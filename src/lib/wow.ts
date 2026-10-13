@@ -3,27 +3,25 @@
 // Raid times are shown in realm (server) time.
 export const REALM_TIMEZONE = "Europe/Paris";
 
-export const ROLES = ["tank", "healer", "melee", "ranged"] as const;
+export const ROLES = ["tank", "healer", "dps"] as const;
 export type Role = (typeof ROLES)[number];
 
 export const ROLE_LABELS: Record<Role, string> = {
   tank: "Tanks",
   healer: "Healers",
-  melee: "Melee",
-  ranged: "Ranged",
+  dps: "DPS",
 };
 
-export const ROLE_SHORT: Record<Role, string> = { tank: "T", healer: "H", melee: "M", ranged: "R" };
+export const ROLE_SHORT: Record<Role, string> = { tank: "T", healer: "H", dps: "D" };
 
 // A raid instance and the minimum number of players per role it needs (table "instances").
-export type Instance = { name: string; size: number; tanks: number; healers: number; melee: number; ranged: number };
+export type Instance = { name: string; size: number; tanks: number; healers: number; dps: number };
 
 // Column in "instances" holding the requirement for each role.
-export const ROLE_REQUIREMENT_KEYS: Record<Role, "tanks" | "healers" | "melee" | "ranged"> = {
+export const ROLE_REQUIREMENT_KEYS: Record<Role, "tanks" | "healers" | "dps"> = {
   tank: "tanks",
   healer: "healers",
-  melee: "melee",
-  ranged: "ranged",
+  dps: "dps",
 };
 
 export type RoleRequirements = Record<Role, number>;
@@ -33,14 +31,13 @@ export function requirementsOf(instance: Instance | null | undefined): RoleRequi
   return {
     tank: instance.tanks,
     healer: instance.healers,
-    melee: instance.melee,
-    ranged: instance.ranged,
+    dps: instance.dps,
   };
 }
 
 // The role a spec fills unless an officer picked another one it can do.
 export function primaryRole(spec: { roles: string[] } | null | undefined): Role {
-  return (spec?.roles[0] ?? "melee") as Role;
+  return (spec?.roles[0] ?? "dps") as Role;
 }
 
 export function effectiveRole(spec: { roles: string[] } | null | undefined, override: Role | null | undefined): Role {

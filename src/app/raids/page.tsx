@@ -22,7 +22,7 @@ export default async function RaidsPage() {
       .lt("starts_at", upcomingCutoff())
       .order("starts_at", { ascending: false })
       .limit(15),
-    supabase.from("instances").select("name, size, tanks, healers, melee, ranged").order("sort"),
+    supabase.from("instances").select("name, size, tanks, healers, dps").order("sort"),
   ]);
 
   const myStatus = new Map(mySignups?.map((s) => [s.raid_id, s.status]));

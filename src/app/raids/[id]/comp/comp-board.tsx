@@ -49,7 +49,7 @@ export type BoardCharacter = {
 type Placement = Record<string, string>; // "group-position" -> character id
 
 const POOL_STATUSES: SignupStatus[] = ["accepted", "tentative", "bench"];
-const ROLE_ORDER: Record<Role, number> = { tank: 0, healer: 1, melee: 2, ranged: 3 };
+const ROLE_ORDER: Record<Role, number> = { tank: 0, healer: 1, dps: 2 };
 
 export function CompBoard({
   raidId,
@@ -129,7 +129,7 @@ export function CompBoard({
     });
   }
 
-  // Switch a placed hybrid to its next role (e.g. Feral melee -> tank).
+  // Switch a placed hybrid to its next role (e.g. Feral dps -> tank).
   function cycleRole(c: BoardCharacter) {
     const current = roleOf(c);
     const next = c.roles[(c.roles.indexOf(current) + 1) % c.roles.length];
@@ -329,7 +329,7 @@ function Pool({ disabled, children }: { disabled: boolean; children: React.React
   );
 }
 
-const ROLE_BADGE: Record<Role, string> = { tank: "Tank", healer: "Heal", melee: "Melee", ranged: "Ranged" };
+const ROLE_BADGE: Record<Role, string> = { tank: "Tank", healer: "Heal", dps: "DPS" };
 
 function Card({
   character: c,
