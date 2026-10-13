@@ -12,6 +12,9 @@ export const ROLE_LABELS: Record<Role, string> = {
   dps: "DPS",
 };
 
+// Singular, for a single player's role.
+export const ROLE_NAMES: Record<Role, string> = { tank: "Tank", healer: "Healer", dps: "DPS" };
+
 export const ROLE_SHORT: Record<Role, string> = { tank: "T", healer: "H", dps: "D" };
 
 // A raid instance and the minimum number of players per role it needs (table "instances").
@@ -140,4 +143,13 @@ export function realmTimeToDate(date: string, time: string) {
   // Check the offset again at the result, in case a DST change falls in between.
   const guess = wall - offsetAt(wall);
   return new Date(wall - offsetAt(guess));
+}
+
+export function hasStarted(iso: string) {
+  return new Date(iso).getTime() <= Date.now();
+}
+
+// Profile page of the player owning a character, opened on that character.
+export function playerHref(playerId: string, characterId?: string) {
+  return characterId ? `/players/${playerId}?character=${characterId}` : `/players/${playerId}`;
 }

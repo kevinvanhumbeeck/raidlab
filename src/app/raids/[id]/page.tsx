@@ -1,14 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireViewer } from "@/lib/viewer";
-import {
-  SIGNUP_STATUSES,
-  STATUS_LABELS,
-  formatRaidTime,
-  primaryRole,
-  requirementsOf,
-  type SignupStatus,
-} from "@/lib/wow";
+import { SIGNUP_STATUSES, STATUS_LABELS, primaryRole, requirementsOf, type SignupStatus } from "@/lib/wow";
 import { deleteRaid, officerSignUp, signUp, withdraw } from "../actions";
 import { SignupBoard, type SignupRow as SignupRowView } from "./signup-board";
 import { SignupForm } from "./signup-form";
@@ -32,33 +25,38 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const { supabase, user, isOfficer } = await requireViewer();
 
-  const [{ data: raid }, { data: signups }, { data: classes }, { data: specs }, { data: myCharacters }] =
-    await Promise.all([
-      supabase.from("raids").select("id, title, instance, size, starts_at, notes").eq("id", id).maybeSingle(),
-      supabase
-        .from("signups")
-        .select("character_id, status, spec_id, note, characters(name, class_id, main_spec_id, owner_id, profiles(display_name))")
-        .eq("raid_id", id)
-        .overrideTypes<SignupRow[], { merge: false }>(),
-      supabase.from("classes").select("id, name, color"),
-      supabase.from("specs").select("id, name, roles"),
-      supabase
-        .from("characters")
-        .select("id, name, main_spec_id, off_spec_ids")
-        .eq("owner_id", user.id)
-        .order("is_main", { ascending: false }),
-    ]);
+  const [
+    { data: raid },
+    { data: signups },
+    { data: classes },
+    { data: specs },
+    { data: myCharacters },
+    { data: slots },
+  ] = await Promise.all([
+    supabase.from("raids").select("id, instance, size").eq("id", id).maybeSingle(),
+    supabase
+      .from("signups")
+      .select(
+        "character_id, status, spec_id, note, characters(name, class_id, main_spec_id, owner_id, profiles(display_name))",
+      )
+      .eq("raid_id", id)
+      .overrideTypes<SignupRow[], { merge: false }>(),
+    supabase.from("classes").select("id, name, color"),
+    supabase.from("specs").select("id, name, roles"),
+    supabase
+      .from("characters")
+      .select("id, name, main_spec_id, off_spec_ids")
+      .eq("owner_id", user.id)
+      .order("is_main", { ascending: false }),
+    supabase.from("comp_slots").select("group_no, character_id").eq("raid_id", id),
+  ]);
   if (!raid) notFound();
 
   const [{ data: allCharacters }, { data: instance }] = await Promise.all([
     isOfficer
       ? supabase.from("characters").select("id, name, class_id, main_spec_id").order("name")
       : Promise.resolve({ data: [] as { id: string; name: string; class_id: string; main_spec_id: string }[] }),
-    supabase
-      .from("instances")
-      .select("name, size, tanks, healers, dps")
-      .eq("name", raid.instance)
-      .maybeSingle(),
+    supabase.from("instances").select("name, size, tanks, healers, dps").eq("name", raid.instance).maybeSingle(),
   ]);
 
   const classById = new Map(classes?.map((c) => [c.id, c]));
@@ -71,6 +69,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
     const spec = specById.get(specId);
     const row: SignupRowView = {
       characterId: s.character_id,
+      playerId: ch.owner_id,
       status: s.status,
       note: s.note,
       name: ch.name,
@@ -85,6 +84,8 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
   });
 
   const mine = rows.find((r) => r.isMine);
+  const myIds = new Set(myCharacters?.map((c) => c.id));
+  const mySlot = slots?.find((s) => myIds.has(s.character_id));
   const mySignup = signups?.find((s) => s.character_id === mine?.characterId);
 
   const formCharacters = (myCharacters ?? []).map((c) => ({
@@ -98,29 +99,6 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="space-y-8">
-      <section className="space-y-1">
-        <Link href="/raids" className="text-sm opacity-70 hover:opacity-100">
-          ← All raids
-        </Link>
-        <h1 className="text-2xl font-semibold">{raid.title}</h1>
-        <p className="opacity-80">
-          {raid.instance} · {raid.size}-man · {formatRaidTime(raid.starts_at)} server time
-        </p>
-        {raid.notes && <p className="text-sm opacity-70">{raid.notes}</p>}
-        <Link
-          href={`/raids/${raid.id}/comp`}
-          className="mt-2 inline-block rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
-        >
-          {isOfficer ? "Edit composition" : "View composition"}
-        </Link>
-        <Link
-          href={`/raids/${raid.id}/attendance`}
-          className="ml-2 mt-2 inline-block rounded border border-border px-3 py-1.5 text-sm"
-        >
-          Attendance
-        </Link>
-      </section>
-
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Your sign-up</h2>
         {formCharacters.length ? (
@@ -144,6 +122,22 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
                 <button className="text-sm text-red-400 hover:text-red-300">Remove my sign-up</button>
               </form>
             )}
+            {mySlot ? (
+              <p className="text-sm text-emerald-400">
+                You&apos;re in group {mySlot.group_no}
+                {mySlot.character_id !== mine?.characterId &&
+                  ` on ${myCharacters?.find((c) => c.id === mySlot.character_id)?.name}`}
+                .{" "}
+                <Link href={`/raids/${raid.id}/comp`} className="underline">
+                  See the composition
+                </Link>
+              </p>
+            ) : (
+              mine &&
+              (slots?.length ?? 0) > 0 && (
+                <p className="text-sm opacity-70">You&apos;re not in the composition (yet).</p>
+              )
+            )}
           </>
         ) : (
           <p className="opacity-70">
@@ -155,9 +149,18 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
         )}
       </section>
 
+      <SignupBoard
+        raidId={raid.id}
+        size={raid.size}
+        rows={rows}
+        requirements={requirementsOf(instance)}
+        canEdit={isOfficer}
+      />
+
       {isOfficer && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Sign up a player</h2>
+        <section className="space-y-3 border-t border-border pt-6">
+          <h2 className="text-lg font-semibold">Officer tools</h2>
+          <h3 className="text-sm font-medium opacity-80">Sign up a player</h3>
           <form
             action={officerSignUp.bind(null, raid.id)}
             className="flex flex-wrap items-end gap-3 rounded border border-border bg-panel p-4"
@@ -176,7 +179,11 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
             </label>
             <label className="space-y-1">
               <span className="block text-sm">Status</span>
-              <select name="status" defaultValue="accepted" className="rounded border border-border bg-background px-2 py-1.5">
+              <select
+                name="status"
+                defaultValue="accepted"
+                className="rounded border border-border bg-background px-2 py-1.5"
+              >
                 {SIGNUP_STATUSES.map((s) => (
                   <option key={s} value={s}>
                     {STATUS_LABELS[s]}
@@ -184,23 +191,14 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
                 ))}
               </select>
             </label>
-            <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">Add</button>
+            <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
+              Add
+            </button>
+          </form>
+          <form action={deleteRaid.bind(null, raid.id)}>
+            <button className="text-sm text-red-400 hover:text-red-300">Delete raid</button>
           </form>
         </section>
-      )}
-
-      <SignupBoard
-        raidId={raid.id}
-        size={raid.size}
-        rows={rows}
-        requirements={requirementsOf(instance)}
-        canEdit={isOfficer}
-      />
-
-      {isOfficer && (
-        <form action={deleteRaid.bind(null, raid.id)} className="border-t border-border pt-4">
-          <button className="text-sm text-red-400 hover:text-red-300">Delete raid</button>
-        </form>
       )}
     </div>
   );

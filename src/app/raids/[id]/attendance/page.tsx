@@ -4,7 +4,7 @@ import { requireViewer } from "@/lib/viewer";
 import {
   ATTENDANCE_LABELS,
   ATTENDANCE_STATUSES,
-  formatRaidTime,
+  playerHref,
   type AttendanceStatus,
   type SignupStatus,
 } from "@/lib/wow";
@@ -18,7 +18,13 @@ const CHECKED: Record<AttendanceStatus, string> = {
   absent: "peer-checked:bg-red-500",
 };
 
-type CharacterJoin = { id: string; name: string; class_id: string; profiles: { display_name: string } | null };
+type CharacterJoin = {
+  id: string;
+  name: string;
+  class_id: string;
+  owner_id: string;
+  profiles: { display_name: string } | null;
+};
 
 export default async function RaidAttendancePage({
   params,
@@ -33,20 +39,20 @@ export default async function RaidAttendancePage({
 
   const [{ data: raid }, { data: signups }, { data: slots }, { data: attendance }, { data: classes }] =
     await Promise.all([
-      supabase.from("raids").select("id, title, instance, size, starts_at").eq("id", id).maybeSingle(),
+      supabase.from("raids").select("id").eq("id", id).maybeSingle(),
       supabase
         .from("signups")
-        .select("status, characters(id, name, class_id, profiles(display_name))")
+        .select("status, characters(id, name, class_id, owner_id, profiles(display_name))")
         .eq("raid_id", id)
         .overrideTypes<{ status: SignupStatus; characters: CharacterJoin | null }[], { merge: false }>(),
       supabase
         .from("comp_slots")
-        .select("characters(id, name, class_id, profiles(display_name))")
+        .select("characters(id, name, class_id, owner_id, profiles(display_name))")
         .eq("raid_id", id)
         .overrideTypes<{ characters: CharacterJoin | null }[], { merge: false }>(),
       supabase
         .from("attendance")
-        .select("status, characters(id, name, class_id, profiles(display_name))")
+        .select("status, characters(id, name, class_id, owner_id, profiles(display_name))")
         .eq("raid_id", id)
         .overrideTypes<{ status: AttendanceStatus; characters: CharacterJoin | null }[], { merge: false }>(),
       supabase.from("classes").select("id, color"),
@@ -59,7 +65,8 @@ export default async function RaidAttendancePage({
   // Suggest a status from the comp and sign-ups until attendance has been saved.
   const rows = new Map<string, { character: CharacterJoin; status: AttendanceStatus }>();
   for (const s of signups ?? []) {
-    if (s.characters) rows.set(s.characters.id, { character: s.characters, status: s.status === "bench" ? "benched" : "absent" });
+    if (s.characters)
+      rows.set(s.characters.id, { character: s.characters, status: s.status === "bench" ? "benched" : "absent" });
   }
   for (const s of slots ?? []) {
     if (s.characters) rows.set(s.characters.id, { character: s.characters, status: "present" });
@@ -76,13 +83,6 @@ export default async function RaidAttendancePage({
   return (
     <div className="space-y-6">
       <section className="space-y-1">
-        <Link href={`/raids/${raid.id}`} className="text-sm opacity-70 hover:opacity-100">
-          ← Sign-ups
-        </Link>
-        <h1 className="text-2xl font-semibold">{raid.title} — attendance</h1>
-        <p className="opacity-80">
-          {raid.instance} · {formatRaidTime(raid.starts_at)} server time
-        </p>
         {!recorded && isOfficer && sorted.length > 0 && (
           <p className="text-sm text-amber-400">
             Not saved yet. Suggested from the comp (present) and sign-ups (benched / absent) — adjust and save.
@@ -98,9 +98,13 @@ export default async function RaidAttendancePage({
           <ul className="divide-y divide-border rounded border border-border bg-panel">
             {sorted.map(({ character, status }) => (
               <li key={character.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2">
-                <span className="w-40 font-medium" style={{ color: color.get(character.class_id) }}>
+                <Link
+                  href={playerHref(character.owner_id, character.id)}
+                  className="w-40 font-medium hover:underline"
+                  style={{ color: color.get(character.class_id) }}
+                >
                   {character.name}
-                </span>
+                </Link>
                 <span className="text-xs opacity-60">{character.profiles?.display_name}</span>
                 <fieldset className="ml-auto flex gap-1" disabled={!isOfficer}>
                   {ATTENDANCE_STATUSES.map((s) => (
@@ -124,7 +128,9 @@ export default async function RaidAttendancePage({
             ))}
           </ul>
           {isOfficer && (
-            <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">Save attendance</button>
+            <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
+              Save attendance
+            </button>
           )}
         </form>
       )}

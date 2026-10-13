@@ -1,6 +1,7 @@
+import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CharacterSpecs, SpecIcon } from "@/components/spec-icon";
-import { ROLES, ROLE_LABELS, primaryRole, type Role } from "@/lib/wow";
+import { ROLES, ROLE_LABELS, playerHref, primaryRole, type Role } from "@/lib/wow";
 
 type CharacterRow = {
   id: string;
@@ -9,6 +10,7 @@ type CharacterRow = {
   main_spec_id: string;
   off_spec_ids: string[];
   is_main: boolean;
+  owner_id: string;
   profiles: { display_name: string } | null;
 };
 
@@ -18,7 +20,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
     supabase.from("specs").select("id, class_id, name, roles").order("name"),
     supabase
       .from("characters")
-      .select("id, name, class_id, main_spec_id, off_spec_ids, is_main, profiles(display_name)")
+      .select("id, name, class_id, main_spec_id, off_spec_ids, is_main, owner_id, profiles(display_name)")
       .order("name")
       .overrideTypes<CharacterRow[], { merge: false }>(),
   ]);
@@ -31,8 +33,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
   const offCount = (specId: string) => all.filter((c) => c.off_spec_ids.includes(specId)).length;
   const altCount = (specId: string) => all.filter((c) => !c.is_main && c.main_spec_id === specId).length;
 
-  const roleCount = (role: Role) =>
-    mains.filter((c) => primaryRole(specById.get(c.main_spec_id)) === role).length;
+  const roleCount = (role: Role) => mains.filter((c) => primaryRole(specById.get(c.main_spec_id)) === role).length;
   const missing = (specs ?? []).filter((s) => mainCount(s.id) === 0);
 
   return (
@@ -54,7 +55,11 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
           <p className="flex flex-wrap items-center gap-1.5 text-sm text-amber-400">
             No main for:
             {missing.map((s) => (
-              <SpecIcon key={s.id} specId={s.id} name={`${s.name} ${classes?.find((c) => c.id === s.class_id)?.name}`} />
+              <SpecIcon
+                key={s.id}
+                specId={s.id}
+                name={`${s.name} ${classes?.find((c) => c.id === s.class_id)?.name}`}
+              />
             ))}
           </p>
         )}
@@ -80,7 +85,10 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
                         <span className={m === 0 ? "text-amber-400" : ""}>{s.name}</span>
                         <span className="ml-auto tabular-nums">
                           <strong className={m === 0 ? "text-amber-400" : ""}>{m}</strong>
-                          <span className="opacity-60"> · {altCount(s.id)} · {offCount(s.id)}</span>
+                          <span className="opacity-60">
+                            {" "}
+                            · {altCount(s.id)} · {offCount(s.id)}
+                          </span>
                         </span>
                       </li>
                     );
@@ -115,9 +123,13 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
                           offSpecIds={c.off_spec_ids}
                           specName={(id) => specById.get(id)?.name ?? ""}
                         />
-                        <span className="font-medium" style={{ color: cls.color }}>
+                        <Link
+                          href={playerHref(c.owner_id, c.id)}
+                          className="font-medium hover:underline"
+                          style={{ color: cls.color }}
+                        >
                           {c.name}
-                        </span>
+                        </Link>
                         {!c.is_main && <span className="text-xs opacity-60">alt</span>}
                         {c.profiles && c.profiles.display_name !== c.name && (
                           <span className="ml-auto text-xs opacity-60">{c.profiles.display_name}</span>
