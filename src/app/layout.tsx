@@ -34,7 +34,7 @@ export default async function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <header className="border-b border-border bg-panel">
-          <nav className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3">
+          <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
             <Link href="/" className="font-semibold">
               Raid Planner
             </Link>
@@ -42,6 +42,9 @@ export default async function RootLayout({
               <>
                 <Link href="/raids" className="text-sm opacity-80 hover:opacity-100">
                   Raids
+                </Link>
+                <Link href="/attendance" className="text-sm opacity-80 hover:opacity-100">
+                  Attendance
                 </Link>
                 <Link href="/characters" className="text-sm opacity-80 hover:opacity-100">
                   My characters

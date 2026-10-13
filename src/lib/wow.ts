@@ -54,3 +54,23 @@ export const DUTY_LABELS: Record<RaidDuty, string> = {
   heal_assist: "Heal assist",
   loot_lead: "Loot lead",
 };
+
+export const ATTENDANCE_STATUSES = ["present", "late", "benched", "absent"] as const;
+export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number];
+
+export const ATTENDANCE_LABELS: Record<AttendanceStatus, string> = {
+  present: "Present",
+  late: "Late",
+  benched: "Benched",
+  absent: "Absent",
+};
+
+export const ATTENDANCE_COLORS: Record<AttendanceStatus, string> = {
+  present: "bg-emerald-500",
+  late: "bg-amber-400",
+  benched: "bg-sky-500",
+  absent: "bg-red-500",
+};
+
+// Benched players showed up and were available, so they count as attended.
+export const COUNTS_AS_ATTENDED: AttendanceStatus[] = ["present", "late", "benched"];
