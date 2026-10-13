@@ -6,7 +6,7 @@ import { NewRaidForm } from "./new-raid-form";
 export default async function RaidsPage() {
   const { supabase, user, isOfficer } = await requireViewer();
 
-  const [{ data: raids }, { data: mySignups }, { data: pastRaids }] = await Promise.all([
+  const [{ data: raids }, { data: mySignups }, { data: pastRaids }, { data: instances }] = await Promise.all([
     supabase
       .from("raids")
       .select("id, title, instance, size, starts_at, signups(status)")
@@ -22,6 +22,7 @@ export default async function RaidsPage() {
       .lt("starts_at", upcomingCutoff())
       .order("starts_at", { ascending: false })
       .limit(15),
+    supabase.from("instances").select("name, size, tanks, healers, melee, ranged").order("sort"),
   ]);
 
   const myStatus = new Map(mySignups?.map((s) => [s.raid_id, s.status]));
@@ -87,7 +88,7 @@ export default async function RaidsPage() {
       {isOfficer && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">New raid</h2>
-          <NewRaidForm />
+          <NewRaidForm instances={instances ?? []} />
         </section>
       )}
     </div>

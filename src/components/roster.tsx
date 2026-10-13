@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ROLES, ROLE_LABELS, type Role } from "@/lib/wow";
+import { ROLES, ROLE_LABELS, primaryRole, type Role } from "@/lib/wow";
 
 type CharacterRow = {
   id: string;
@@ -31,7 +31,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
   const altCount = (specId: string) => all.filter((c) => !c.is_main && c.main_spec_id === specId).length;
 
   const roleCount = (role: Role) =>
-    mains.filter((c) => (specById.get(c.main_spec_id)?.roles[0] ?? "melee") === role).length;
+    mains.filter((c) => primaryRole(specById.get(c.main_spec_id)) === role).length;
   const missing = (specs ?? []).filter((s) => mainCount(s.id) === 0);
 
   return (
