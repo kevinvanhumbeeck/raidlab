@@ -106,6 +106,12 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
         >
           {isOfficer ? "Edit composition" : "View composition"}
         </Link>
+        <Link
+          href={`/raids/${raid.id}/attendance`}
+          className="ml-2 mt-2 inline-block rounded border border-border px-3 py-1.5 text-sm"
+        >
+          Attendance
+        </Link>
       </section>
 
       <section className="space-y-3">

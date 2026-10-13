@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Roster } from "@/components/roster";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function Home() {
@@ -23,17 +23,12 @@ export default async function Home() {
     .single();
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Welcome, {profile?.display_name}</h1>
-      {profile?.is_officer && <p className="text-sm opacity-70">You are an officer.</p>}
-      <div className="flex gap-3">
-        <Link href="/raids" className="rounded bg-accent px-3 py-1.5 text-sm text-white">
-          Upcoming raids
-        </Link>
-        <Link href="/characters" className="rounded border border-border px-3 py-1.5 text-sm">
-          Manage my characters
-        </Link>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Welcome, {profile?.display_name}</h1>
+        {profile?.is_officer && <p className="text-sm opacity-70">You are an officer.</p>}
       </div>
+      <Roster supabase={supabase} />
     </div>
   );
 }

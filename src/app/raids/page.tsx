@@ -6,7 +6,7 @@ import { NewRaidForm } from "./new-raid-form";
 export default async function RaidsPage() {
   const { supabase, user, isOfficer } = await requireViewer();
 
-  const [{ data: raids }, { data: mySignups }] = await Promise.all([
+  const [{ data: raids }, { data: mySignups }, { data: pastRaids }] = await Promise.all([
     supabase
       .from("raids")
       .select("id, title, instance, size, starts_at, signups(status)")
@@ -16,6 +16,12 @@ export default async function RaidsPage() {
       .from("signups")
       .select("raid_id, status, characters!inner(owner_id)")
       .eq("characters.owner_id", user.id),
+    supabase
+      .from("raids")
+      .select("id, title, instance, starts_at, attendance(count)")
+      .lt("starts_at", upcomingCutoff())
+      .order("starts_at", { ascending: false })
+      .limit(15),
   ]);
 
   const myStatus = new Map(mySignups?.map((s) => [s.raid_id, s.status]));
@@ -52,6 +58,31 @@ export default async function RaidsPage() {
           <p className="opacity-70">No raids planned yet.</p>
         )}
       </section>
+
+      {pastRaids && pastRaids.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Past raids</h2>
+          <ul className="divide-y divide-border rounded border border-border bg-panel">
+            {pastRaids.map((raid) => {
+              const recorded = (raid.attendance[0]?.count ?? 0) > 0;
+              return (
+                <li key={raid.id}>
+                  <Link
+                    href={`/raids/${raid.id}/attendance`}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-white/5"
+                  >
+                    <span className="font-medium">{raid.title}</span>
+                    <span className="text-sm opacity-70">{formatRaidTime(raid.starts_at)}</span>
+                    <span className={`ml-auto text-xs ${recorded ? "opacity-70" : "text-amber-400"}`}>
+                      {recorded ? "Attendance recorded" : "Attendance not recorded"}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       {isOfficer && (
         <section className="space-y-3">
