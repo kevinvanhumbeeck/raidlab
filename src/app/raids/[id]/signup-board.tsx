@@ -30,7 +30,7 @@ export type SignupRow = {
 
 type Change = { characterId: string; status: SignupStatus | null };
 
-const ROLE_ORDER: Record<Role, number> = { tank: 0, healer: 1, melee: 2, ranged: 3 };
+const ROLE_ORDER: Record<Role, number> = { tank: 0, healer: 1, dps: 2 };
 const byRoleThenName = (a: SignupRow, b: SignupRow) =>
   ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.name.localeCompare(b.name);
 
@@ -86,7 +86,7 @@ export function SignupBoard({
             </span>
           </h2>
         </header>
-        <div className="grid divide-border sm:grid-cols-2 sm:divide-x lg:grid-cols-4">
+        <div className="grid divide-border sm:grid-cols-[1fr_1fr_2fr] sm:divide-x">
           {ROLES.map((role) => {
             const inRole = accepted.filter((r) => r.role === role).sort(byRoleThenName);
             return (
@@ -95,7 +95,8 @@ export function SignupBoard({
                   <span className="opacity-60">{ROLE_LABELS[role]}</span>
                   <RoleCount count={inRole.length} needed={requirements?.[role]} />
                 </h3>
-                <ul className="space-y-0.5">
+                {/* DPS is most of the raid, so it gets two columns. */}
+                <ul className={`space-y-0.5 ${role === "dps" ? "lg:columns-2 lg:gap-4 [&>li]:break-inside-avoid" : ""}`}>
                   {inRole.map((r) => (
                     <PlayerRow key={r.characterId} row={r} canEdit={canEdit} onChange={change} />
                   ))}

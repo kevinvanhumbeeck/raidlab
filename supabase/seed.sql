@@ -14,38 +14,38 @@ insert into public.classes (id, name, color) values
 on conflict (id) do update set name = excluded.name, color = excluded.color;
 
 insert into public.specs (id, class_id, name, roles) values
-  ('druid_balance',         'druid',   'Balance',       '{ranged}'),
-  ('druid_feral',           'druid',   'Feral',         '{melee,tank}'),
+  ('druid_balance',         'druid',   'Balance',       '{dps}'),
+  ('druid_feral',           'druid',   'Feral',         '{dps,tank}'),
   ('druid_restoration',     'druid',   'Restoration',   '{healer}'),
-  ('hunter_beastmastery',   'hunter',  'Beast Mastery', '{ranged}'),
-  ('hunter_marksmanship',   'hunter',  'Marksmanship',  '{ranged}'),
-  ('hunter_survival',       'hunter',  'Survival',      '{ranged}'),
-  ('mage_arcane',           'mage',    'Arcane',        '{ranged}'),
-  ('mage_fire',             'mage',    'Fire',          '{ranged}'),
-  ('mage_frost',            'mage',    'Frost',         '{ranged}'),
+  ('hunter_beastmastery',   'hunter',  'Beast Mastery', '{dps}'),
+  ('hunter_marksmanship',   'hunter',  'Marksmanship',  '{dps}'),
+  ('hunter_survival',       'hunter',  'Survival',      '{dps}'),
+  ('mage_arcane',           'mage',    'Arcane',        '{dps}'),
+  ('mage_fire',             'mage',    'Fire',          '{dps}'),
+  ('mage_frost',            'mage',    'Frost',         '{dps}'),
   ('paladin_holy',          'paladin', 'Holy',          '{healer}'),
   ('paladin_protection',    'paladin', 'Protection',    '{tank}'),
-  ('paladin_retribution',   'paladin', 'Retribution',   '{melee}'),
+  ('paladin_retribution',   'paladin', 'Retribution',   '{dps}'),
   ('priest_discipline',     'priest',  'Discipline',    '{healer}'),
   ('priest_holy',           'priest',  'Holy',          '{healer}'),
-  ('priest_shadow',         'priest',  'Shadow',        '{ranged}'),
-  ('rogue_assassination',   'rogue',   'Assassination', '{melee}'),
-  ('rogue_combat',          'rogue',   'Combat',        '{melee}'),
-  ('rogue_subtlety',        'rogue',   'Subtlety',      '{melee}'),
-  ('shaman_elemental',      'shaman',  'Elemental',     '{ranged}'),
-  ('shaman_enhancement',    'shaman',  'Enhancement',   '{melee}'),
+  ('priest_shadow',         'priest',  'Shadow',        '{dps}'),
+  ('rogue_assassination',   'rogue',   'Assassination', '{dps}'),
+  ('rogue_combat',          'rogue',   'Combat',        '{dps}'),
+  ('rogue_subtlety',        'rogue',   'Subtlety',      '{dps}'),
+  ('shaman_elemental',      'shaman',  'Elemental',     '{dps}'),
+  ('shaman_enhancement',    'shaman',  'Enhancement',   '{dps}'),
   ('shaman_restoration',    'shaman',  'Restoration',   '{healer}'),
-  ('warlock_affliction',    'warlock', 'Affliction',    '{ranged}'),
-  ('warlock_demonology',    'warlock', 'Demonology',    '{ranged}'),
-  ('warlock_destruction',   'warlock', 'Destruction',   '{ranged}'),
-  ('warrior_arms',          'warrior', 'Arms',          '{melee}'),
-  ('warrior_fury',          'warrior', 'Fury',          '{melee}'),
+  ('warlock_affliction',    'warlock', 'Affliction',    '{dps}'),
+  ('warlock_demonology',    'warlock', 'Demonology',    '{dps}'),
+  ('warlock_destruction',   'warlock', 'Destruction',   '{dps}'),
+  ('warrior_arms',          'warrior', 'Arms',          '{dps}'),
+  ('warrior_fury',          'warrior', 'Fury',          '{dps}'),
   ('warrior_protection',    'warrior', 'Protection',    '{tank}')
 on conflict (id) do update set class_id = excluded.class_id, name = excluded.name, roles = excluded.roles;
 
 -- Raid instances and their minimum role requirements (also created by the instance_requirements migration).
-insert into public.instances (name, size, tanks, healers, melee, ranged, sort) values
-  ('Barrow Deeps',  10, 2, 3,  2,  2, 1),
-  ('Hyjal Summit',  20, 3, 5,  5,  5, 2),
-  ('Onyxia''s Lair', 40, 3, 9, 12, 12, 3)
+insert into public.instances (name, size, tanks, healers, dps, sort) values
+  ('Barrow Deeps',  10, 2, 3,  4, 1),
+  ('Hyjal Summit',  20, 3, 5, 10, 2),
+  ('Onyxia''s Lair', 40, 3, 9, 24, 3)
 on conflict (name) do nothing;
