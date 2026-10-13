@@ -109,3 +109,38 @@ export const STATUS_DOT: Record<SignupStatus, string> = {
   bench: "bg-sky-500",
   absent: "bg-red-500",
 };
+
+// Wall-clock parts of an instant in realm time.
+function realmParts(ms: number) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: REALM_TIMEZONE,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(new Date(ms));
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return { year: get("year"), month: get("month"), day: get("day"), hour: get("hour"), minute: get("minute") };
+}
+
+// Today's date in realm time, as "YYYY-MM-DD".
+export function realmToday() {
+  const { year, month, day } = realmParts(Date.now());
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+// The instant a realm-time date ("YYYY-MM-DD") and time ("HH:MM") refer to.
+export function realmTimeToDate(date: string, time: string) {
+  const [year, month, day] = date.split("-").map(Number);
+  const [hour, minute] = time.split(":").map(Number);
+  const wall = Date.UTC(year, month - 1, day, hour, minute);
+  const offsetAt = (ms: number) => {
+    const p = realmParts(ms);
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute) - ms;
+  };
+  // Check the offset again at the result, in case a DST change falls in between.
+  const guess = wall - offsetAt(wall);
+  return new Date(wall - offsetAt(guess));
+}
