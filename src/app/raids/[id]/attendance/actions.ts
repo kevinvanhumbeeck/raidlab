@@ -22,7 +22,7 @@ export async function saveAttendance(raidId: string, formData: FormData) {
   const { error } = await supabase.from("attendance").upsert(rows);
   if (error) throw error;
 
-  revalidatePath(`/raids/${raidId}/attendance`);
+  revalidatePath("/raids/[id]", "layout");
   revalidatePath("/attendance");
   redirect(`/raids/${raidId}/attendance?saved=1`);
 }

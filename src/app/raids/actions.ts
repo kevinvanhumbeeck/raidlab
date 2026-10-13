@@ -94,7 +94,7 @@ export async function signUp(raidId: string, formData: FormData) {
   });
   if (error) throw error;
 
-  revalidatePath(`/raids/${raidId}`);
+  revalidatePath("/raids/[id]", "layout");
   revalidatePath("/raids");
 }
 
@@ -107,7 +107,7 @@ export async function withdraw(raidId: string, characterId: string) {
     .eq("character_id", characterId);
   if (error) throw error;
 
-  revalidatePath(`/raids/${raidId}`);
+  revalidatePath("/raids/[id]", "layout");
   revalidatePath("/raids");
 }
 
@@ -124,7 +124,7 @@ export async function setSignupStatus(raidId: string, characterId: string, statu
     .eq("character_id", characterId);
   if (error) throw error;
 
-  revalidatePath(`/raids/${raidId}`);
+  revalidatePath("/raids/[id]", "layout");
 }
 
 // Officers can sign up any character, e.g. for players who replied in Discord.
@@ -151,6 +151,6 @@ export async function officerSignUp(raidId: string, formData: FormData) {
   });
   if (error) throw error;
 
-  revalidatePath(`/raids/${raidId}`);
+  revalidatePath("/raids/[id]", "layout");
   revalidatePath("/raids");
 }
