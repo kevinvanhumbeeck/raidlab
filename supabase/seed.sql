@@ -42,3 +42,10 @@ insert into public.specs (id, class_id, name, roles) values
   ('warrior_fury',          'warrior', 'Fury',          '{melee}'),
   ('warrior_protection',    'warrior', 'Protection',    '{tank}')
 on conflict (id) do update set class_id = excluded.class_id, name = excluded.name, roles = excluded.roles;
+
+-- Raid instances and their minimum role requirements (also created by the instance_requirements migration).
+insert into public.instances (name, size, tanks, healers, melee, ranged, sort) values
+  ('Barrow Deeps',  10, 2, 3,  2,  2, 1),
+  ('Hyjal Summit',  20, 3, 5,  5,  5, 2),
+  ('Onyxia''s Lair', 40, 3, 9, 12, 12, 3)
+on conflict (name) do nothing;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SpecPicker } from "@/components/spec-picker";
 import { STATUS_LABELS, SIGNUP_STATUSES, type SignupStatus } from "@/lib/wow";
 
 type Character = { id: string; name: string; specs: { id: string; name: string }[] };
@@ -20,7 +21,7 @@ export function SignupForm({
   const character = characters.find((c) => c.id === characterId);
 
   return (
-    <form action={action} className="grid gap-4 rounded border border-border bg-panel p-4 sm:grid-cols-4">
+    <form action={action} className="grid gap-4 rounded border border-border bg-panel p-4 sm:grid-cols-3">
       <label className="space-y-1">
         <span className="text-sm">Character</span>
         <select
@@ -32,21 +33,6 @@ export function SignupForm({
           {characters.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="space-y-1">
-        <span className="text-sm">Spec</span>
-        <select
-          key={characterId}
-          name="spec_id"
-          defaultValue={current?.characterId === characterId ? (current.specId ?? undefined) : undefined}
-          className={input}
-        >
-          {character?.specs.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
             </option>
           ))}
         </select>
@@ -65,7 +51,20 @@ export function SignupForm({
         <span className="text-sm">Note</span>
         <input name="note" defaultValue={current?.note ?? ""} placeholder="Late 15 min" className={input} />
       </label>
-      <div className="sm:col-span-4">
+      <fieldset className="space-y-1.5 sm:col-span-3">
+        <legend className="text-sm">Spec</legend>
+        <SpecPicker
+          key={characterId}
+          name="spec_id"
+          type="radio"
+          required
+          specs={character?.specs ?? []}
+          defaultValues={[
+            current?.characterId === characterId && current.specId ? current.specId : (character?.specs[0]?.id ?? ""),
+          ]}
+        />
+      </fieldset>
+      <div className="sm:col-span-3">
         <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
           {current ? "Update sign-up" : "Sign up"}
         </button>

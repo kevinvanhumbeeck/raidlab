@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireViewer } from "@/lib/viewer";
-import { RAID_DUTIES, type RaidDuty } from "@/lib/wow";
+import { RAID_DUTIES, ROLES, type RaidDuty, type Role } from "@/lib/wow";
 
 async function requireOfficer() {
   const viewer = await requireViewer();
@@ -18,14 +18,14 @@ export async function moveToSlot(raidId: string, characterId: string, groupNo: n
   const [{ data: occupant }, { data: source }, { data: signup }] = await Promise.all([
     supabase
       .from("comp_slots")
-      .select("character_id, spec_id")
+      .select("character_id, spec_id, role")
       .eq("raid_id", raidId)
       .eq("group_no", groupNo)
       .eq("position", position)
       .maybeSingle(),
     supabase
       .from("comp_slots")
-      .select("group_no, position")
+      .select("group_no, position, role")
       .eq("raid_id", raidId)
       .eq("character_id", characterId)
       .maybeSingle(),
@@ -46,8 +46,16 @@ export async function moveToSlot(raidId: string, characterId: string, groupNo: n
     .in("character_id", moving);
   if (deleteError) throw deleteError;
 
+  // Keep each character's chosen role when they move.
   const inserts = [
-    { raid_id: raidId, group_no: groupNo, position, character_id: characterId, spec_id: signup?.spec_id ?? null },
+    {
+      raid_id: raidId,
+      group_no: groupNo,
+      position,
+      character_id: characterId,
+      spec_id: signup?.spec_id ?? null,
+      role: source?.role ?? null,
+    },
   ];
   if (occupant && source) {
     inserts.push({
@@ -56,9 +64,38 @@ export async function moveToSlot(raidId: string, characterId: string, groupNo: n
       position: source.position,
       character_id: occupant.character_id,
       spec_id: occupant.spec_id,
+      role: occupant.role,
     });
   }
   const { error } = await supabase.from("comp_slots").insert(inserts);
+  if (error) throw error;
+
+  revalidatePath(`/raids/${raidId}/comp`);
+}
+
+// Set the role a placed hybrid fills (null = the spec's primary role).
+export async function setSlotRole(raidId: string, characterId: string, role: Role | null) {
+  const supabase = await requireOfficer();
+
+  if (role) {
+    if (!ROLES.includes(role)) throw new Error("Unknown role");
+    const { data: slot } = await supabase
+      .from("comp_slots")
+      .select("spec_id, characters(main_spec_id)")
+      .eq("raid_id", raidId)
+      .eq("character_id", characterId)
+      .single()
+      .overrideTypes<{ spec_id: string | null; characters: { main_spec_id: string } | null }, { merge: false }>();
+    const specId = slot?.spec_id ?? slot?.characters?.main_spec_id;
+    const { data: spec } = await supabase.from("specs").select("roles").eq("id", specId ?? "").single();
+    if (!spec?.roles.includes(role)) throw new Error("This spec can't fill that role");
+  }
+
+  const { error } = await supabase
+    .from("comp_slots")
+    .update({ role })
+    .eq("raid_id", raidId)
+    .eq("character_id", characterId);
   if (error) throw error;
 
   revalidatePath(`/raids/${raidId}/comp`);

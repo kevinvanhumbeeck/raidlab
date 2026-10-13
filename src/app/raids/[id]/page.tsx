@@ -5,7 +5,8 @@ import {
   SIGNUP_STATUSES,
   STATUS_LABELS,
   formatRaidTime,
-  type Role,
+  primaryRole,
+  requirementsOf,
   type SignupStatus,
 } from "@/lib/wow";
 import { deleteRaid, officerSignUp, signUp, withdraw } from "../actions";
@@ -49,9 +50,16 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
     ]);
   if (!raid) notFound();
 
-  const { data: allCharacters } = isOfficer
-    ? await supabase.from("characters").select("id, name, class_id, main_spec_id").order("name")
-    : { data: [] };
+  const [{ data: allCharacters }, { data: instance }] = await Promise.all([
+    isOfficer
+      ? supabase.from("characters").select("id, name, class_id, main_spec_id").order("name")
+      : Promise.resolve({ data: [] as { id: string; name: string; class_id: string; main_spec_id: string }[] }),
+    supabase
+      .from("instances")
+      .select("name, size, tanks, healers, melee, ranged")
+      .eq("name", raid.instance)
+      .maybeSingle(),
+  ]);
 
   const classById = new Map(classes?.map((c) => [c.id, c]));
   const specById = new Map(specs?.map((s) => [s.id, s]));
@@ -71,7 +79,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
       color: classById.get(ch.class_id)?.color ?? "#ccc",
       specId,
       specName: spec?.name ?? "",
-      role: (spec?.roles[0] ?? "melee") as Role,
+      role: primaryRole(spec),
     };
     return [row];
   });
@@ -181,7 +189,13 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
         </section>
       )}
 
-      <SignupBoard raidId={raid.id} size={raid.size} rows={rows} canEdit={isOfficer} />
+      <SignupBoard
+        raidId={raid.id}
+        size={raid.size}
+        rows={rows}
+        requirements={requirementsOf(instance)}
+        canEdit={isOfficer}
+      />
 
       {isOfficer && (
         <form action={deleteRaid.bind(null, raid.id)} className="border-t border-border pt-4">

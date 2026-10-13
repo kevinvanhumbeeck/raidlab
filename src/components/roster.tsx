@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ROLES, ROLE_LABELS, type Role } from "@/lib/wow";
+import { CharacterSpecs, SpecIcon } from "@/components/spec-icon";
+import { ROLES, ROLE_LABELS, primaryRole, type Role } from "@/lib/wow";
 
 type CharacterRow = {
   id: string;
@@ -31,7 +32,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
   const altCount = (specId: string) => all.filter((c) => !c.is_main && c.main_spec_id === specId).length;
 
   const roleCount = (role: Role) =>
-    mains.filter((c) => (specById.get(c.main_spec_id)?.roles[0] ?? "melee") === role).length;
+    mains.filter((c) => primaryRole(specById.get(c.main_spec_id)) === role).length;
   const missing = (specs ?? []).filter((s) => mainCount(s.id) === 0);
 
   return (
@@ -50,8 +51,11 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
           ))}
         </div>
         {missing.length > 0 && (
-          <p className="text-sm text-amber-400">
-            No main for: {missing.map((s) => `${s.name} ${classes?.find((c) => c.id === s.class_id)?.name}`).join(", ")}
+          <p className="flex flex-wrap items-center gap-1.5 text-sm text-amber-400">
+            No main for:
+            {missing.map((s) => (
+              <SpecIcon key={s.id} specId={s.id} name={`${s.name} ${classes?.find((c) => c.id === s.class_id)?.name}`} />
+            ))}
           </p>
         )}
       </section>
@@ -72,6 +76,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
                     const m = mainCount(s.id);
                     return (
                       <li key={s.id} className="flex items-center gap-2">
+                        <SpecIcon specId={s.id} name={s.name} />
                         <span className={m === 0 ? "text-amber-400" : ""}>{s.name}</span>
                         <span className="ml-auto tabular-nums">
                           <strong className={m === 0 ? "text-amber-400" : ""}>{m}</strong>
@@ -104,16 +109,15 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
                   </h3>
                   <ul className="space-y-1 text-sm">
                     {inClass.map((c) => (
-                      <li key={c.id} className="flex flex-wrap items-baseline gap-x-2">
+                      <li key={c.id} className="flex flex-wrap items-center gap-x-2">
+                        <CharacterSpecs
+                          mainSpecId={c.main_spec_id}
+                          offSpecIds={c.off_spec_ids}
+                          specName={(id) => specById.get(id)?.name ?? ""}
+                        />
                         <span className="font-medium" style={{ color: cls.color }}>
                           {c.name}
                         </span>
-                        <span className="opacity-80">{specById.get(c.main_spec_id)?.name}</span>
-                        {c.off_spec_ids.length > 0 && (
-                          <span className="text-xs opacity-60">
-                            / {c.off_spec_ids.map((id) => specById.get(id)?.name).join(", ")}
-                          </span>
-                        )}
                         {!c.is_main && <span className="text-xs opacity-60">alt</span>}
                         {c.profiles && c.profiles.display_name !== c.name && (
                           <span className="ml-auto text-xs opacity-60">{c.profiles.display_name}</span>
