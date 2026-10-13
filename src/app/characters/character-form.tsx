@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { SpecPicker } from "@/components/spec-picker";
 import { saveCharacter, type CharacterFormState } from "./actions";
 
 type ClassOption = { id: string; name: string; color: string };
@@ -29,7 +30,7 @@ export function CharacterForm({
   return (
     <form action={action} className="space-y-4 rounded border border-border bg-panel p-4">
       {character && <input type="hidden" name="id" value={character.id} />}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <label className="space-y-1">
           <span className="text-sm">Name</span>
           <input name="name" required defaultValue={character?.name} className={input} />
@@ -53,44 +54,30 @@ export function CharacterForm({
             ))}
           </select>
         </label>
-        <label className="space-y-1">
-          <span className="text-sm">Main spec</span>
-          <select
-            name="main_spec_id"
-            required
-            value={mainSpecId}
-            onChange={(e) => setMainSpecId(e.target.value)}
-            className={input}
-          >
-            <option value="" disabled>
-              Choose…
-            </option>
-            {classSpecs.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
 
-      <fieldset className="space-y-1">
+      <fieldset className="space-y-1.5">
+        <legend className="text-sm">Main spec</legend>
+        <SpecPicker
+          key={classId}
+          name="main_spec_id"
+          type="radio"
+          required
+          specs={classSpecs}
+          defaultValues={mainSpecId ? [mainSpecId] : []}
+          onChange={(specId) => setMainSpecId(specId)}
+        />
+      </fieldset>
+
+      <fieldset className="space-y-1.5">
         <legend className="text-sm">Off-specs you can also play</legend>
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
-          {classSpecs
-            .filter((s) => s.id !== mainSpecId)
-            .map((s) => (
-              <label key={`${classId}-${s.id}`} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  name="off_spec_ids"
-                  value={s.id}
-                  defaultChecked={character?.off_spec_ids.includes(s.id)}
-                />
-                {s.name}
-              </label>
-            ))}
-        </div>
+        <SpecPicker
+          key={`${classId}:${mainSpecId}`}
+          name="off_spec_ids"
+          type="checkbox"
+          specs={classSpecs.filter((s) => s.id !== mainSpecId)}
+          defaultValues={character?.off_spec_ids ?? []}
+        />
       </fieldset>
 
       <label className="flex items-center gap-2 text-sm">
