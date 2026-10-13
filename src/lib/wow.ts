@@ -74,3 +74,10 @@ export const ATTENDANCE_COLORS: Record<AttendanceStatus, string> = {
 
 // Benched players showed up and were available, so they count as attended.
 export const COUNTS_AS_ATTENDED: AttendanceStatus[] = ["present", "late", "benched"];
+
+export const STATUS_DOT: Record<SignupStatus, string> = {
+  accepted: "bg-emerald-500",
+  tentative: "bg-amber-400",
+  bench: "bg-sky-500",
+  absent: "bg-red-500",
+};
