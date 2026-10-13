@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { DISCORD_SCOPES } from "@/lib/discord";
 import { createClient } from "@/lib/supabase/server";
 
 export async function signInWithDiscord() {
@@ -9,7 +10,7 @@ export async function signInWithDiscord() {
   const origin = (await headers()).get("origin");
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "discord",
-    options: { redirectTo: `${origin}/auth/callback` },
+    options: { redirectTo: `${origin}/auth/callback`, scopes: DISCORD_SCOPES },
   });
   if (error) throw error;
   redirect(data.url);
