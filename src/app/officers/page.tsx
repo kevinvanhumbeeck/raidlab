@@ -11,7 +11,7 @@ export default async function OfficersPage() {
     supabase.from("profiles").select("id, display_name, avatar_url, is_officer, is_member, created_at"),
     supabase.from("characters").select("owner_id, name, class_id, is_main").order("is_main", { ascending: false }),
     supabase.from("classes").select("id, color"),
-    supabase.from("instances").select("name, size, tanks, healers, melee, ranged").order("sort"),
+    supabase.from("instances").select("name, size, tanks, healers, dps").order("sort"),
   ]);
 
   const color = new Map(classes?.map((c) => [c.id, c.color]));

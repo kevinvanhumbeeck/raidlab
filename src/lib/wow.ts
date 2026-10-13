@@ -3,27 +3,25 @@
 // Raid times are shown in realm (server) time.
 export const REALM_TIMEZONE = "Europe/Paris";
 
-export const ROLES = ["tank", "healer", "melee", "ranged"] as const;
+export const ROLES = ["tank", "healer", "dps"] as const;
 export type Role = (typeof ROLES)[number];
 
 export const ROLE_LABELS: Record<Role, string> = {
   tank: "Tanks",
   healer: "Healers",
-  melee: "Melee",
-  ranged: "Ranged",
+  dps: "DPS",
 };
 
-export const ROLE_SHORT: Record<Role, string> = { tank: "T", healer: "H", melee: "M", ranged: "R" };
+export const ROLE_SHORT: Record<Role, string> = { tank: "T", healer: "H", dps: "D" };
 
 // A raid instance and the minimum number of players per role it needs (table "instances").
-export type Instance = { name: string; size: number; tanks: number; healers: number; melee: number; ranged: number };
+export type Instance = { name: string; size: number; tanks: number; healers: number; dps: number };
 
 // Column in "instances" holding the requirement for each role.
-export const ROLE_REQUIREMENT_KEYS: Record<Role, "tanks" | "healers" | "melee" | "ranged"> = {
+export const ROLE_REQUIREMENT_KEYS: Record<Role, "tanks" | "healers" | "dps"> = {
   tank: "tanks",
   healer: "healers",
-  melee: "melee",
-  ranged: "ranged",
+  dps: "dps",
 };
 
 export type RoleRequirements = Record<Role, number>;
@@ -33,14 +31,13 @@ export function requirementsOf(instance: Instance | null | undefined): RoleRequi
   return {
     tank: instance.tanks,
     healer: instance.healers,
-    melee: instance.melee,
-    ranged: instance.ranged,
+    dps: instance.dps,
   };
 }
 
 // The role a spec fills unless an officer picked another one it can do.
 export function primaryRole(spec: { roles: string[] } | null | undefined): Role {
-  return (spec?.roles[0] ?? "melee") as Role;
+  return (spec?.roles[0] ?? "dps") as Role;
 }
 
 export function effectiveRole(spec: { roles: string[] } | null | undefined, override: Role | null | undefined): Role {
@@ -109,3 +106,38 @@ export const STATUS_DOT: Record<SignupStatus, string> = {
   bench: "bg-sky-500",
   absent: "bg-red-500",
 };
+
+// Wall-clock parts of an instant in realm time.
+function realmParts(ms: number) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: REALM_TIMEZONE,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(new Date(ms));
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return { year: get("year"), month: get("month"), day: get("day"), hour: get("hour"), minute: get("minute") };
+}
+
+// Today's date in realm time, as "YYYY-MM-DD".
+export function realmToday() {
+  const { year, month, day } = realmParts(Date.now());
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+// The instant a realm-time date ("YYYY-MM-DD") and time ("HH:MM") refer to.
+export function realmTimeToDate(date: string, time: string) {
+  const [year, month, day] = date.split("-").map(Number);
+  const [hour, minute] = time.split(":").map(Number);
+  const wall = Date.UTC(year, month - 1, day, hour, minute);
+  const offsetAt = (ms: number) => {
+    const p = realmParts(ms);
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute) - ms;
+  };
+  // Check the offset again at the result, in case a DST change falls in between.
+  const guess = wall - offsetAt(wall);
+  return new Date(wall - offsetAt(guess));
+}
