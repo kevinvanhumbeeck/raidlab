@@ -13,3 +13,25 @@ export function SpecIcon({ specId, name, size = 20 }: { specId: string; name: st
     />
   );
 }
+
+// Main spec icon followed by smaller, dimmed off-spec icons.
+export function CharacterSpecs({
+  mainSpecId,
+  offSpecIds,
+  specName,
+}: {
+  mainSpecId: string;
+  offSpecIds: string[];
+  specName: (specId: string) => string;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <SpecIcon specId={mainSpecId} name={specName(mainSpecId)} size={20} />
+      {offSpecIds.map((id) => (
+        <span key={id} className="opacity-60">
+          <SpecIcon specId={id} name={`Off-spec: ${specName(id)}`} size={16} />
+        </span>
+      ))}
+    </span>
+  );
+}

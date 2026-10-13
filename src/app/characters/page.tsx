@@ -1,3 +1,4 @@
+import { CharacterSpecs } from "@/components/spec-icon";
 import { requireViewer } from "@/lib/viewer";
 import { deleteCharacter } from "./actions";
 import { CharacterForm } from "./character-form";
@@ -29,13 +30,13 @@ export default async function CharactersPage() {
               <li key={ch.id} className="px-4 py-3">
                 <details className="group">
                   <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-4 gap-y-1">
+                    <CharacterSpecs
+                      mainSpecId={ch.main_spec_id}
+                      offSpecIds={ch.off_spec_ids}
+                      specName={(id) => specById.get(id)?.name ?? ""}
+                    />
                     <span className="font-medium" style={{ color: classById.get(ch.class_id)?.color }}>
                       {ch.name}
-                    </span>
-                    <span className="text-sm opacity-80">
-                      {specById.get(ch.main_spec_id)?.name} {classById.get(ch.class_id)?.name}
-                      {ch.off_spec_ids.length > 0 &&
-                        ` · off-spec: ${ch.off_spec_ids.map((id: string) => specById.get(id)?.name).join(", ")}`}
                     </span>
                     {!ch.is_main && <span className="text-xs opacity-60">alt</span>}
                     <span className="ml-auto text-sm text-accent group-open:hidden">Edit</span>
