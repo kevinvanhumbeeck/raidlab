@@ -42,7 +42,7 @@ export function NewRaidForm() {
         <input name="notes" placeholder="Flasks required, invites 19:45" className={input} />
       </label>
       <div className="sm:col-span-2">
-        <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-white">Create raid</button>
+        <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">Create raid</button>
       </div>
     </form>
   );
