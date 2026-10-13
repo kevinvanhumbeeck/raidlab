@@ -26,8 +26,11 @@ update profiles set is_officer = true where display_name = 'YourName';
 
 - **Code**: https://github.com/kevinvanhumbeeck/raidlab (private). Pushes to `main` deploy to production;
   other branches get Vercel preview URLs.
-- **Hosting**: Vercel project `raidlab`, env vars `NEXT_PUBLIC_SUPABASE_URL` and
-  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Don't add Vercel's Supabase/Postgres integration.
+- **Hosting**: Vercel project `raidlab`, env vars `NEXT_PUBLIC_SUPABASE_URL`,
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (sensitive) and `DISCORD_GUILD_ID`.
+  Don't add Vercel's Supabase/Postgres integration.
+- **Access**: only members of Discord server `1230423637182382132` get in, checked at every login
+  (OAuth scope `guilds.members.read`, no bot needed). Officers manage officers and access at `/officers`.
 - **Domain**: `www.raidlab.net` is primary; `raidlab.net` redirects to it. DNS at Cloudflare,
   records DNS-only (grey cloud) pointing to Vercel.
 - **Supabase auth URLs**: Site URL `https://www.raidlab.net`; redirect URLs

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
-import { createClient } from "@/lib/supabase/server";
+import { getViewer } from "@/lib/viewer";
 import { signInWithDiscord, signOut } from "@/app/auth/actions";
 import "./globals.css";
 
@@ -25,10 +25,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, isMember, isOfficer } = await getViewer();
 
   return (
     <html lang="en">
@@ -38,7 +35,7 @@ export default async function RootLayout({
             <Link href="/" className="font-semibold">
               Raid Planner
             </Link>
-            {user && (
+            {isMember && (
               <>
                 <Link href="/raids" className="text-sm opacity-80 hover:opacity-100">
                   Raids
@@ -49,6 +46,11 @@ export default async function RootLayout({
                 <Link href="/characters" className="text-sm opacity-80 hover:opacity-100">
                   My characters
                 </Link>
+                {isOfficer && (
+                  <Link href="/officers" className="text-sm opacity-80 hover:opacity-100">
+                    Officers
+                  </Link>
+                )}
               </>
             )}
             <div className="ml-auto">

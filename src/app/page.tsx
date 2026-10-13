@@ -1,32 +1,48 @@
 import { Roster } from "@/components/roster";
-import { createClient } from "@/lib/supabase/server";
+import { signOut } from "@/app/auth/actions";
+import { getViewer } from "@/lib/viewer";
 
-export default async function Home() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+const ERRORS: Record<string, string> = {
+  login: "Logging in failed. Please try again.",
+  discord: "Couldn't check your Discord server membership. Please try again.",
+};
+
+export default async function Home({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const { error } = await searchParams;
+  const { supabase, user, profile, isOfficer, isMember } = await getViewer();
+  const errorMessage = error && ERRORS[error];
 
   if (!user) {
     return (
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold">Raid Planner</h1>
+        {errorMessage && <p className="text-sm text-red-400">{errorMessage}</p>}
         <p className="opacity-80">Log in with Discord to register your characters and sign up for raids.</p>
       </div>
     );
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name, is_officer")
-    .eq("id", user.id)
-    .single();
+  if (!isMember) {
+    return (
+      <div className="space-y-3">
+        <h1 className="text-2xl font-semibold">Guild members only</h1>
+        {errorMessage && <p className="text-sm text-red-400">{errorMessage}</p>}
+        <p className="opacity-80">
+          Hi {profile?.display_name}, this planner is for members of our Discord server. Join the server, then log out
+          and log in again.
+        </p>
+        <form action={signOut}>
+          <button className="rounded border border-border px-3 py-1.5 text-sm">Log out</button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Welcome, {profile?.display_name}</h1>
-        {profile?.is_officer && <p className="text-sm opacity-70">You are an officer.</p>}
+        {isOfficer && <p className="text-sm opacity-70">You are an officer.</p>}
       </div>
       <Roster supabase={supabase} />
     </div>
