@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireViewer } from "@/lib/viewer";
-import { formatRaidTime, primaryRole, requirementsOf, type RaidDuty, type Role, type SignupStatus } from "@/lib/wow";
+import { primaryRole, requirementsOf, type RaidDuty, type Role, type SignupStatus } from "@/lib/wow";
 import { CompBoard, type BoardCharacter } from "./comp-board";
 
 type CharacterJoin = {
@@ -19,7 +18,7 @@ export default async function CompPage({ params }: { params: Promise<{ id: strin
 
   const { data: raid } = await supabase
     .from("raids")
-    .select("id, title, instance, size, starts_at")
+    .select("id, instance, size, starts_at")
     .eq("id", id)
     .maybeSingle();
   if (!raid) notFound();
@@ -37,45 +36,51 @@ export default async function CompPage({ params }: { params: Promise<{ id: strin
     { data: nearby },
     { data: instance },
   ] = await Promise.all([
-      supabase
-        .from("signups")
-        .select("character_id, status, spec_id, note, characters(id, name, class_id, main_spec_id, owner_id, profiles(display_name))")
-        .eq("raid_id", id)
-        .overrideTypes<
-          { character_id: string; status: SignupStatus; spec_id: string | null; note: string | null; characters: CharacterJoin | null }[],
-          { merge: false }
-        >(),
-      supabase
-        .from("comp_slots")
-        .select("group_no, position, character_id, spec_id, role, characters(id, name, class_id, main_spec_id, owner_id, profiles(display_name))")
-        .eq("raid_id", id)
-        .overrideTypes<
-          {
-            group_no: number;
-            position: number;
-            character_id: string;
-            spec_id: string | null;
-            role: Role | null;
-            characters: CharacterJoin | null;
-          }[],
-          { merge: false }
-        >(),
-      supabase.from("raid_duties").select("duty, character_id").eq("raid_id", id),
-      supabase.from("classes").select("id, name, color"),
-      supabase.from("specs").select("id, name, roles"),
-      supabase
-        .from("comp_slots")
-        .select("raids!inner(id, title, starts_at), characters!inner(owner_id)")
-        .neq("raid_id", id)
-        .gte("raids.starts_at", new Date(start - window).toISOString())
-        .lte("raids.starts_at", new Date(start + window).toISOString())
-        .overrideTypes<{ raids: { id: string; title: string }; characters: { owner_id: string } }[], { merge: false }>(),
-      supabase
-        .from("instances")
-        .select("name, size, tanks, healers, dps")
-        .eq("name", raid.instance)
-        .maybeSingle(),
-    ]);
+    supabase
+      .from("signups")
+      .select(
+        "character_id, status, spec_id, note, characters(id, name, class_id, main_spec_id, owner_id, profiles(display_name))",
+      )
+      .eq("raid_id", id)
+      .overrideTypes<
+        {
+          character_id: string;
+          status: SignupStatus;
+          spec_id: string | null;
+          note: string | null;
+          characters: CharacterJoin | null;
+        }[],
+        { merge: false }
+      >(),
+    supabase
+      .from("comp_slots")
+      .select(
+        "group_no, position, character_id, spec_id, role, characters(id, name, class_id, main_spec_id, owner_id, profiles(display_name))",
+      )
+      .eq("raid_id", id)
+      .overrideTypes<
+        {
+          group_no: number;
+          position: number;
+          character_id: string;
+          spec_id: string | null;
+          role: Role | null;
+          characters: CharacterJoin | null;
+        }[],
+        { merge: false }
+      >(),
+    supabase.from("raid_duties").select("duty, character_id").eq("raid_id", id),
+    supabase.from("classes").select("id, name, color"),
+    supabase.from("specs").select("id, name, roles"),
+    supabase
+      .from("comp_slots")
+      .select("raids!inner(id, title, starts_at), characters!inner(owner_id)")
+      .neq("raid_id", id)
+      .gte("raids.starts_at", new Date(start - window).toISOString())
+      .lte("raids.starts_at", new Date(start + window).toISOString())
+      .overrideTypes<{ raids: { id: string; title: string }; characters: { owner_id: string } }[], { merge: false }>(),
+    supabase.from("instances").select("name, size, tanks, healers, dps").eq("name", raid.instance).maybeSingle(),
+  ]);
 
   const classById = new Map(classes?.map((c) => [c.id, c]));
   const specById = new Map(specs?.map((s) => [s.id, s]));
@@ -117,15 +122,6 @@ export default async function CompPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="space-y-6">
-      <section className="space-y-1">
-        <Link href={`/raids/${raid.id}`} className="text-sm opacity-70 hover:opacity-100">
-          ← Sign-ups
-        </Link>
-        <h1 className="text-2xl font-semibold">{raid.title} — composition</h1>
-        <p className="opacity-80">
-          {raid.instance} · {raid.size}-man · {formatRaidTime(raid.starts_at)} server time
-        </p>
-      </section>
       <CompBoard
         raidId={raid.id}
         size={raid.size}
