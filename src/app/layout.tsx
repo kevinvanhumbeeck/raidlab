@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Cinzel, Geist, Geist_Mono } from "next/font/google";
+import { DiscordLoginButton } from "@/components/discord-login-button";
 import { getViewer } from "@/lib/viewer";
-import { signInWithDiscord, signOut } from "@/app/auth/actions";
+import { signOut } from "@/app/auth/actions";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,9 +17,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const cinzel = Cinzel({
+  variable: "--font-cinzel",
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+
 export const metadata: Metadata = {
-  title: "Raid Planner",
-  description: "Roster, compositions and attendance for our WoW Forever raids",
+  metadataBase: new URL("https://www.raidlab.net"),
+  title: {
+    default: "Breakfast at Booty Bay — Raid Planner",
+    template: "%s · Breakfast at Booty Bay",
+  },
+  description: "Roster, compositions and attendance for Breakfast at Booty Bay's WoW Forever raids",
 };
 
 export default async function RootLayout({
@@ -29,11 +41,12 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} font-sans antialiased`}>
         <header className="border-b border-border bg-panel">
           <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-            <Link href="/" className="font-semibold">
-              Raid Planner
+            <Link href="/" className="flex items-center gap-2.5">
+              <Image src="/crest-128.webp" alt="" width={36} height={36} priority />
+              <span className="font-display text-base font-bold tracking-wide text-accent">Breakfast at Booty Bay</span>
             </Link>
             {isMember && (
               <>
@@ -59,11 +72,7 @@ export default async function RootLayout({
                   <button className="text-sm opacity-80 hover:opacity-100">Sign out</button>
                 </form>
               ) : (
-                <form action={signInWithDiscord}>
-                  <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-white">
-                    Log in with Discord
-                  </button>
-                </form>
+                <DiscordLoginButton />
               )}
             </div>
           </nav>

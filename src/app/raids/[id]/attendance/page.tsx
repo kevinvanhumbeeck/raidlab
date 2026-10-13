@@ -124,7 +124,7 @@ export default async function RaidAttendancePage({
             ))}
           </ul>
           {isOfficer && (
-            <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-white">Save attendance</button>
+            <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">Save attendance</button>
           )}
         </form>
       )}
