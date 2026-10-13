@@ -1,22 +1,19 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { addCharacter, deleteCharacter } from "./actions";
+import { requireViewer } from "@/lib/viewer";
+import { deleteCharacter } from "./actions";
+import { CharacterForm } from "./character-form";
 
 export default async function CharactersPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/");
+  const { supabase, user } = await requireViewer();
 
   const [{ data: classes }, { data: specs }, { data: characters }] = await Promise.all([
     supabase.from("classes").select("id, name, color").order("name"),
-    supabase.from("specs").select("id, class_id, name, roles").order("name"),
+    supabase.from("specs").select("id, class_id, name").order("name"),
     supabase
       .from("characters")
       .select("id, name, class_id, main_spec_id, off_spec_ids, is_main")
       .eq("owner_id", user.id)
-      .order("is_main", { ascending: false }),
+      .order("is_main", { ascending: false })
+      .order("name"),
   ]);
 
   const classById = new Map(classes?.map((c) => [c.id, c]));
@@ -29,20 +26,31 @@ export default async function CharactersPage() {
         {characters?.length ? (
           <ul className="divide-y divide-border rounded border border-border bg-panel">
             {characters.map((ch) => (
-              <li key={ch.id} className="flex items-center gap-4 px-4 py-3">
-                <span className="font-medium" style={{ color: classById.get(ch.class_id)?.color }}>
-                  {ch.name}
-                </span>
-                <span className="text-sm opacity-80">
-                  {specById.get(ch.main_spec_id)?.name} {classById.get(ch.class_id)?.name}
-                  {ch.off_spec_ids.length > 0 &&
-                    ` · off-spec: ${ch.off_spec_ids.map((id: string) => specById.get(id)?.name).join(", ")}`}
-                </span>
-                {!ch.is_main && <span className="text-xs opacity-60">alt</span>}
-                <form action={deleteCharacter} className="ml-auto">
-                  <input type="hidden" name="id" value={ch.id} />
-                  <button className="text-sm text-red-400 hover:text-red-300">Remove</button>
-                </form>
+              <li key={ch.id} className="px-4 py-3">
+                <details className="group">
+                  <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-4 gap-y-1">
+                    <span className="font-medium" style={{ color: classById.get(ch.class_id)?.color }}>
+                      {ch.name}
+                    </span>
+                    <span className="text-sm opacity-80">
+                      {specById.get(ch.main_spec_id)?.name} {classById.get(ch.class_id)?.name}
+                      {ch.off_spec_ids.length > 0 &&
+                        ` · off-spec: ${ch.off_spec_ids.map((id: string) => specById.get(id)?.name).join(", ")}`}
+                    </span>
+                    {!ch.is_main && <span className="text-xs opacity-60">alt</span>}
+                    <span className="ml-auto text-sm text-accent group-open:hidden">Edit</span>
+                    <span className="ml-auto hidden text-sm opacity-70 group-open:inline">Close</span>
+                  </summary>
+                  <div className="mt-3 space-y-3">
+                    <CharacterForm classes={classes ?? []} specs={specs ?? []} character={ch} />
+                    <form action={deleteCharacter}>
+                      <input type="hidden" name="id" value={ch.id} />
+                      <button className="text-sm text-red-400 hover:text-red-300">
+                        Delete {ch.name} (also removes their sign-ups and attendance)
+                      </button>
+                    </form>
+                  </div>
+                </details>
               </li>
             ))}
           </ul>
@@ -53,54 +61,7 @@ export default async function CharactersPage() {
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Add a character</h2>
-        <form action={addCharacter} className="space-y-4 rounded border border-border bg-panel p-4">
-          <label className="block space-y-1">
-            <span className="text-sm">Name</span>
-            <input
-              name="name"
-              required
-              className="w-full rounded border border-border bg-background px-2 py-1.5"
-            />
-          </label>
-          <label className="block space-y-1">
-            <span className="text-sm">Main spec</span>
-            <select
-              name="main_spec_id"
-              required
-              className="w-full rounded border border-border bg-background px-2 py-1.5"
-            >
-              {classes?.map((c) => (
-                <optgroup key={c.id} label={c.name}>
-                  {specs
-                    ?.filter((s) => s.class_id === c.id)
-                    .map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} {c.name}
-                      </option>
-                    ))}
-                </optgroup>
-              ))}
-            </select>
-          </label>
-          <fieldset className="space-y-1">
-            <legend className="text-sm">Off-specs (same class only)</legend>
-            <div className="grid grid-cols-2 gap-1 text-sm sm:grid-cols-3">
-              {specs?.map((s) => (
-                <label key={s.id} className="flex items-center gap-2">
-                  <input type="checkbox" name="off_spec_ids" value={s.id} />
-                  <span style={{ color: classById.get(s.class_id)?.color }}>
-                    {s.name} {classById.get(s.class_id)?.name}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="is_main" defaultChecked />
-            Main character
-          </label>
-          <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">Add</button>
-        </form>
+        <CharacterForm classes={classes ?? []} specs={specs ?? []} />
       </section>
     </div>
   );
