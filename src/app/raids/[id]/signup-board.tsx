@@ -1,8 +1,18 @@
 "use client";
 
 import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
+import { RoleCount } from "@/components/role-count";
 import { SpecIcon } from "@/components/spec-icon";
-import { ROLES, ROLE_LABELS, SIGNUP_STATUSES, STATUS_DOT, STATUS_LABELS, type Role, type SignupStatus } from "@/lib/wow";
+import {
+  ROLES,
+  ROLE_LABELS,
+  SIGNUP_STATUSES,
+  STATUS_DOT,
+  STATUS_LABELS,
+  type Role,
+  type RoleRequirements,
+  type SignupStatus,
+} from "@/lib/wow";
 import { setSignupStatus, withdraw } from "../actions";
 
 export type SignupRow = {
@@ -28,11 +38,13 @@ export function SignupBoard({
   raidId,
   size,
   rows: serverRows,
+  requirements,
   canEdit,
 }: {
   raidId: string;
   size: number;
   rows: SignupRow[];
+  requirements: RoleRequirements | null;
   canEdit: boolean;
 }) {
   const [, startTransition] = useTransition();
@@ -79,9 +91,9 @@ export function SignupBoard({
             const inRole = accepted.filter((r) => r.role === role).sort(byRoleThenName);
             return (
               <div key={role} className="px-3 py-3">
-                <h3 className="mb-2 flex items-baseline justify-between px-1 text-xs font-semibold uppercase tracking-wide opacity-60">
-                  {ROLE_LABELS[role]}
-                  <span className="tabular-nums">{inRole.length}</span>
+                <h3 className="mb-2 flex items-baseline justify-between px-1 text-xs font-semibold uppercase tracking-wide">
+                  <span className="opacity-60">{ROLE_LABELS[role]}</span>
+                  <RoleCount count={inRole.length} needed={requirements?.[role]} />
                 </h3>
                 <ul className="space-y-0.5">
                   {inRole.map((r) => (

@@ -12,6 +12,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { RoleCount } from "@/components/role-count";
 import { SpecIcon } from "@/components/spec-icon";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -22,9 +23,10 @@ import {
   STATUS_LABELS,
   type RaidDuty,
   type Role,
+  type RoleRequirements,
   type SignupStatus,
 } from "@/lib/wow";
-import { moveToSlot, removeFromComp, setDuty } from "./actions";
+import { moveToSlot, removeFromComp, setDuty, setSlotRole } from "./actions";
 
 export type BoardCharacter = {
   id: string;
@@ -35,7 +37,9 @@ export type BoardCharacter = {
   classId: string;
   specId: string;
   specName: string;
+  // Primary role of the spec, and every role the spec can fill.
   role: Role;
+  roles: Role[];
   status: SignupStatus | null;
   note: string | null;
   // Title of another raid around the same time where this player is already placed.
@@ -52,6 +56,8 @@ export function CompBoard({
   size,
   characters,
   placement: serverPlacement,
+  slotRoles: serverSlotRoles,
+  requirements,
   duties,
   canEdit,
 }: {
@@ -59,6 +65,9 @@ export function CompBoard({
   size: number;
   characters: Record<string, BoardCharacter>;
   placement: Placement;
+  // Role picked by an officer for placed hybrids (character id -> role).
+  slotRoles: Record<string, Role>;
+  requirements: RoleRequirements | null;
   duties: Partial<Record<RaidDuty, string>>;
   canEdit: boolean;
 }) {
@@ -72,6 +81,12 @@ export function CompBoard({
   if (serverPlacement !== lastServerPlacement) {
     setLastServerPlacement(serverPlacement);
     setPlacement(serverPlacement);
+  }
+  const [slotRoles, setSlotRoles] = useState(serverSlotRoles);
+  const [lastServerSlotRoles, setLastServerSlotRoles] = useState(serverSlotRoles);
+  if (serverSlotRoles !== lastServerSlotRoles) {
+    setLastServerSlotRoles(serverSlotRoles);
+    setSlotRoles(serverSlotRoles);
   }
 
   // Refresh when another officer edits a comp or someone changes their sign-up.
@@ -95,7 +110,12 @@ export function CompBoard({
 
   const groups = size / 5;
   const slotOf = new Map(Object.entries(placement).map(([slot, id]) => [id, slot]));
-  const placed = Object.values(placement).map((id) => characters[id]).filter(Boolean);
+  const roleOf = (c: BoardCharacter) =>
+    slotOf.has(c.id) && slotRoles[c.id] && c.roles.includes(slotRoles[c.id]) ? slotRoles[c.id] : c.role;
+  const placed = Object.values(placement)
+    .map((id) => characters[id])
+    .filter(Boolean)
+    .map((c) => ({ ...c, role: roleOf(c) }));
 
   function run(action: () => Promise<void>, rollback: Placement) {
     setError(null);
@@ -104,6 +124,23 @@ export function CompBoard({
         await action();
       } catch (e) {
         setPlacement(rollback);
+        setError(e instanceof Error ? e.message : "Something went wrong");
+      }
+    });
+  }
+
+  // Switch a placed hybrid to its next role (e.g. Feral melee -> tank).
+  function cycleRole(c: BoardCharacter) {
+    const current = roleOf(c);
+    const next = c.roles[(c.roles.indexOf(current) + 1) % c.roles.length];
+    const before = slotRoles;
+    setSlotRoles({ ...slotRoles, [c.id]: next });
+    setError(null);
+    startTransition(async () => {
+      try {
+        await setSlotRole(raidId, c.id, next === c.role ? null : next);
+      } catch (e) {
+        setSlotRoles(before);
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
     });
@@ -144,7 +181,7 @@ export function CompBoard({
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
       {error && <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
 
-      <Summary placed={placed} size={size} duties={duties} />
+      <Summary placed={placed} size={size} requirements={requirements} duties={duties} />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -157,7 +194,14 @@ export function CompBoard({
                   const ch = characters[placement[slot]];
                   return (
                     <Slot key={slot} id={slot} disabled={!canEdit}>
-                      {ch && <Card character={ch} disabled={!canEdit} />}
+                      {ch && (
+                        <Card
+                          character={ch}
+                          disabled={!canEdit}
+                          role={roleOf(ch)}
+                          onCycleRole={ch.roles.length > 1 ? () => cycleRole(ch) : undefined}
+                        />
+                      )}
                     </Slot>
                   );
                 })}
@@ -199,17 +243,19 @@ export function CompBoard({
 function Summary({
   placed,
   size,
+  requirements,
   duties,
 }: {
   placed: BoardCharacter[];
   size: number;
+  requirements: RoleRequirements | null;
   duties: Partial<Record<RaidDuty, string>>;
 }) {
   const count = (role: Role) => placed.filter((c) => c.role === role).length;
-  const minHealers = size / 5;
   const warnings = [
-    count("tank") < 2 && "Fewer than 2 tanks",
-    count("healer") < minHealers && `Fewer than ${minHealers} healers`,
+    ...ROLES.filter((role) => requirements && count(role) < requirements[role]).map(
+      (role) => `${requirements![role] - count(role)} more ${ROLE_LABELS[role].toLowerCase()} needed`,
+    ),
     ...placed
       .filter((c) => c.status !== "accepted")
       .map((c) => `${c.name} is ${c.status ? STATUS_LABELS[c.status].toLowerCase() : "no longer signed up"}`),
@@ -231,8 +277,11 @@ function Summary({
           {placed.length}/{size} placed
         </span>
         {ROLES.map((role) => (
-          <span key={role}>
-            {ROLE_LABELS[role]}: <strong>{count(role)}</strong>
+          <span key={role} className="flex items-baseline gap-1.5">
+            {ROLE_LABELS[role]}
+            <strong>
+              <RoleCount count={count(role)} needed={requirements?.[role]} />
+            </strong>
           </span>
         ))}
       </div>
@@ -280,7 +329,20 @@ function Pool({ disabled, children }: { disabled: boolean; children: React.React
   );
 }
 
-function Card({ character: c, disabled }: { character: BoardCharacter; disabled: boolean }) {
+const ROLE_BADGE: Record<Role, string> = { tank: "Tank", healer: "Heal", melee: "Melee", ranged: "Ranged" };
+
+function Card({
+  character: c,
+  disabled,
+  role,
+  onCycleRole,
+}: {
+  character: BoardCharacter;
+  disabled: boolean;
+  // Only for placed characters: the role they fill, and a handler when the spec can fill several.
+  role?: Role;
+  onCycleRole?: () => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: c.id, disabled });
   const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
 
@@ -299,7 +361,26 @@ function Card({ character: c, disabled }: { character: BoardCharacter; disabled:
       <span className="truncate font-medium" style={{ color: c.color }}>
         {c.name}
       </span>
-      {c.elsewhere && <span className="ml-auto text-xs text-amber-400" title={`Also in ${c.elsewhere}`}>⚠</span>}
+      <span className="ml-auto flex items-center gap-1.5">
+        {c.elsewhere && (
+          <span className="text-xs text-amber-400" title={`Also in ${c.elsewhere}`}>
+            ⚠
+          </span>
+        )}
+        {role && onCycleRole && (
+          <button
+            type="button"
+            disabled={disabled}
+            onPointerDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            onClick={onCycleRole}
+            title={disabled ? `Plays ${ROLE_BADGE[role].toLowerCase()}` : "Switch role"}
+            className="rounded border border-border px-1.5 text-[11px] leading-4 opacity-80 enabled:hover:border-accent enabled:hover:opacity-100"
+          >
+            {ROLE_BADGE[role]}
+          </button>
+        )}
+      </span>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireViewer } from "@/lib/viewer";
-import { formatRaidTime, type RaidDuty, type Role, type SignupStatus } from "@/lib/wow";
+import { formatRaidTime, primaryRole, requirementsOf, type RaidDuty, type Role, type SignupStatus } from "@/lib/wow";
 import { CompBoard, type BoardCharacter } from "./comp-board";
 
 type CharacterJoin = {
@@ -28,8 +28,15 @@ export default async function CompPage({ params }: { params: Promise<{ id: strin
   const start = new Date(raid.starts_at).getTime();
   const window = 6 * 60 * 60 * 1000;
 
-  const [{ data: signups }, { data: slots }, { data: duties }, { data: classes }, { data: specs }, { data: nearby }] =
-    await Promise.all([
+  const [
+    { data: signups },
+    { data: slots },
+    { data: duties },
+    { data: classes },
+    { data: specs },
+    { data: nearby },
+    { data: instance },
+  ] = await Promise.all([
       supabase
         .from("signups")
         .select("character_id, status, spec_id, note, characters(id, name, class_id, main_spec_id, owner_id, profiles(display_name))")
@@ -40,10 +47,17 @@ export default async function CompPage({ params }: { params: Promise<{ id: strin
         >(),
       supabase
         .from("comp_slots")
-        .select("group_no, position, character_id, spec_id, characters(id, name, class_id, main_spec_id, owner_id, profiles(display_name))")
+        .select("group_no, position, character_id, spec_id, role, characters(id, name, class_id, main_spec_id, owner_id, profiles(display_name))")
         .eq("raid_id", id)
         .overrideTypes<
-          { group_no: number; position: number; character_id: string; spec_id: string | null; characters: CharacterJoin | null }[],
+          {
+            group_no: number;
+            position: number;
+            character_id: string;
+            spec_id: string | null;
+            role: Role | null;
+            characters: CharacterJoin | null;
+          }[],
           { merge: false }
         >(),
       supabase.from("raid_duties").select("duty, character_id").eq("raid_id", id),
@@ -56,6 +70,11 @@ export default async function CompPage({ params }: { params: Promise<{ id: strin
         .gte("raids.starts_at", new Date(start - window).toISOString())
         .lte("raids.starts_at", new Date(start + window).toISOString())
         .overrideTypes<{ raids: { id: string; title: string }; characters: { owner_id: string } }[], { merge: false }>(),
+      supabase
+        .from("instances")
+        .select("name, size, tanks, healers, melee, ranged")
+        .eq("name", raid.instance)
+        .maybeSingle(),
     ]);
 
   const classById = new Map(classes?.map((c) => [c.id, c]));
@@ -76,7 +95,8 @@ export default async function CompPage({ params }: { params: Promise<{ id: strin
       classId: ch.class_id,
       specId: resolvedSpecId,
       specName: spec?.name ?? "",
-      role: (spec?.roles[0] ?? "melee") as Role,
+      role: primaryRole(spec),
+      roles: (spec?.roles ?? []) as Role[],
       status,
       note,
       elsewhere: elsewhere.get(ch.owner_id) ?? null,
@@ -86,7 +106,11 @@ export default async function CompPage({ params }: { params: Promise<{ id: strin
   for (const s of signups ?? []) if (s.characters) addCharacter(s.characters, s.spec_id, s.status, s.note);
 
   const placement: Record<string, string> = {};
-  for (const slot of slots ?? []) placement[`${slot.group_no}-${slot.position}`] = slot.character_id;
+  const slotRoles: Record<string, Role> = {};
+  for (const slot of slots ?? []) {
+    placement[`${slot.group_no}-${slot.position}`] = slot.character_id;
+    if (slot.role) slotRoles[slot.character_id] = slot.role;
+  }
 
   const dutyMap: Partial<Record<RaidDuty, string>> = {};
   for (const d of duties ?? []) dutyMap[d.duty as RaidDuty] = d.character_id;
@@ -107,6 +131,8 @@ export default async function CompPage({ params }: { params: Promise<{ id: strin
         size={raid.size}
         characters={characters}
         placement={placement}
+        slotRoles={slotRoles}
+        requirements={requirementsOf(instance)}
         duties={dutyMap}
         canEdit={isOfficer}
       />

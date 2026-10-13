@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { INSTANCES } from "@/lib/wow";
+import { ROLES, ROLE_REQUIREMENT_KEYS, ROLE_SHORT, type Instance } from "@/lib/wow";
 import { createRaid } from "./actions";
 
 const input = "w-full rounded border border-border bg-background px-2 py-1.5";
 
-export function NewRaidForm() {
+export function NewRaidForm({ instances }: { instances: Instance[] }) {
   const [localTime, setLocalTime] = useState("");
 
   return (
@@ -14,9 +14,9 @@ export function NewRaidForm() {
       <label className="space-y-1">
         <span className="text-sm">Instance</span>
         <select name="instance" required className={input}>
-          {INSTANCES.map((i) => (
+          {instances.map((i) => (
             <option key={i.name} value={i.name}>
-              {i.name} ({i.size})
+              {i.name} ({i.size}) — {ROLES.map((r) => `${i[ROLE_REQUIREMENT_KEYS[r]]} ${ROLE_SHORT[r]}`).join(" · ")}
             </option>
           ))}
         </select>
