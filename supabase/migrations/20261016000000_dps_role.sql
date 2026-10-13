@@ -1,13 +1,12 @@
 -- Merge the melee and ranged roles into a single "dps" role.
 
+-- In case an earlier failed attempt left it behind.
+drop type if exists public.raid_role_new;
 create type public.raid_role_new as enum ('tank', 'healer', 'dps');
 
+-- No spec has both melee and ranged, so this cannot produce a duplicate "dps".
 alter table public.specs alter column roles type public.raid_role_new[] using (
-  array(
-    select (case when r in ('melee', 'ranged') then 'dps' else r::text end)::public.raid_role_new
-    from unnest(roles) with ordinality as u(r, i)
-    order by i
-  )
+  array_replace(array_replace(roles::text[], 'melee', 'dps'), 'ranged', 'dps')::public.raid_role_new[]
 );
 
 alter table public.comp_slots alter column role type public.raid_role_new using (
