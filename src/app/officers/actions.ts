@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { officersFromDiscord } from "@/lib/discord";
 import { requireViewer } from "@/lib/viewer";
 
 export async function setOfficer(profileId: string, value: boolean) {
+  if (officersFromDiscord()) throw new Error("Officers follow the @officer role in Discord");
   const { supabase } = await requireViewer();
   const { error } = await supabase.rpc("set_officer", { target: profileId, value });
   if (error) throw new Error(error.message);
