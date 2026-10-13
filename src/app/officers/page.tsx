@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { officersFromDiscord } from "@/lib/discord";
 import { requireViewer } from "@/lib/viewer";
 import { setMember, setOfficer } from "./actions";
 import { InstanceSettings } from "./instance-settings";
@@ -25,13 +26,16 @@ export default async function OfficersPage() {
       a.display_name.localeCompare(b.display_name),
   );
   const officerCount = sorted.filter((p) => p.is_officer).length;
+  const discordOfficers = officersFromDiscord();
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Officers & members</h1>
       <p className="text-sm opacity-70">
-        Officers manage raids, compositions and attendance. Membership is checked against the Discord server at every
-        login; revoking it here locks someone out until their next login while still in the server.
+        Officers manage raids, compositions and attendance. Access is checked against the Discord server at every login:
+        the @raider, @pug and @officer roles let players in
+        {discordOfficers ? ", and the @officer role makes them an officer here" : ""}. Revoking access here locks
+        someone out until their next login.
       </p>
 
       <ul className="divide-y divide-border rounded border border-border bg-panel">
@@ -69,9 +73,7 @@ export default async function OfficersPage() {
                 {p.is_officer ? (
                   <span className="rounded bg-accent/20 px-2 py-1 text-xs">Officer</span>
                 ) : (
-                  <span
-                    className={`rounded px-2 py-1 text-xs ${p.is_member ? "bg-emerald-500/20" : "bg-red-500/20"}`}
-                  >
+                  <span className={`rounded px-2 py-1 text-xs ${p.is_member ? "bg-emerald-500/20" : "bg-red-500/20"}`}>
                     {p.is_member ? "Member" : "No access"}
                   </span>
                 )}
@@ -82,15 +84,17 @@ export default async function OfficersPage() {
                     </button>
                   </form>
                 )}
-                <form action={setOfficer.bind(null, p.id, !p.is_officer)}>
-                  <button
-                    disabled={lastOfficer}
-                    title={lastOfficer ? "There must be at least one officer" : undefined}
-                    className="rounded border border-border px-2 py-1 text-xs hover:bg-white/5 disabled:opacity-40"
-                  >
-                    {p.is_officer ? "Remove officer" : "Make officer"}
-                  </button>
-                </form>
+                {!discordOfficers && (
+                  <form action={setOfficer.bind(null, p.id, !p.is_officer)}>
+                    <button
+                      disabled={lastOfficer}
+                      title={lastOfficer ? "There must be at least one officer" : undefined}
+                      className="rounded border border-border px-2 py-1 text-xs hover:bg-white/5 disabled:opacity-40"
+                    >
+                      {p.is_officer ? "Remove officer" : "Make officer"}
+                    </button>
+                  </form>
+                )}
               </div>
             </li>
           );
