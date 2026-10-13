@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { RoleCount } from "@/components/role-count";
 import { SpecIcon } from "@/components/spec-icon";
@@ -11,12 +12,14 @@ import {
   STATUS_LABELS,
   type Role,
   type RoleRequirements,
+  playerHref,
   type SignupStatus,
 } from "@/lib/wow";
 import { setSignupStatus, withdraw } from "../actions";
 
 export type SignupRow = {
   characterId: string;
+  playerId: string;
   name: string;
   player: string | null;
   color: string;
@@ -74,7 +77,9 @@ export function SignupBoard({
 
   return (
     <div className="space-y-4">
-      {error && <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+      {error && (
+        <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>
+      )}
 
       <section className="rounded border border-border bg-panel">
         <header className="flex flex-wrap items-baseline gap-x-5 gap-y-1 border-b border-border px-4 py-3">
@@ -96,7 +101,9 @@ export function SignupBoard({
                   <RoleCount count={inRole.length} needed={requirements?.[role]} />
                 </h3>
                 {/* DPS is most of the raid, so it gets two columns. */}
-                <ul className={`space-y-0.5 ${role === "dps" ? "lg:columns-2 lg:gap-4 [&>li]:break-inside-avoid" : ""}`}>
+                <ul
+                  className={`space-y-0.5 ${role === "dps" ? "lg:columns-2 lg:gap-4 [&>li]:break-inside-avoid" : ""}`}
+                >
                   {inRole.map((r) => (
                     <PlayerRow key={r.characterId} row={r} canEdit={canEdit} onChange={change} />
                   ))}
@@ -148,9 +155,14 @@ function PlayerRow({
       }`}
     >
       <SpecIcon specId={r.specId} name={r.specName} />
-      <span className="truncate font-medium" style={{ color: r.color }} title={r.player ?? undefined}>
+      <Link
+        href={playerHref(r.playerId, r.characterId)}
+        className="truncate font-medium hover:underline"
+        style={{ color: r.color }}
+        title={r.player ?? undefined}
+      >
         {r.name}
-      </span>
+      </Link>
       {r.note && (
         <span className="cursor-help text-xs opacity-60" title={r.note}>
           ✎
