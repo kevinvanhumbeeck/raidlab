@@ -72,7 +72,7 @@ export default async function CompPage({ params }: { params: Promise<{ id: strin
         .overrideTypes<{ raids: { id: string; title: string }; characters: { owner_id: string } }[], { merge: false }>(),
       supabase
         .from("instances")
-        .select("name, size, tanks, healers, melee, ranged")
+        .select("name, size, tanks, healers, dps")
         .eq("name", raid.instance)
         .maybeSingle(),
     ]);

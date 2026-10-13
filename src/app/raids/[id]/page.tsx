@@ -56,7 +56,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
       : Promise.resolve({ data: [] as { id: string; name: string; class_id: string; main_spec_id: string }[] }),
     supabase
       .from("instances")
-      .select("name, size, tanks, healers, melee, ranged")
+      .select("name, size, tanks, healers, dps")
       .eq("name", raid.instance)
       .maybeSingle(),
   ]);
