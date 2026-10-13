@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { ROLES, ROLE_REQUIREMENT_KEYS, ROLE_SHORT, type Instance } from "@/lib/wow";
 import { createRaid } from "./actions";
+import { RaidDatePicker } from "./raid-date-picker";
 
 const input = "w-full rounded border border-border bg-background px-2 py-1.5";
 
 export function NewRaidForm({ instances }: { instances: Instance[] }) {
-  const [localTime, setLocalTime] = useState("");
+  const [picked, setPicked] = useState(false);
 
   return (
     <form action={createRaid} className="grid gap-4 rounded border border-border bg-panel p-4 sm:grid-cols-2">
@@ -21,18 +22,10 @@ export function NewRaidForm({ instances }: { instances: Instance[] }) {
           ))}
         </select>
       </label>
-      <label className="space-y-1">
-        <span className="text-sm">Start (your local time)</span>
-        <input
-          type="datetime-local"
-          required
-          value={localTime}
-          onChange={(e) => setLocalTime(e.target.value)}
-          className={input}
-        />
-        {/* Convert in the browser so the server stores the right instant. */}
-        <input type="hidden" name="starts_at" value={localTime ? new Date(localTime).toISOString() : ""} />
-      </label>
+      <div className="space-y-1 sm:row-span-3">
+        <span className="text-sm">Start</span>
+        <RaidDatePicker onPick={() => setPicked(true)} />
+      </div>
       <label className="space-y-1">
         <span className="text-sm">Title (optional)</span>
         <input name="title" placeholder="e.g. Hyjal week 1" className={input} />
@@ -42,7 +35,12 @@ export function NewRaidForm({ instances }: { instances: Instance[] }) {
         <input name="notes" placeholder="Flasks required, invites 19:45" className={input} />
       </label>
       <div className="sm:col-span-2">
-        <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">Create raid</button>
+        <button
+          disabled={!picked}
+          className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover disabled:opacity-50 disabled:hover:bg-accent"
+        >
+          Create raid
+        </button>
       </div>
     </form>
   );
