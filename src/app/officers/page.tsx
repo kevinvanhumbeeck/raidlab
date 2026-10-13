@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { officersFromDiscord } from "@/lib/discord";
 import { requireViewer } from "@/lib/viewer";
+import { playerHref } from "@/lib/wow";
 import { setMember, setOfficer } from "./actions";
 import { InstanceSettings } from "./instance-settings";
 
@@ -10,13 +12,13 @@ export default async function OfficersPage() {
 
   const [{ data: profiles }, { data: characters }, { data: classes }, { data: instances }] = await Promise.all([
     supabase.from("profiles").select("id, display_name, avatar_url, is_officer, is_member, created_at"),
-    supabase.from("characters").select("owner_id, name, class_id, is_main").order("is_main", { ascending: false }),
+    supabase.from("characters").select("id, owner_id, name, class_id, is_main").order("is_main", { ascending: false }),
     supabase.from("classes").select("id, color"),
     supabase.from("instances").select("name, size, tanks, healers, dps").order("sort"),
   ]);
 
   const color = new Map(classes?.map((c) => [c.id, c.color]));
-  const charactersOf = new Map<string, { name: string; class_id: string }[]>();
+  const charactersOf = new Map<string, { id: string; name: string; class_id: string }[]>();
   for (const c of characters ?? []) charactersOf.set(c.owner_id, [...(charactersOf.get(c.owner_id) ?? []), c]);
 
   const sorted = [...(profiles ?? [])].sort(
@@ -52,7 +54,9 @@ export default async function OfficersPage() {
               )}
               <div className="min-w-40">
                 <div className="font-medium">
-                  {p.display_name}
+                  <Link href={playerHref(p.id)} className="hover:underline">
+                    {p.display_name}
+                  </Link>
                   {p.id === user.id && <span className="ml-2 text-xs opacity-60">you</span>}
                 </div>
                 <div className="text-xs">
@@ -60,7 +64,13 @@ export default async function OfficersPage() {
                     chars.map((c, i) => (
                       <span key={c.name}>
                         {i > 0 && ", "}
-                        <span style={{ color: color.get(c.class_id) }}>{c.name}</span>
+                        <Link
+                          href={playerHref(p.id, c.id)}
+                          className="hover:underline"
+                          style={{ color: color.get(c.class_id) }}
+                        >
+                          {c.name}
+                        </Link>
                       </span>
                     ))
                   ) : (
