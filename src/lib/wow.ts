@@ -1,11 +1,5 @@
 // Shared WoW Forever constants and helpers.
 
-export const INSTANCES = [
-  { name: "Barrow Deeps", size: 10 },
-  { name: "Hyjal Summit", size: 20 },
-  { name: "Onyxia's Lair", size: 40 },
-] as const;
-
 // Raid times are shown in realm (server) time.
 export const REALM_TIMEZONE = "Europe/Paris";
 
@@ -18,6 +12,40 @@ export const ROLE_LABELS: Record<Role, string> = {
   melee: "Melee",
   ranged: "Ranged",
 };
+
+export const ROLE_SHORT: Record<Role, string> = { tank: "T", healer: "H", melee: "M", ranged: "R" };
+
+// A raid instance and the minimum number of players per role it needs (table "instances").
+export type Instance = { name: string; size: number; tanks: number; healers: number; melee: number; ranged: number };
+
+// Column in "instances" holding the requirement for each role.
+export const ROLE_REQUIREMENT_KEYS: Record<Role, "tanks" | "healers" | "melee" | "ranged"> = {
+  tank: "tanks",
+  healer: "healers",
+  melee: "melee",
+  ranged: "ranged",
+};
+
+export type RoleRequirements = Record<Role, number>;
+
+export function requirementsOf(instance: Instance | null | undefined): RoleRequirements | null {
+  if (!instance) return null;
+  return {
+    tank: instance.tanks,
+    healer: instance.healers,
+    melee: instance.melee,
+    ranged: instance.ranged,
+  };
+}
+
+// The role a spec fills unless an officer picked another one it can do.
+export function primaryRole(spec: { roles: string[] } | null | undefined): Role {
+  return (spec?.roles[0] ?? "melee") as Role;
+}
+
+export function effectiveRole(spec: { roles: string[] } | null | undefined, override: Role | null | undefined): Role {
+  return override && spec?.roles.includes(override) ? override : primaryRole(spec);
+}
 
 export const SIGNUP_STATUSES = ["accepted", "tentative", "bench", "absent"] as const;
 export type SignupStatus = (typeof SIGNUP_STATUSES)[number];
