@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Cinzel, Geist, Geist_Mono } from "next/font/google";
 import { DiscordLoginButton } from "@/components/discord-login-button";
 import { getViewer } from "@/lib/viewer";
+import { playerHref } from "@/lib/wow";
 import { signOut } from "@/app/auth/actions";
 import "./globals.css";
 
@@ -66,7 +67,12 @@ export default async function RootLayout({
                 )}
               </>
             )}
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-4">
+              {user && isMember && (
+                <Link href={playerHref(user.id)} className="text-sm opacity-80 hover:opacity-100">
+                  My profile
+                </Link>
+              )}
               {user ? (
                 <form action={signOut}>
                   <button className="text-sm opacity-80 hover:opacity-100">Sign out</button>

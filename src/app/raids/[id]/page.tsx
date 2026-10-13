@@ -69,6 +69,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
     const spec = specById.get(specId);
     const row: SignupRowView = {
       characterId: s.character_id,
+      playerId: ch.owner_id,
       status: s.status,
       note: s.note,
       name: ch.name,
