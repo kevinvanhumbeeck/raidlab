@@ -66,7 +66,7 @@ export function SignupForm({
         <input name="note" defaultValue={current?.note ?? ""} placeholder="Late 15 min" className={input} />
       </label>
       <div className="sm:col-span-4">
-        <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-white">
+        <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
           {current ? "Update sign-up" : "Sign up"}
         </button>
       </div>

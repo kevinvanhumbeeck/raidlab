@@ -1,11 +1,15 @@
 @import "tailwindcss";
 
+/* Warm tavern palette taken from the guild crest. */
 :root {
-  --background: #0f1115;
-  --foreground: #e6e6e6;
-  --panel: #181b22;
-  --border: #2a2f3a;
-  --accent: #5865f2;
+  --background: #15110d;
+  --foreground: #ece3d4;
+  --panel: #1f1a14;
+  --border: #3a3026;
+  --accent: #d9a441;
+  --accent-hover: #e6b65a;
+  --accent-foreground: #1a1208;
+  --discord: #5865f2;
 }
 
 @theme inline {
@@ -14,8 +18,12 @@
   --color-panel: var(--panel);
   --color-border: var(--border);
   --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-discord: var(--discord);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-cinzel);
 }
 
 body {

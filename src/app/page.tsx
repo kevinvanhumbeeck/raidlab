@@ -1,3 +1,5 @@
+import Image from "next/image";
+import { DiscordLoginButton } from "@/components/discord-login-button";
 import { Roster } from "@/components/roster";
 import { signOut } from "@/app/auth/actions";
 import { getViewer } from "@/lib/viewer";
@@ -14,10 +16,17 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
 
   if (!user) {
     return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">Raid Planner</h1>
+      <div className="flex flex-col items-center gap-5 py-6 text-center">
+        <Image src="/crest-512.webp" alt="Breakfast at Booty Bay crest" width={288} height={288} priority />
+        <div className="space-y-2">
+          <h1 className="font-display text-3xl font-bold tracking-wide text-accent sm:text-4xl">
+            Breakfast at Booty Bay
+          </h1>
+          <p className="opacity-80">Raid roster, sign-ups and compositions for our WoW Forever raids.</p>
+        </div>
         {errorMessage && <p className="text-sm text-red-400">{errorMessage}</p>}
-        <p className="opacity-80">Log in with Discord to register your characters and sign up for raids.</p>
+        <DiscordLoginButton size="lg" />
+        <p className="text-xs opacity-60">For members of our Discord server.</p>
       </div>
     );
   }
