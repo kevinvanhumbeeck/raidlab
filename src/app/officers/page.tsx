@@ -1,15 +1,17 @@
 import { redirect } from "next/navigation";
 import { requireViewer } from "@/lib/viewer";
 import { setMember, setOfficer } from "./actions";
+import { InstanceSettings } from "./instance-settings";
 
 export default async function OfficersPage() {
   const { supabase, user, isOfficer } = await requireViewer();
   if (!isOfficer) redirect("/");
 
-  const [{ data: profiles }, { data: characters }, { data: classes }] = await Promise.all([
+  const [{ data: profiles }, { data: characters }, { data: classes }, { data: instances }] = await Promise.all([
     supabase.from("profiles").select("id, display_name, avatar_url, is_officer, is_member, created_at"),
     supabase.from("characters").select("owner_id, name, class_id, is_main").order("is_main", { ascending: false }),
     supabase.from("classes").select("id, color"),
+    supabase.from("instances").select("name, size, tanks, healers, melee, ranged").order("sort"),
   ]);
 
   const color = new Map(classes?.map((c) => [c.id, c.color]));
@@ -94,6 +96,8 @@ export default async function OfficersPage() {
           );
         })}
       </ul>
+
+      <InstanceSettings instances={instances ?? []} />
     </div>
   );
 }

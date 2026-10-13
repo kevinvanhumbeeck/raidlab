@@ -3,13 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireViewer } from "@/lib/viewer";
-import { INSTANCES, SIGNUP_STATUSES, type SignupStatus } from "@/lib/wow";
+import { SIGNUP_STATUSES, type SignupStatus } from "@/lib/wow";
 
 export async function createRaid(formData: FormData) {
   const { supabase, user, isOfficer } = await requireViewer();
   if (!isOfficer) throw new Error("Only officers can create raids");
 
-  const instance = INSTANCES.find((i) => i.name === formData.get("instance"));
+  const { data: instance } = await supabase
+    .from("instances")
+    .select("name, size")
+    .eq("name", String(formData.get("instance")))
+    .maybeSingle();
   if (!instance) throw new Error("Unknown instance");
 
   const startsAt = new Date(String(formData.get("starts_at")));
