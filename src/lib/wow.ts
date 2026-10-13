@@ -141,3 +141,7 @@ export function realmTimeToDate(date: string, time: string) {
   const guess = wall - offsetAt(wall);
   return new Date(wall - offsetAt(guess));
 }
+
+export function hasStarted(iso: string) {
+  return new Date(iso).getTime() <= Date.now();
+}

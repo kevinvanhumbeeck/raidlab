@@ -1,13 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireViewer } from "@/lib/viewer";
-import {
-  ATTENDANCE_LABELS,
-  ATTENDANCE_STATUSES,
-  formatRaidTime,
-  type AttendanceStatus,
-  type SignupStatus,
-} from "@/lib/wow";
+import { ATTENDANCE_LABELS, ATTENDANCE_STATUSES, type AttendanceStatus, type SignupStatus } from "@/lib/wow";
 import { saveAttendance } from "./actions";
 
 // Written out in full so Tailwind picks up the classes.
@@ -33,7 +26,7 @@ export default async function RaidAttendancePage({
 
   const [{ data: raid }, { data: signups }, { data: slots }, { data: attendance }, { data: classes }] =
     await Promise.all([
-      supabase.from("raids").select("id, title, instance, size, starts_at").eq("id", id).maybeSingle(),
+      supabase.from("raids").select("id").eq("id", id).maybeSingle(),
       supabase
         .from("signups")
         .select("status, characters(id, name, class_id, profiles(display_name))")
@@ -59,7 +52,8 @@ export default async function RaidAttendancePage({
   // Suggest a status from the comp and sign-ups until attendance has been saved.
   const rows = new Map<string, { character: CharacterJoin; status: AttendanceStatus }>();
   for (const s of signups ?? []) {
-    if (s.characters) rows.set(s.characters.id, { character: s.characters, status: s.status === "bench" ? "benched" : "absent" });
+    if (s.characters)
+      rows.set(s.characters.id, { character: s.characters, status: s.status === "bench" ? "benched" : "absent" });
   }
   for (const s of slots ?? []) {
     if (s.characters) rows.set(s.characters.id, { character: s.characters, status: "present" });
@@ -76,13 +70,6 @@ export default async function RaidAttendancePage({
   return (
     <div className="space-y-6">
       <section className="space-y-1">
-        <Link href={`/raids/${raid.id}`} className="text-sm opacity-70 hover:opacity-100">
-          ← Sign-ups
-        </Link>
-        <h1 className="text-2xl font-semibold">{raid.title} — attendance</h1>
-        <p className="opacity-80">
-          {raid.instance} · {formatRaidTime(raid.starts_at)} server time
-        </p>
         {!recorded && isOfficer && sorted.length > 0 && (
           <p className="text-sm text-amber-400">
             Not saved yet. Suggested from the comp (present) and sign-ups (benched / absent) — adjust and save.
@@ -124,7 +111,9 @@ export default async function RaidAttendancePage({
             ))}
           </ul>
           {isOfficer && (
-            <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">Save attendance</button>
+            <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
+              Save attendance
+            </button>
           )}
         </form>
       )}
