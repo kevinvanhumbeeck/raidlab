@@ -64,7 +64,8 @@ export default async function CompPage({ params }: { params: Promise<{ id: strin
 
   const characters: Record<string, BoardCharacter> = {};
   const addCharacter = (ch: CharacterJoin, specId: string | null, status: SignupStatus | null, note: string | null) => {
-    const spec = specById.get(specId ?? ch.main_spec_id);
+    const resolvedSpecId = specId ?? ch.main_spec_id;
+    const spec = specById.get(resolvedSpecId);
     const cls = classById.get(ch.class_id);
     characters[ch.id] = {
       id: ch.id,
@@ -73,6 +74,7 @@ export default async function CompPage({ params }: { params: Promise<{ id: strin
       color: cls?.color ?? "#ccc",
       className: cls?.name ?? "",
       classId: ch.class_id,
+      specId: resolvedSpecId,
       specName: spec?.name ?? "",
       role: (spec?.roles[0] ?? "melee") as Role,
       status,

@@ -12,6 +12,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { SpecIcon } from "@/components/spec-icon";
 import { createClient } from "@/lib/supabase/client";
 import {
   DUTY_LABELS,
@@ -32,6 +33,7 @@ export type BoardCharacter = {
   color: string;
   className: string;
   classId: string;
+  specId: string;
   specName: string;
   role: Role;
   status: SignupStatus | null;
@@ -293,11 +295,10 @@ function Card({ character: c, disabled }: { character: BoardCharacter; disabled:
       } ${isDragging ? "relative z-10 opacity-80 shadow-lg" : ""}`}
       title={c.note ?? undefined}
     >
-      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: c.color }} />
-      <span className="font-medium" style={{ color: c.color }}>
+      <SpecIcon specId={c.specId} name={c.specName} />
+      <span className="truncate font-medium" style={{ color: c.color }}>
         {c.name}
       </span>
-      <span className="truncate text-xs opacity-60">{c.specName}</span>
       {c.elsewhere && <span className="ml-auto text-xs text-amber-400" title={`Also in ${c.elsewhere}`}>⚠</span>}
     </div>
   );

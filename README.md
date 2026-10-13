@@ -51,5 +51,6 @@ update profiles set is_officer = true where display_name = 'YourName';
 ## Test data
 
 `supabase/dev/sample_data.sql` adds the roster from the spreadsheet as fake players with a sample raid;
-`supabase/dev/remove_sample_data.sql` removes it. Remove it before players register, since character
+`supabase/dev/sample_attendance.sql` (run after it) adds 10 past raids with comps and attendance;
+`supabase/dev/remove_sample_data.sql` removes all of it. Remove it before players register, since character
 names must be unique.

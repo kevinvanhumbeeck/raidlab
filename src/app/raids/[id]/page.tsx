@@ -2,15 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireViewer } from "@/lib/viewer";
 import {
-  ROLES,
-  ROLE_LABELS,
   SIGNUP_STATUSES,
   STATUS_LABELS,
   formatRaidTime,
   type Role,
   type SignupStatus,
 } from "@/lib/wow";
-import { deleteRaid, officerSignUp, setSignupStatus, signUp, withdraw } from "../actions";
+import { deleteRaid, officerSignUp, signUp, withdraw } from "../actions";
+import { SignupBoard, type SignupRow as SignupRowView } from "./signup-board";
 import { SignupForm } from "./signup-form";
 
 // Many-to-one joins return a single object at runtime.
@@ -60,25 +59,25 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
   const rows = (signups ?? []).flatMap((s) => {
     const ch = s.characters;
     if (!ch) return [];
-    const spec = specById.get(s.spec_id ?? ch.main_spec_id);
-    return [
-      {
-        characterId: s.character_id,
-        status: s.status,
-        note: s.note,
-        name: ch.name,
-        player: ch.profiles?.display_name,
-        isMine: ch.owner_id === user.id,
-        color: classById.get(ch.class_id)?.color,
-        label: `${spec?.name ?? ""} ${classById.get(ch.class_id)?.name ?? ""}`,
-        role: (spec?.roles[0] ?? "melee") as Role,
-      },
-    ];
+    const specId = s.spec_id ?? ch.main_spec_id;
+    const spec = specById.get(specId);
+    const row: SignupRowView = {
+      characterId: s.character_id,
+      status: s.status,
+      note: s.note,
+      name: ch.name,
+      player: ch.profiles?.display_name ?? null,
+      isMine: ch.owner_id === user.id,
+      color: classById.get(ch.class_id)?.color ?? "#ccc",
+      specId,
+      specName: spec?.name ?? "",
+      role: (spec?.roles[0] ?? "melee") as Role,
+    };
+    return [row];
   });
 
   const mine = rows.find((r) => r.isMine);
   const mySignup = signups?.find((s) => s.character_id === mine?.characterId);
-  const accepted = rows.filter((r) => r.status === "accepted");
 
   const formCharacters = (myCharacters ?? []).map((c) => ({
     id: c.id,
@@ -162,7 +161,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
                   ?.filter((c) => !rows.some((r) => r.characterId === c.id))
                   .map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name} — {specById.get(c.main_spec_id)?.name} {classById.get(c.class_id)?.name}
+                      {c.name} — {specById.get(c.main_spec_id)?.name}
                     </option>
                   ))}
               </select>
@@ -182,62 +181,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
         </section>
       )}
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">
-          Accepted {accepted.length}/{raid.size}
-        </h2>
-        <div className="flex flex-wrap gap-4 text-sm">
-          {ROLES.map((role) => (
-            <span key={role}>
-              {ROLE_LABELS[role]}: <strong>{accepted.filter((r) => r.role === role).length}</strong>
-            </span>
-          ))}
-        </div>
-      </section>
-
-      {SIGNUP_STATUSES.map((status) => {
-        const inStatus = rows.filter((r) => r.status === status);
-        if (!inStatus.length) return null;
-        return (
-          <section key={status} className="space-y-2">
-            <h3 className="font-semibold">
-              {STATUS_LABELS[status]} ({inStatus.length})
-            </h3>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {ROLES.map((role) => {
-                const inRole = inStatus.filter((r) => r.role === role).sort((a, b) => a.name.localeCompare(b.name));
-                return (
-                  <div key={role} className="rounded border border-border bg-panel p-3">
-                    <h4 className="mb-2 text-sm opacity-70">
-                      {ROLE_LABELS[role]} ({inRole.length})
-                    </h4>
-                    <ul className="space-y-1.5">
-                      {inRole.map((r) => (
-                        <li key={r.characterId} className="text-sm">
-                          <span className="font-medium" style={{ color: r.color }}>
-                            {r.name}
-                          </span>{" "}
-                          <span className="opacity-60">{r.label}</span>
-                          {r.note && <div className="text-xs opacity-60">“{r.note}”</div>}
-                          {isOfficer && (
-                            <div className="mt-0.5 flex gap-2 text-xs">
-                              {SIGNUP_STATUSES.filter((s) => s !== status).map((s) => (
-                                <form key={s} action={setSignupStatus.bind(null, raid.id, r.characterId, s)}>
-                                  <button className="opacity-60 hover:opacity-100">→ {STATUS_LABELS[s]}</button>
-                                </form>
-                              ))}
-                            </div>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        );
-      })}
+      <SignupBoard raidId={raid.id} size={raid.size} rows={rows} canEdit={isOfficer} />
 
       {isOfficer && (
         <form action={deleteRaid.bind(null, raid.id)} className="border-t border-border pt-4">
