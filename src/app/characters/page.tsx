@@ -99,7 +99,7 @@ export default async function CharactersPage() {
             <input type="checkbox" name="is_main" defaultChecked />
             Main character
           </label>
-          <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-white">Add</button>
+          <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">Add</button>
         </form>
       </section>
     </div>

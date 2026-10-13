@@ -22,10 +22,20 @@ Make yourself an officer after first login (SQL editor):
 update profiles set is_officer = true where display_name = 'YourName';
 ```
 
+## Workflow
+
+- `main` = production (www.raidlab.net). `development` = integration branch with its own Vercel preview.
+- Work on `feat/<issue>-<slug>` or `fix/<issue>-<slug>` branches off `development`, open a PR into
+  `development`, and release with a PR from `development` into `main`.
+- Commit messages: `feat(scope): ...`, `fix(scope): ...`, `chore: ...`.
+- CI (`.github/workflows/ci.yml`) runs lint, typecheck and build on pushes and PRs to both branches.
+- Preview deployments use the **production** Supabase database, so test data created there is real data.
+- When a PR includes a migration, run it in Supabase before merging to `main`.
+
 ## Infrastructure
 
 - **Code**: https://github.com/kevinvanhumbeeck/raidlab (private). Pushes to `main` deploy to production;
-  other branches get Vercel preview URLs.
+  other branches (including `development`) get Vercel preview URLs.
 - **Hosting**: Vercel project `raidlab`, env vars `NEXT_PUBLIC_SUPABASE_URL`,
   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (sensitive) and `DISCORD_GUILD_ID`.
   Don't add Vercel's Supabase/Postgres integration.

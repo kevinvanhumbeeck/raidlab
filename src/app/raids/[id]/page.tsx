@@ -102,7 +102,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
         {raid.notes && <p className="text-sm opacity-70">{raid.notes}</p>}
         <Link
           href={`/raids/${raid.id}/comp`}
-          className="mt-2 inline-block rounded bg-accent px-3 py-1.5 text-sm font-medium text-white"
+          className="mt-2 inline-block rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
         >
           {isOfficer ? "Edit composition" : "View composition"}
         </Link>
@@ -177,7 +177,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
                 ))}
               </select>
             </label>
-            <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-white">Add</button>
+            <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">Add</button>
           </form>
         </section>
       )}
