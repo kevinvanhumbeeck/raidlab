@@ -1,36 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Raid Planner
 
-## Getting Started
+Roster, raid compositions and attendance for our WoW Forever guild.
+Next.js (App Router) on Vercel, Supabase for Postgres + Discord login.
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+1. **Supabase**: create a project at https://supabase.com.
+   - SQL editor → run `supabase/migrations/20261013000000_init.sql`, then `supabase/seed.sql`.
+2. **Discord app**: https://discord.com/developers/applications → New Application → OAuth2.
+   - Add redirect: `https://<project-ref>.supabase.co/auth/v1/callback`
+   - Copy Client ID + Client Secret.
+3. **Supabase → Authentication → Providers → Discord**: enable, paste ID + secret.
+4. **Supabase → Authentication → URL Configuration**: Site URL = your Vercel URL;
+   add `http://localhost:3000/**` and `https://<your-app>.vercel.app/**` to redirect URLs.
+5. `cp .env.example .env.local` and fill in values from Supabase → Settings → API.
+6. `npm install && npm run dev`
+
+Make yourself an officer after first login (SQL editor):
+
+```sql
+update profiles set is_officer = true where display_name = 'YourName';
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deploy
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Import the repo in Vercel and set the same two env vars.
