@@ -105,6 +105,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
           <>
             <SignupForm
               action={signUp.bind(null, raid.id)}
+              withdrawAction={mine ? withdraw.bind(null, raid.id, mine.characterId) : undefined}
               characters={formCharacters}
               current={
                 mine && mySignup
@@ -117,11 +118,6 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
                   : undefined
               }
             />
-            {mine && (
-              <form action={withdraw.bind(null, raid.id, mine.characterId)}>
-                <button className="text-sm text-red-400 hover:text-red-300">Remove my sign-up</button>
-              </form>
-            )}
             {mySlot ? (
               <p className="text-sm text-emerald-400">
                 You&apos;re in group {mySlot.group_no}
