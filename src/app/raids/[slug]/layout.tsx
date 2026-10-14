@@ -5,7 +5,7 @@ import { formatRaidTime, hasStarted, isLocked } from "@/lib/wow";
 import { setRaidLock } from "../actions";
 import { RaidTabs } from "./raid-tabs";
 
-// Shared header and tabs for a raid's sign-ups, composition and attendance pages.
+// Shared header and tabs for a raid's sign-ups, composition, loot and attendance pages.
 export default async function RaidLayout({
   children,
   params,
@@ -18,13 +18,14 @@ export default async function RaidLayout({
   const { id } = raid;
   const { supabase, isOfficer } = await requireViewer();
 
-  const count = (table: "signups" | "comp_slots" | "attendance") =>
+  const count = (table: "signups" | "comp_slots" | "attendance" | "reserves") =>
     supabase.from(table).select("raid_id", { count: "exact", head: true }).eq("raid_id", id);
 
-  const [{ count: accepted }, { count: placed }, { count: recorded }] = await Promise.all([
+  const [{ count: accepted }, { count: placed }, { count: recorded }, { count: reserved }] = await Promise.all([
     count("signups").eq("status", "accepted"),
     count("comp_slots"),
     count("attendance"),
+    count("reserves"),
   ]);
 
   const started = hasStarted(raid.starts_at);
@@ -62,6 +63,7 @@ export default async function RaidLayout({
         tabs={[
           { segment: "", label: "Sign-ups", meta: `${accepted ?? 0}/${raid.size}` },
           { segment: "comp", label: "Composition", meta: `${placed ?? 0}/${raid.size}` },
+          { segment: "loot", label: "Loot", meta: `${reserved ?? 0}` },
           {
             segment: "attendance",
             label: "Attendance",

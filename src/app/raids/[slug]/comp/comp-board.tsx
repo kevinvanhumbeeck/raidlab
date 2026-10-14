@@ -187,7 +187,7 @@ export function CompBoard({
         <div className="grid gap-4 sm:grid-cols-2">
           {Array.from({ length: groups }, (_, g) => (
             <div key={g} className="rounded-xl border border-border bg-panel p-3">
-              <h3 className="mb-2 text-sm font-semibold opacity-80">Group {g + 1}</h3>
+              <h3 className="mb-2 font-sans text-sm font-semibold opacity-80">Group {g + 1}</h3>
               <div className="space-y-1.5">
                 {Array.from({ length: 5 }, (_, p) => {
                   const slot = `${g + 1}-${p + 1}`;
@@ -216,7 +216,7 @@ export function CompBoard({
             if (!list.length) return null;
             return (
               <div key={status} className="space-y-1.5">
-                <h3 className="text-sm font-semibold opacity-80">
+                <h3 className="font-sans text-sm font-semibold opacity-80">
                   {STATUS_LABELS[status]} ({list.length})
                 </h3>
                 {list.map((c) => (

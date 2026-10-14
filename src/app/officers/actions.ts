@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { officersFromDiscord } from "@/lib/discord";
 import { requireViewer } from "@/lib/viewer";
+import { INSTANCE_SIZES } from "@/lib/wow";
 
 export async function setOfficer(profileId: string, value: boolean) {
   if (officersFromDiscord()) throw new Error("Officers follow the @officer role in Discord");
@@ -19,16 +20,18 @@ export async function setMember(profileId: string, value: boolean) {
   revalidatePath("/officers");
 }
 
-// Instance settings: size and minimum players per role. Form fields: name, size, tanks, healers, dps.
+// Instance settings: size, minimum players per role and reserves per player.
+// Form fields: name, size, tanks, healers, dps, reserves.
 function readInstance(formData: FormData) {
   const num = (key: string) => {
-    const n = Number(formData.get(key));
+    const value = formData.get(key);
+    const n = value === null || value === "" ? NaN : Number(value);
     if (!Number.isInteger(n) || n < 0) throw new Error(`Invalid ${key}`);
     return n;
   };
   const size = num("size");
-  if (![10, 20, 40].includes(size)) throw new Error("Size must be 10, 20 or 40");
-  const fields = { size, tanks: num("tanks"), healers: num("healers"), dps: num("dps") };
+  if (!INSTANCE_SIZES.includes(size)) throw new Error(`Size must be ${INSTANCE_SIZES.join(", ")}`);
+  const fields = { size, tanks: num("tanks"), healers: num("healers"), dps: num("dps"), reserves: num("reserves") };
   if (fields.tanks + fields.healers + fields.dps > size) {
     throw new Error("Requirements add up to more than the raid size");
   }

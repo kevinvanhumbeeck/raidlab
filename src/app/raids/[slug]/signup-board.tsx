@@ -84,7 +84,7 @@ export function SignupBoard({
 
       <section className="rounded-xl border border-border bg-panel">
         <header className="flex flex-wrap items-baseline gap-x-5 gap-y-1 rounded-t-xl border-b border-border bg-panel-raised px-4 py-3">
-          <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <h2 className="flex items-center gap-2 font-sans text-lg font-semibold">
             <span className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT.accepted}`} />
             Accepted
             <span className="tabular-nums opacity-70">
@@ -97,7 +97,7 @@ export function SignupBoard({
             const inRole = accepted.filter((r) => r.role === role).sort(byRoleThenName);
             return (
               <div key={role} className="px-3 py-3">
-                <h3 className="mb-2 flex items-baseline justify-between px-1 text-xs font-semibold uppercase tracking-wide">
+                <h3 className="mb-2 flex items-baseline justify-between px-1 font-sans text-xs font-semibold uppercase tracking-wide">
                   <span className="opacity-60">{ROLE_LABELS[role]}</span>
                   <RoleCount count={inRole.length} needed={requirements?.[role]} />
                 </h3>
@@ -121,7 +121,7 @@ export function SignupBoard({
           const list = rows.filter((r) => r.status === status).sort(byRoleThenName);
           return (
             <section key={status} className="rounded-xl border border-border bg-panel">
-              <h2 className="flex items-center gap-2 rounded-t-xl border-b border-border bg-panel-raised px-4 py-2.5 font-semibold">
+              <h2 className="flex items-center gap-2 rounded-t-xl border-b border-border bg-panel-raised px-4 py-2.5 font-sans font-semibold">
                 <span className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT[status]}`} />
                 {STATUS_LABELS[status]}
                 <span className="tabular-nums opacity-70">{list.length}</span>
