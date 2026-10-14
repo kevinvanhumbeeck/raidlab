@@ -14,9 +14,12 @@ export function CharacterForm({
   classes,
   specs,
   character,
+  currentMain,
 }: {
   classes: ClassOption[];
   specs: SpecOption[];
+  // The player's main, if they have one (and it isn't this character).
+  currentMain?: string;
   // Present when editing an existing character.
   character?: { id: string; name: string; class_id: string; main_spec_id: string; off_spec_ids: string[]; is_main: boolean };
 }) {
@@ -81,9 +84,10 @@ export function CharacterForm({
         />
       </fieldset>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="is_main" defaultChecked={character?.is_main ?? true} />
+      <label className="flex flex-wrap items-center gap-x-2 text-sm">
+        <input type="checkbox" name="is_main" defaultChecked={character ? character.is_main : !currentMain} />
         Main character
+        {currentMain && <span className="text-xs text-muted">(replaces {currentMain} as your main)</span>}
       </label>
 
       <div className="flex flex-wrap items-center gap-3">

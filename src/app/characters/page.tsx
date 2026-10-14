@@ -18,6 +18,7 @@ export default async function CharactersPage() {
 
   const classById = new Map(classes?.map((c) => [c.id, c]));
   const specById = new Map(specs?.map((s) => [s.id, s]));
+  const main = characters?.find((c) => c.is_main);
 
   return (
     <div className="space-y-8">
@@ -42,7 +43,12 @@ export default async function CharactersPage() {
                     <span className="ml-auto hidden text-sm opacity-70 group-open:inline">Close</span>
                   </summary>
                   <div className="mt-3">
-                    <CharacterForm classes={classes ?? []} specs={specs ?? []} character={ch} />
+                    <CharacterForm
+                      classes={classes ?? []}
+                      specs={specs ?? []}
+                      character={ch}
+                      currentMain={main && main.id !== ch.id ? main.name : undefined}
+                    />
                   </div>
                 </details>
               </li>
@@ -55,7 +61,7 @@ export default async function CharactersPage() {
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Add a character</h2>
-        <CharacterForm classes={classes ?? []} specs={specs ?? []} />
+        <CharacterForm classes={classes ?? []} specs={specs ?? []} currentMain={main?.name} />
       </section>
     </div>
   );
