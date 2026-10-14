@@ -17,7 +17,8 @@ export type Account = {
   links: NavLink[];
 };
 
-const linkClass = "font-heading text-sm opacity-80 hover:opacity-100";
+// text-base so the links sit level with the text-lg wordmark next to the logo.
+const linkClass = "nav-link w-fit font-heading text-base tracking-wide opacity-80 hover:opacity-100";
 const menuItem = "flex w-full items-center px-3 py-2 text-left text-sm hover:bg-white/5";
 
 // Main links inline with an account menu on the right; one hamburger panel on mobile.
@@ -69,7 +70,8 @@ export function SiteNav({
       {brand}
 
       {/* Desktop */}
-      <div className="hidden items-center gap-6 sm:flex">{links.map((l) => mainLink(l))}</div>
+      {/* Centred, the text-lg wordmark's baseline sits 1px lower than the links'; nudge them onto it. */}
+      <div className="hidden translate-y-px items-center gap-6 sm:flex">{links.map((l) => mainLink(l))}</div>
       <div className="ml-auto hidden items-center gap-4 sm:flex">
         {account ? (
           <div ref={menuRef} className="relative">
