@@ -17,7 +17,7 @@ export function CardHeader({
   return (
     <header className="flex items-center justify-between gap-3 border-b border-border bg-panel-raised px-4 py-3">
       <div className="min-w-0 space-y-0.5">
-        <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight" style={style}>
+        <h2 className="flex items-center gap-2 font-sans text-sm font-semibold tracking-tight" style={style}>
           {title}
         </h2>
         {subtitle && <p className="text-xs text-muted">{subtitle}</p>}

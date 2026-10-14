@@ -184,7 +184,7 @@ export default async function PlayerPage({
 
       <div className="grid gap-4 md:grid-cols-2">
         <section className="space-y-3 rounded-xl border border-border bg-panel p-4">
-          <h2 className="font-semibold">Characters</h2>
+          <h2 className="font-sans font-semibold">Characters</h2>
           {characters?.length ? (
             <ul className="space-y-1.5 text-sm">
               {characters.map((c) => {
@@ -214,7 +214,7 @@ export default async function PlayerPage({
         </section>
 
         <section className="space-y-3 rounded-xl border border-border bg-panel p-4">
-          <h2 className="font-semibold">Attendance</h2>
+          <h2 className="font-sans font-semibold">Attendance</h2>
           {summary.total ? (
             <>
               <p className="flex items-baseline gap-2">
