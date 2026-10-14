@@ -107,3 +107,34 @@ select {
   background-size: 1rem;
   padding-right: 2rem;
 }
+
+/* Nav underline: an accent line that fills in left to right on hover and leaves to the right; stays on the current page. */
+.nav-link {
+  position: relative;
+  padding-block: 0.25rem;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: -0.125rem;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-link:hover::after,
+.nav-link:focus-visible::after,
+.nav-link[aria-current="page"]::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-link::after {
+    transition: none;
+  }
+}

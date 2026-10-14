@@ -52,7 +52,7 @@ export default async function RootLayout({
     ? [
         { href: "/raids", label: "Raids" },
         { href: "/attendance", label: "Attendance" },
-        ...(isOfficer ? [{ href: "/officers", label: "Officers" }] : []),
+        ...(isOfficer ? [{ href: "/officers", label: "Manage" }] : []),
       ]
     : [];
 
@@ -64,7 +64,7 @@ export default async function RootLayout({
             brand={
               <Link href="/" className="flex shrink-0 items-center gap-2.5">
                 <Image src="/raidlab.svg" alt="" width={29} height={36} priority />
-                <span className="font-display text-lg font-bold tracking-wide">
+                <span className="font-heading text-lg tracking-wide">
                   Raid<span className="text-accent">Lab</span>
                 </span>
               </Link>
