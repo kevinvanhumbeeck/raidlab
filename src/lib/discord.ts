@@ -15,7 +15,7 @@ function roleIds(name: string) {
 // officer is null when no officer role is configured: officers are then managed in the app only.
 export type DiscordAccess = { member: boolean; officer: boolean | null };
 
-// Access comes from the server's roles: @raider, @pug or @officer lets you in, @officer makes you an officer.
+// Access comes from the server's roles: any DISCORD_RAIDER_ROLE_ID role (e.g. @raider, @pug) or @officer lets you in, @officer makes you an officer.
 // Without role IDs configured, being in the server is enough; without DISCORD_GUILD_ID, everyone gets in.
 export async function discordAccess(providerToken: string | null | undefined): Promise<DiscordAccess> {
   const guildId = process.env.DISCORD_GUILD_ID;
@@ -23,7 +23,7 @@ export async function discordAccess(providerToken: string | null | undefined): P
   if (!providerToken) return { member: false, officer: null };
 
   const officerRoles = roleIds("DISCORD_OFFICER_ROLE_ID");
-  const accessRoles = [...roleIds("DISCORD_RAIDER_ROLE_ID"), ...roleIds("DISCORD_PUG_ROLE_ID"), ...officerRoles];
+  const accessRoles = [...roleIds("DISCORD_RAIDER_ROLE_ID"), ...officerRoles];
 
   const res = await fetch(`https://discord.com/api/v10/users/@me/guilds/${guildId}/member`, {
     headers: { Authorization: `Bearer ${providerToken}` },
