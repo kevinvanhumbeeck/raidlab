@@ -2,6 +2,20 @@
 
 import { useState } from "react";
 
+// navigator.clipboard only exists on secure pages (HTTPS or localhost). On plain HTTP, such as the dev
+// server opened by IP address, fall back to copying from a hidden textarea.
+async function copyText(text: string) {
+  if (navigator.clipboard) return navigator.clipboard.writeText(text);
+  const textarea = Object.assign(document.createElement("textarea"), { value: text, readOnly: true });
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.append(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("Copying is blocked by the browser");
+}
+
 // Copies text to the clipboard, e.g. an addon import string.
 export function CopyButton({
   text,
@@ -18,7 +32,7 @@ export function CopyButton({
       type="button"
       className={className}
       onClick={async () => {
-        await navigator.clipboard.writeText(text);
+        await copyText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }}
