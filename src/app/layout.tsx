@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { Cinzel, Exo_2, Geist_Mono, Zen_Dots } from "next/font/google";
+import { Exo_2, Geist_Mono, Zen_Dots } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { DiscordLoginButton } from "@/components/discord-login-button";
@@ -20,12 +20,6 @@ const exo2 = Exo_2({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-});
-
-const cinzel = Cinzel({
-  variable: "--font-cinzel",
-  subsets: ["latin"],
-  weight: ["600", "700"],
 });
 
 const zenDots = Zen_Dots({
@@ -60,7 +54,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" data-theme={theme}>
-      <body className={`${exo2.variable} ${geistMono.variable} ${cinzel.variable} ${zenDots.variable} font-sans antialiased`}>
+      <body className={`${exo2.variable} ${geistMono.variable} ${zenDots.variable} font-sans antialiased`}>
         <header className="border-b border-border bg-panel">
           <SiteNav
             brand={
