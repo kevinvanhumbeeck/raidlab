@@ -192,7 +192,9 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
             </button>
           </form>
           <form action={deleteRaid.bind(null, raid.id)}>
-            <button className="text-sm text-red-400 hover:text-red-300">Delete raid</button>
+            <button className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300">
+              Delete raid
+            </button>
           </form>
         </section>
       )}
