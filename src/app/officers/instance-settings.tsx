@@ -64,15 +64,16 @@ export function InstanceSettings({ instances }: { instances: InstanceRow[] }) {
                 <input type="hidden" name="name" value={instance.name} />
                 <div className="min-w-40 pb-1">
                   <div className="font-medium">{instance.name}</div>
-                  <div className="text-xs opacity-60">
-                    {flexible} flexible ·{" "}
-                    <Link href={`/officers/loot/${encodeURIComponent(instance.name)}`} className="hover:underline">
-                      Loot table
-                    </Link>
-                  </div>
+                  <div className="text-xs opacity-60">{flexible} flexible</div>
                 </div>
                 <Fields instance={instance} />
                 <button className="rounded border border-border px-3 py-1 text-sm hover:bg-white/5">Save</button>
+                <Link
+                  href={`/officers/loot/${encodeURIComponent(instance.name)}`}
+                  className="rounded border border-border px-3 py-1 text-sm hover:bg-white/5"
+                >
+                  Loot table
+                </Link>
               </form>
             </li>
           );

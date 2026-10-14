@@ -138,6 +138,12 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
             >
               Download CSV
             </DownloadButton>
+            <Link
+              href={`/officers/loot/${encodeURIComponent(raid.instance)}`}
+              className="ml-auto rounded border border-border px-3 py-1 hover:bg-white/5"
+            >
+              Edit loot table
+            </Link>
           </div>
         </section>
       )}
