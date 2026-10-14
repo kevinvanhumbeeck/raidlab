@@ -362,6 +362,11 @@ function Card({
         {c.name}
       </span>
       <span className="ml-auto flex items-center gap-1.5">
+        {role && c.status !== "accepted" && (
+          <span className="text-xs text-amber-400">
+            {c.status ? STATUS_LABELS[c.status].toLowerCase() : "not signed up"}
+          </span>
+        )}
         {c.elsewhere && (
           <span className="text-xs text-amber-400" title={`Also in ${c.elsewhere}`}>
             ⚠
