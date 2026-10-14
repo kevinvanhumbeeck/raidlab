@@ -67,7 +67,6 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-discord: var(--discord);
   --font-sans: var(--font-exo-2);
-  --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-zen-dots);
 }
 
