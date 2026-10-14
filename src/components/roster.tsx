@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { CharacterSpecs, SpecIcon } from "@/components/spec-icon";
+import { Card, CardHeader, StatTile } from "@/components/card";
+import { SpecIcon } from "@/components/spec-icon";
 import { ROLES, ROLE_LABELS, playerHref, primaryRole, type Role } from "@/lib/wow";
 
 type CharacterRow = {
@@ -37,18 +38,13 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
   const missing = (specs ?? []).filter((s) => mainCount(s.id) === 0);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Guild roster</h2>
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
-          <span className="font-semibold">
-            {mains.length} main{mains.length === 1 ? "" : "s"}, {all.length - mains.length} alt
-            {all.length - mains.length === 1 ? "" : "s"}
-          </span>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <StatTile label="Mains" value={mains.length} />
+          <StatTile label="Alts" value={all.length - mains.length} />
           {ROLES.map((role) => (
-            <span key={role}>
-              {ROLE_LABELS[role]}: <strong>{roleCount(role)}</strong>
-            </span>
+            <StatTile key={role} label={ROLE_LABELS[role]} value={roleCount(role)} hint="mains" />
           ))}
         </div>
         {missing.length > 0 && (
@@ -67,25 +63,23 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Spec coverage</h2>
-        <p className="text-xs opacity-70">Mains · alts · players with it as off-spec</p>
+        <p className="text-xs text-muted">Mains · alts · players with it as off-spec</p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {classes?.map((cls) => (
-            <div key={cls.id} className="rounded border border-border bg-panel p-3">
-              <h3 className="mb-2 font-semibold" style={{ color: cls.color }}>
-                {cls.name}
-              </h3>
-              <ul className="space-y-1 text-sm">
+            <Card key={cls.id}>
+              <CardHeader title={cls.name} style={{ color: cls.color }} />
+              <ul className="divide-y divide-border text-sm">
                 {specs
                   ?.filter((s) => s.class_id === cls.id)
                   .map((s) => {
                     const m = mainCount(s.id);
                     return (
-                      <li key={s.id} className="flex items-center gap-2">
+                      <li key={s.id} className="flex items-center gap-2 px-4 py-2">
                         <SpecIcon specId={s.id} name={s.name} />
                         <span className={m === 0 ? "text-amber-400" : ""}>{s.name}</span>
                         <span className="ml-auto tabular-nums">
                           <strong className={m === 0 ? "text-amber-400" : ""}>{m}</strong>
-                          <span className="opacity-60">
+                          <span className="text-muted">
                             {" "}
                             · {altCount(s.id)} · {offCount(s.id)}
                           </span>
@@ -94,7 +88,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
                     );
                   })}
               </ul>
-            </div>
+            </Card>
           ))}
         </div>
       </section>
@@ -111,18 +105,16 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
                 .sort((a, b) => Number(b.is_main) - Number(a.is_main) || a.name.localeCompare(b.name));
               if (!inClass.length) return null;
               return (
-                <div key={cls.id} className="rounded border border-border bg-panel p-3">
-                  <h3 className="mb-2 font-semibold" style={{ color: cls.color }}>
-                    {cls.name} ({inClass.length})
-                  </h3>
-                  <ul className="space-y-1 text-sm">
+                <Card key={cls.id}>
+                  <CardHeader
+                    title={cls.name}
+                    style={{ color: cls.color }}
+                    action={<span className="text-xs tabular-nums text-muted">{inClass.length}</span>}
+                  />
+                  <ul className="divide-y divide-border text-sm">
                     {inClass.map((c) => (
-                      <li key={c.id} className="flex flex-wrap items-center gap-x-2">
-                        <CharacterSpecs
-                          mainSpecId={c.main_spec_id}
-                          offSpecIds={c.off_spec_ids}
-                          specName={(id) => specById.get(id)?.name ?? ""}
-                        />
+                      <li key={c.id} className="flex items-center gap-2 px-4 py-2">
+                        <SpecIcon specId={c.main_spec_id} name={specById.get(c.main_spec_id)?.name ?? ""} />
                         <Link
                           href={playerHref(c.owner_id, c.id)}
                           className="font-medium hover:underline"
@@ -130,14 +122,14 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
                         >
                           {c.name}
                         </Link>
-                        {!c.is_main && <span className="text-xs opacity-60">alt</span>}
+                        {!c.is_main && <span className="text-xs text-muted">alt</span>}
                         {c.profiles && c.profiles.display_name !== c.name && (
-                          <span className="ml-auto text-xs opacity-60">{c.profiles.display_name}</span>
+                          <span className="ml-auto text-xs text-muted">{c.profiles.display_name}</span>
                         )}
                       </li>
                     ))}
                   </ul>
-                </div>
+                </Card>
               );
             })}
           </div>

@@ -21,7 +21,7 @@ export function SignupForm({
   const character = characters.find((c) => c.id === characterId);
 
   return (
-    <form action={action} className="grid gap-4 rounded border border-border bg-panel p-4 sm:grid-cols-3">
+    <form action={action} className="grid gap-4 rounded-xl border border-border bg-panel p-4 sm:grid-cols-3">
       <label className="space-y-1">
         <span className="text-sm">Character</span>
         <select

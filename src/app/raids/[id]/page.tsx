@@ -163,7 +163,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
           <h3 className="text-sm font-medium opacity-80">Sign up a player</h3>
           <form
             action={officerSignUp.bind(null, raid.id)}
-            className="flex flex-wrap items-end gap-3 rounded border border-border bg-panel p-4"
+            className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-panel p-4"
           >
             <label className="space-y-1">
               <span className="block text-sm">Character</span>

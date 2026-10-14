@@ -40,7 +40,7 @@ export default async function OfficersPage() {
         someone out until their next login.
       </p>
 
-      <ul className="divide-y divide-border rounded border border-border bg-panel">
+      <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
         {sorted.map((p) => {
           const chars = charactersOf.get(p.id) ?? [];
           const lastOfficer = p.is_officer && officerCount === 1;
