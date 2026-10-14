@@ -150,6 +150,8 @@ export function hasStarted(iso: string) {
 }
 
 // Profile page of the player owning a character, opened on that character.
-export function playerHref(playerId: string, characterId?: string) {
-  return characterId ? `/players/${playerId}?character=${characterId}` : `/players/${playerId}`;
+export function playerHref(playerSlug: string, characterName?: string) {
+  return characterName
+    ? `/players/${playerSlug}?character=${encodeURIComponent(characterName.toLowerCase())}`
+    : `/players/${playerSlug}`;
 }

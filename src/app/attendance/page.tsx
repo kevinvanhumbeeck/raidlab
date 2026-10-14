@@ -27,7 +27,7 @@ export default async function AttendancePage() {
       .from("attendance")
       .select("status, raid_id, raids(title, starts_at), characters(owner_id)")
       .overrideTypes<Row[], { merge: false }>(),
-    supabase.from("profiles").select("id, display_name, created_at"),
+    supabase.from("profiles").select("id, slug, display_name, created_at"),
     supabase.from("characters").select("id, owner_id, name, class_id, is_main").order("is_main", { ascending: false }),
     supabase.from("classes").select("id, color"),
   ]);
@@ -58,6 +58,7 @@ export default async function AttendancePage() {
       const summary = attendanceSummary(raidList, byPlayer.get(p.id) ?? new Map(), p.created_at);
       return {
         id: p.id,
+        slug: p.slug,
         player: p.display_name,
         main: mainOf.get(p.id)!,
         ...summary,
@@ -103,7 +104,7 @@ export default async function AttendancePage() {
                 <tr key={p.id} className={p.id === user.id ? "bg-white/5" : undefined}>
                   <td className="px-3 py-2">
                     <Link
-                      href={playerHref(p.id, p.main.id)}
+                      href={playerHref(p.slug, p.main.name)}
                       className="font-medium hover:underline"
                       style={{ color: color.get(p.main.class_id) }}
                     >

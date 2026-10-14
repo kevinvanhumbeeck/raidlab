@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { ConfirmButton } from "@/components/confirm-button";
+import { getRaid } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import { SIGNUP_STATUSES, STATUS_LABELS, primaryRole, requirementsOf, type SignupStatus } from "@/lib/wow";
 import { deleteRaid, officerSignUp, signUp, withdraw } from "../actions";
@@ -18,27 +18,27 @@ type SignupRow = {
     class_id: string;
     main_spec_id: string;
     owner_id: string;
-    profiles: { display_name: string } | null;
+    profiles: { slug: string; display_name: string } | null;
   } | null;
 };
 
-export default async function RaidPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function RaidPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const raid = await getRaid(slug);
+  const { id } = raid;
   const { supabase, user, isOfficer } = await requireViewer();
 
   const [
-    { data: raid },
     { data: signups },
     { data: classes },
     { data: specs },
     { data: myCharacters },
     { data: slots },
   ] = await Promise.all([
-    supabase.from("raids").select("id, instance, size").eq("id", id).maybeSingle(),
     supabase
       .from("signups")
       .select(
-        "character_id, status, spec_id, note, characters(name, class_id, main_spec_id, owner_id, profiles(display_name))",
+        "character_id, status, spec_id, note, characters(name, class_id, main_spec_id, owner_id, profiles(slug, display_name))",
       )
       .eq("raid_id", id)
       .overrideTypes<SignupRow[], { merge: false }>(),
@@ -51,7 +51,6 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
       .order("is_main", { ascending: false }),
     supabase.from("comp_slots").select("group_no, character_id").eq("raid_id", id),
   ]);
-  if (!raid) notFound();
 
   const [{ data: allCharacters }, { data: instance }] = await Promise.all([
     isOfficer
@@ -70,7 +69,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
     const spec = specById.get(specId);
     const row: SignupRowView = {
       characterId: s.character_id,
-      playerId: ch.owner_id,
+      playerSlug: ch.profiles?.slug ?? "",
       status: s.status,
       note: s.note,
       name: ch.name,
@@ -125,7 +124,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
                 {mySlot.character_id !== mine?.characterId &&
                   ` on ${myCharacters?.find((c) => c.id === mySlot.character_id)?.name}`}
                 .{" "}
-                <Link href={`/raids/${raid.id}/comp`} className="underline">
+                <Link href={`/raids/${raid.slug}/comp`} className="underline">
                   See the composition
                 </Link>
               </p>

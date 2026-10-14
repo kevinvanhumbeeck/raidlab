@@ -76,7 +76,7 @@ export default async function RootLayout({
                 avatarUrl: profile?.avatar_url ?? null,
                 links: isMember
                   ? [
-                      { href: playerHref(user.id), label: "My profile" },
+                      { href: playerHref(profile?.slug ?? user.id), label: "My profile" },
                       { href: "/characters", label: "My characters" },
                     ]
                   : [],

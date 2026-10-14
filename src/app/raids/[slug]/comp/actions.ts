@@ -70,7 +70,7 @@ export async function moveToSlot(raidId: string, characterId: string, groupNo: n
   const { error } = await supabase.from("comp_slots").insert(inserts);
   if (error) throw error;
 
-  revalidatePath("/raids/[id]", "layout");
+  revalidatePath("/raids/[slug]", "layout");
 }
 
 // Set the role a placed hybrid fills (null = the spec's primary role).
@@ -98,7 +98,7 @@ export async function setSlotRole(raidId: string, characterId: string, role: Rol
     .eq("character_id", characterId);
   if (error) throw error;
 
-  revalidatePath("/raids/[id]", "layout");
+  revalidatePath("/raids/[slug]", "layout");
 }
 
 export async function removeFromComp(raidId: string, characterId: string) {
@@ -110,7 +110,7 @@ export async function removeFromComp(raidId: string, characterId: string) {
     .eq("character_id", characterId);
   if (error) throw error;
 
-  revalidatePath("/raids/[id]", "layout");
+  revalidatePath("/raids/[slug]", "layout");
 }
 
 export async function setDuty(raidId: string, duty: RaidDuty, characterId: string | null) {
@@ -122,5 +122,5 @@ export async function setDuty(raidId: string, duty: RaidDuty, characterId: strin
     : await supabase.from("raid_duties").delete().eq("raid_id", raidId).eq("duty", duty);
   if (error) throw error;
 
-  revalidatePath("/raids/[id]", "layout");
+  revalidatePath("/raids/[slug]", "layout");
 }

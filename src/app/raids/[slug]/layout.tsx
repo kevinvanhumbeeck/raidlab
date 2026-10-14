@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { getRaid } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import { formatRaidTime, hasStarted } from "@/lib/wow";
 import { RaidTabs } from "./raid-tabs";
@@ -10,21 +10,21 @@ export default async function RaidLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id } = await params;
+  const { slug } = await params;
+  const raid = await getRaid(slug);
+  const { id } = raid;
   const { supabase } = await requireViewer();
 
   const count = (table: "signups" | "comp_slots" | "attendance") =>
     supabase.from(table).select("raid_id", { count: "exact", head: true }).eq("raid_id", id);
 
-  const [{ data: raid }, { count: accepted }, { count: placed }, { count: recorded }] = await Promise.all([
-    supabase.from("raids").select("id, title, instance, size, starts_at, notes").eq("id", id).maybeSingle(),
+  const [{ count: accepted }, { count: placed }, { count: recorded }] = await Promise.all([
     count("signups").eq("status", "accepted"),
     count("comp_slots"),
     count("attendance"),
   ]);
-  if (!raid) notFound();
 
   const started = hasStarted(raid.starts_at);
 
@@ -41,7 +41,7 @@ export default async function RaidLayout({
         {raid.notes && <p className="text-sm opacity-70">{raid.notes}</p>}
       </section>
       <RaidTabs
-        raidId={raid.id}
+        raidSlug={raid.slug}
         tabs={[
           { segment: "", label: "Sign-ups", meta: `${accepted ?? 0}/${raid.size}` },
           { segment: "comp", label: "Composition", meta: `${placed ?? 0}/${raid.size}` },

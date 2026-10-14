@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { getRaid } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import { primaryRole, requirementsOf, type RaidDuty, type Role, type SignupStatus } from "@/lib/wow";
 import { CompBoard, type BoardCharacter } from "./comp-board";
@@ -12,16 +12,11 @@ type CharacterJoin = {
   profiles: { display_name: string } | null;
 };
 
-export default async function CompPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function CompPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const raid = await getRaid(slug);
+  const { id } = raid;
   const { supabase, isOfficer } = await requireViewer();
-
-  const { data: raid } = await supabase
-    .from("raids")
-    .select("id, instance, size, starts_at")
-    .eq("id", id)
-    .maybeSingle();
-  if (!raid) notFound();
 
   // Other raids within 6 hours, to flag players already placed in a parallel split.
   const start = new Date(raid.starts_at).getTime();

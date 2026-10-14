@@ -12,7 +12,7 @@ export const getViewer = cache(async () => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, display_name, avatar_url, is_officer, is_member")
+    .select("id, slug, display_name, avatar_url, is_officer, is_member")
     .eq("id", user.id)
     .single();
 

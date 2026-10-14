@@ -12,7 +12,7 @@ type CharacterRow = {
   off_spec_ids: string[];
   is_main: boolean;
   owner_id: string;
-  profiles: { display_name: string } | null;
+  profiles: { slug: string; display_name: string } | null;
 };
 
 export async function Roster({ supabase }: { supabase: SupabaseClient }) {
@@ -21,7 +21,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
     supabase.from("specs").select("id, class_id, name, roles").order("name"),
     supabase
       .from("characters")
-      .select("id, name, class_id, main_spec_id, off_spec_ids, is_main, owner_id, profiles(display_name)")
+      .select("id, name, class_id, main_spec_id, off_spec_ids, is_main, owner_id, profiles(slug, display_name)")
       .order("name")
       .overrideTypes<CharacterRow[], { merge: false }>(),
   ]);
@@ -91,7 +91,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
                       <li key={c.id} className="flex items-center gap-2 px-4 py-2">
                         <SpecIcon specId={c.main_spec_id} name={specById.get(c.main_spec_id)?.name ?? ""} />
                         <Link
-                          href={playerHref(c.owner_id, c.id)}
+                          href={playerHref(c.profiles?.slug ?? "", c.name)}
                           className="font-medium hover:underline"
                           style={{ color: cls.color }}
                         >
