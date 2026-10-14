@@ -17,6 +17,9 @@ export const ROLE_NAMES: Record<Role, string> = { tank: "Tank", healer: "Healer"
 
 export const ROLE_SHORT: Record<Role, string> = { tank: "T", healer: "H", dps: "D" };
 
+// Raid sizes; 5 is for dungeons standing in for raids while testing (Ragefire Chasm).
+export const INSTANCE_SIZES = [5, 10, 20, 40];
+
 // A raid instance and the minimum number of players per role it needs (table "instances").
 export type Instance = { name: string; size: number; tanks: number; healers: number; dps: number };
 
