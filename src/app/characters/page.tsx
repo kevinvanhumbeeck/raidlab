@@ -1,7 +1,5 @@
-import { ConfirmButton } from "@/components/confirm-button";
 import { CharacterSpecs } from "@/components/spec-icon";
 import { requireViewer } from "@/lib/viewer";
-import { deleteCharacter } from "./actions";
 import { CharacterForm } from "./character-form";
 
 export default async function CharactersPage() {
@@ -43,17 +41,8 @@ export default async function CharactersPage() {
                     <span className="ml-auto text-sm text-accent group-open:hidden">Edit</span>
                     <span className="ml-auto hidden text-sm opacity-70 group-open:inline">Close</span>
                   </summary>
-                  <div className="mt-3 space-y-3">
+                  <div className="mt-3">
                     <CharacterForm classes={classes ?? []} specs={specs ?? []} character={ch} />
-                    <form action={deleteCharacter}>
-                      <input type="hidden" name="id" value={ch.id} />
-                      <ConfirmButton
-                        message={`Delete ${ch.name}? This also removes their sign-ups and attendance.`}
-                        className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300"
-                      >
-                        Delete {ch.name}
-                      </ConfirmButton>
-                    </form>
                   </div>
                 </details>
               </li>

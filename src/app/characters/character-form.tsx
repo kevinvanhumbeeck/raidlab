@@ -1,8 +1,9 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { ConfirmButton } from "@/components/confirm-button";
 import { SpecPicker } from "@/components/spec-picker";
-import { saveCharacter, type CharacterFormState } from "./actions";
+import { deleteCharacter, saveCharacter, type CharacterFormState } from "./actions";
 
 type ClassOption = { id: string; name: string; color: string };
 type SpecOption = { id: string; class_id: string; name: string };
@@ -85,13 +86,22 @@ export function CharacterForm({
         Main character
       </label>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           disabled={pending}
           className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover disabled:opacity-60"
         >
           {character ? "Save changes" : "Add character"}
         </button>
+        {character && (
+          <ConfirmButton
+            formAction={deleteCharacter}
+            message={`Delete ${character.name}? This also removes their sign-ups and attendance.`}
+            className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300"
+          >
+            Delete {character.name}
+          </ConfirmButton>
+        )}
         {state.error && <span className="text-sm text-red-400">{state.error}</span>}
         {!state.error && state.saved > 0 && <span className="text-sm text-emerald-400">Saved.</span>}
       </div>
