@@ -24,7 +24,8 @@ export async function setMember(profileId: string, value: boolean) {
 // Form fields: name, size, tanks, healers, dps, reserves.
 function readInstance(formData: FormData) {
   const num = (key: string) => {
-    const n = Number(formData.get(key));
+    const value = formData.get(key);
+    const n = value === null || value === "" ? NaN : Number(value);
     if (!Number.isInteger(n) || n < 0) throw new Error(`Invalid ${key}`);
     return n;
   };
