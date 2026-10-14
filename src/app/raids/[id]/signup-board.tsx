@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
+import { useCallback, useOptimistic, useRef, useState, useTransition } from "react";
 import { RoleCount } from "@/components/role-count";
 import { SpecIcon } from "@/components/spec-icon";
+import { useDismiss } from "@/lib/use-dismiss";
 import {
   ROLES,
   ROLE_LABELS,
@@ -187,18 +188,8 @@ function StatusMenu({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent | KeyboardEvent) => {
-      if (e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("keydown", close);
-    };
-  }, [open]);
+  const close = useCallback(() => setOpen(false), []);
+  useDismiss(ref, open, close);
 
   function pick(status: SignupStatus | null) {
     setOpen(false);
