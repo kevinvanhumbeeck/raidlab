@@ -16,7 +16,12 @@ export type ReserveExportRow = {
 const unix = (iso: string) => Math.floor(new Date(iso).getTime() / 1000);
 
 // base64(zlib(JSON)), the "Gargul export" string softres.it produces.
-export function gargulExport(raid: { slug: string; starts_at: string }, rows: ReserveExportRow[], url: string) {
+export function gargulExport(
+  raid: { slug: string; starts_at: string },
+  rows: ReserveExportRow[],
+  hardReserves: number[],
+  url: string,
+) {
   const players = new Map<
     string,
     { name: string; class: string; note: string; plusOnes: number; items: { id: number }[] }
@@ -45,7 +50,8 @@ export function gargulExport(raid: { slug: string; starts_at: string }, rows: Re
       url,
     },
     softreserves: [...players.values()],
-    hardreserves: [],
+    // Gargul runs tostring() on "for" and "note", so missing values would import as "nil".
+    hardreserves: hardReserves.map((id) => ({ id, for: "", note: "" })),
   };
   return deflateSync(Buffer.from(JSON.stringify(data))).toString("base64");
 }
