@@ -70,6 +70,11 @@
   --font-heading: var(--font-zen-dots);
 }
 
+/* Always reserve the scrollbar's width, so the centred nav doesn't shift between short and long pages. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
