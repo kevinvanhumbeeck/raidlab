@@ -30,9 +30,16 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
   const mains = all.filter((c) => c.is_main);
   const specById = new Map(specs?.map((s) => [s.id, s]));
 
-  const mainCount = (specId: string) => mains.filter((c) => c.main_spec_id === specId).length;
-  const offCount = (specId: string) => all.filter((c) => c.off_spec_ids.includes(specId)).length;
-  const altCount = (specId: string) => all.filter((c) => !c.is_main && c.main_spec_id === specId).length;
+  // Who can play a spec, split by main/alt character and main/off-spec. A character's off-specs
+  // never include its main spec, so each character counts once per spec.
+  const coverage = (specId: string) => {
+    const count = (isMain: boolean, onMainSpec: boolean) =>
+      all.filter(
+        (c) => c.is_main === isMain && (onMainSpec ? c.main_spec_id === specId : c.off_spec_ids.includes(specId)),
+      ).length;
+    return { main: count(true, true), mainOff: count(true, false), alt: count(false, true), altOff: count(false, false) };
+  };
+  const mainCount = (specId: string) => coverage(specId).main;
 
   const roleCount = (role: Role) => mains.filter((c) => primaryRole(specById.get(c.main_spec_id)) === role).length;
   const missing = (specs ?? []).filter((s) => mainCount(s.id) === 0);
@@ -59,38 +66,6 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
             ))}
           </p>
         )}
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Spec coverage</h2>
-        <p className="text-xs text-muted">Mains · alts · players with it as off-spec</p>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {classes?.map((cls) => (
-            <Card key={cls.id}>
-              <CardHeader title={cls.name} style={{ color: cls.color }} />
-              <ul className="divide-y divide-border text-sm">
-                {specs
-                  ?.filter((s) => s.class_id === cls.id)
-                  .map((s) => {
-                    const m = mainCount(s.id);
-                    return (
-                      <li key={s.id} className="flex items-center gap-2 px-4 py-2">
-                        <SpecIcon specId={s.id} name={s.name} />
-                        <span className={m === 0 ? "text-amber-400" : ""}>{s.name}</span>
-                        <span className="ml-auto tabular-nums">
-                          <strong className={m === 0 ? "text-amber-400" : ""}>{m}</strong>
-                          <span className="text-muted">
-                            {" "}
-                            · {altCount(s.id)} · {offCount(s.id)}
-                          </span>
-                        </span>
-                      </li>
-                    );
-                  })}
-              </ul>
-            </Card>
-          ))}
-        </div>
       </section>
 
       <section className="space-y-3">
@@ -134,6 +109,39 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
             })}
           </div>
         )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Spec coverage</h2>
+        <p className="text-xs text-muted">Mains on their main spec · everyone else who can play it (hover for details)</p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {classes?.map((cls) => (
+            <Card key={cls.id}>
+              <CardHeader title={cls.name} style={{ color: cls.color }} />
+              <ul className="divide-y divide-border text-sm">
+                {specs
+                  ?.filter((s) => s.class_id === cls.id)
+                  .map((s) => {
+                    const c = coverage(s.id);
+                    const m = c.main;
+                    return (
+                      <li key={s.id} className="flex items-center gap-2 px-4 py-2">
+                        <SpecIcon specId={s.id} name={s.name} />
+                        <span className={m === 0 ? "text-amber-400" : ""}>{s.name}</span>
+                        <span
+                          className="ml-auto cursor-help tabular-nums"
+                          title={`Main characters: ${c.main} main spec, ${c.mainOff} off-spec\nAlts: ${c.alt} main spec, ${c.altOff} off-spec`}
+                        >
+                          <strong className={m === 0 ? "text-amber-400" : ""}>{m}</strong>
+                          <span className="text-muted"> · {c.mainOff + c.alt + c.altOff}</span>
+                        </span>
+                      </li>
+                    );
+                  })}
+              </ul>
+            </Card>
+          ))}
+        </div>
       </section>
     </div>
   );
