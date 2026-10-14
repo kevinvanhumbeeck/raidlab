@@ -1,21 +1,19 @@
 "use client";
 
-import { useState } from "react";
 import { THEMES, THEME_COOKIE, type Theme } from "@/lib/theme";
 
-export function ThemePicker({ initial }: { initial: Theme }) {
-  const [theme, setTheme] = useState(initial);
+// Applies a theme right away and remembers it in a cookie so the server renders it next time.
+export function applyTheme(theme: Theme) {
+  document.documentElement.dataset.theme = theme;
+  document.cookie = `${THEME_COOKIE}=${theme}; path=/; max-age=31536000; samesite=lax`;
+}
 
-  function change(next: Theme) {
-    setTheme(next);
-    document.documentElement.dataset.theme = next;
-    document.cookie = `${THEME_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
-  }
-
+// Controlled: the nav owns the current theme, since its menus mount and unmount pickers.
+export function ThemePicker({ value, onChange }: { value: Theme; onChange: (theme: Theme) => void }) {
   return (
     <select
-      value={theme}
-      onChange={(e) => change(e.target.value as Theme)}
+      value={value}
+      onChange={(e) => onChange(e.target.value as Theme)}
       aria-label="Theme"
       className="rounded border border-border bg-background px-2 py-1 text-sm"
     >

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { signOut } from "@/app/auth/actions";
-import { ThemePicker } from "@/components/theme-picker";
+import { ThemePicker, applyTheme } from "@/components/theme-picker";
 import type { Theme } from "@/lib/theme";
 import { useDismiss } from "@/lib/use-dismiss";
 
@@ -25,7 +25,7 @@ export function SiteNav({
   brand,
   links,
   account,
-  theme,
+  theme: initialTheme,
   loginButton,
 }: {
   brand: React.ReactNode;
@@ -36,6 +36,12 @@ export function SiteNav({
 }) {
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+
+  const [theme, setTheme] = useState(initialTheme);
+  const changeTheme = (next: Theme) => {
+    setTheme(next);
+    applyTheme(next);
+  };
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -88,7 +94,7 @@ export function SiteNav({
                     {l.label}
                   </Link>
                 ))}
-                <ThemeRow theme={theme} />
+                <ThemeRow theme={theme} onChange={changeTheme} />
                 <div className="my-1 border-t border-border" />
                 <form action={signOut}>
                   <button role="menuitem" className={menuItem}>
@@ -100,7 +106,7 @@ export function SiteNav({
           </div>
         ) : (
           <>
-            <ThemePicker initial={theme} />
+            <ThemePicker value={theme} onChange={changeTheme} />
             {loginButton}
           </>
         )}
@@ -131,14 +137,14 @@ export function SiteNav({
                   <span className="font-heading text-sm">{account.name}</span>
                 </div>
                 {account.links.map((l) => mainLink(l, closeMobile))}
-                <ThemeRow theme={theme} />
+                <ThemeRow theme={theme} onChange={changeTheme} />
                 <form action={signOut}>
                   <button className={linkClass}>Sign out</button>
                 </form>
               </>
             ) : (
               <>
-                <ThemeRow theme={theme} />
+                <ThemeRow theme={theme} onChange={changeTheme} />
                 <div>{loginButton}</div>
               </>
             )}
@@ -149,11 +155,11 @@ export function SiteNav({
   );
 }
 
-function ThemeRow({ theme }: { theme: Theme }) {
+function ThemeRow({ theme, onChange }: { theme: Theme; onChange: (theme: Theme) => void }) {
   return (
     <label className="flex items-center justify-between gap-3 px-3 py-1.5 text-sm max-sm:px-0">
       <span className="opacity-80">Theme</span>
-      <ThemePicker initial={theme} />
+      <ThemePicker value={theme} onChange={onChange} />
     </label>
   );
 }
