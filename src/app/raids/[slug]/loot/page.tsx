@@ -119,7 +119,7 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
 
       {isOfficer && (
         <section className="space-y-2 rounded-xl border border-border bg-panel p-4 text-sm">
-          <h2 className="font-semibold">Export for the loot master</h2>
+          <h2 className="font-sans font-semibold">Export for the loot master</h2>
           <p className="opacity-70">
             {exportRows.length} reserves. In game, type <code>/gl sr</code> (Gargul), paste the copied string and
             import. The CSV is a softres.it-style fallback for other loot addons.
