@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { Cinzel, Exo_2, Geist_Mono, Zen_Dots } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { DiscordLoginButton } from "@/components/discord-login-button";
 import { SiteNav } from "@/components/site-nav";
 import { THEME_COOKIE, parseTheme } from "@/lib/theme";
@@ -87,6 +89,8 @@ export default async function RootLayout({
           />
         </header>
         <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
