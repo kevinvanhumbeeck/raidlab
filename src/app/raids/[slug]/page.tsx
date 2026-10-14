@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { ConfirmButton } from "@/components/confirm-button";
+import { getRaid } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
-import { SIGNUP_STATUSES, STATUS_LABELS, primaryRole, requirementsOf, type SignupStatus } from "@/lib/wow";
+import { SIGNUP_STATUSES, STATUS_LABELS, isLocked, primaryRole, requirementsOf, type SignupStatus } from "@/lib/wow";
 import { deleteRaid, officerSignUp, signUp, withdraw } from "../actions";
 import { SignupBoard, type SignupRow as SignupRowView } from "./signup-board";
 import { SignupForm } from "./signup-form";
@@ -17,27 +18,27 @@ type SignupRow = {
     class_id: string;
     main_spec_id: string;
     owner_id: string;
-    profiles: { display_name: string } | null;
+    profiles: { slug: string; display_name: string } | null;
   } | null;
 };
 
-export default async function RaidPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function RaidPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const raid = await getRaid(slug);
+  const { id } = raid;
   const { supabase, user, isOfficer } = await requireViewer();
 
   const [
-    { data: raid },
     { data: signups },
     { data: classes },
     { data: specs },
     { data: myCharacters },
     { data: slots },
   ] = await Promise.all([
-    supabase.from("raids").select("id, instance, size").eq("id", id).maybeSingle(),
     supabase
       .from("signups")
       .select(
-        "character_id, status, spec_id, note, characters(name, class_id, main_spec_id, owner_id, profiles(display_name))",
+        "character_id, status, spec_id, note, characters(name, class_id, main_spec_id, owner_id, profiles(slug, display_name))",
       )
       .eq("raid_id", id)
       .overrideTypes<SignupRow[], { merge: false }>(),
@@ -50,7 +51,6 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
       .order("is_main", { ascending: false }),
     supabase.from("comp_slots").select("group_no, character_id").eq("raid_id", id),
   ]);
-  if (!raid) notFound();
 
   const [{ data: allCharacters }, { data: instance }] = await Promise.all([
     isOfficer
@@ -69,7 +69,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
     const spec = specById.get(specId);
     const row: SignupRowView = {
       characterId: s.character_id,
-      playerId: ch.owner_id,
+      playerSlug: ch.profiles?.slug ?? "",
       status: s.status,
       note: s.note,
       name: ch.name,
@@ -103,24 +103,34 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
         <h2 className="text-lg font-semibold">Your sign-up</h2>
         {formCharacters.length ? (
           <>
-            <SignupForm
-              action={signUp.bind(null, raid.id)}
-              characters={formCharacters}
-              current={
-                mine && mySignup
-                  ? {
-                      characterId: mine.characterId,
-                      specId: mySignup.spec_id,
-                      status: mine.status,
-                      note: mine.note,
-                    }
-                  : undefined
-              }
-            />
-            {mine && (
-              <form action={withdraw.bind(null, raid.id, mine.characterId)}>
-                <button className="text-sm text-red-400 hover:text-red-300">Remove my sign-up</button>
-              </form>
+            {isLocked(raid) && !isOfficer ? (
+              <p className="rounded-xl border border-border bg-panel p-4 text-sm">
+                Sign-ups are locked.{" "}
+                {mine ? (
+                  <>
+                    You&apos;re signed up as <strong>{STATUS_LABELS[mine.status]}</strong> on {mine.name}.
+                  </>
+                ) : (
+                  "You didn't sign up for this raid."
+                )}{" "}
+                <span className="opacity-70">Ask an officer if something changed.</span>
+              </p>
+            ) : (
+              <SignupForm
+                action={signUp.bind(null, raid.id)}
+                withdrawAction={mine ? withdraw.bind(null, raid.id, mine.characterId) : undefined}
+                characters={formCharacters}
+                current={
+                  mine && mySignup
+                    ? {
+                        characterId: mine.characterId,
+                        specId: mySignup.spec_id,
+                        status: mine.status,
+                        note: mine.note,
+                      }
+                    : undefined
+                }
+              />
             )}
             {mySlot ? (
               <p className="text-sm text-emerald-400">
@@ -128,7 +138,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
                 {mySlot.character_id !== mine?.characterId &&
                   ` on ${myCharacters?.find((c) => c.id === mySlot.character_id)?.name}`}
                 .{" "}
-                <Link href={`/raids/${raid.id}/comp`} className="underline">
+                <Link href={`/raids/${raid.slug}/comp`} className="underline">
                   See the composition
                 </Link>
               </p>
@@ -163,7 +173,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
           <h3 className="text-sm font-medium opacity-80">Sign up a player</h3>
           <form
             action={officerSignUp.bind(null, raid.id)}
-            className="flex flex-wrap items-end gap-3 rounded border border-border bg-panel p-4"
+            className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-panel p-4"
           >
             <label className="space-y-1">
               <span className="block text-sm">Character</span>
@@ -196,7 +206,12 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
             </button>
           </form>
           <form action={deleteRaid.bind(null, raid.id)}>
-            <button className="text-sm text-red-400 hover:text-red-300">Delete raid</button>
+            <ConfirmButton
+              message="Delete this raid? This also removes its sign-ups, composition and attendance."
+              className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300"
+            >
+              Delete raid
+            </ConfirmButton>
           </form>
         </section>
       )}

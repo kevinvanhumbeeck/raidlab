@@ -5,7 +5,7 @@ import { useSelectedLayoutSegment } from "next/navigation";
 
 export type RaidTab = { segment: string; label: string; meta: string; warn?: boolean };
 
-export function RaidTabs({ raidId, tabs }: { raidId: string; tabs: RaidTab[] }) {
+export function RaidTabs({ raidSlug, tabs }: { raidSlug: string; tabs: RaidTab[] }) {
   const active = useSelectedLayoutSegment() ?? "";
 
   return (
@@ -18,7 +18,7 @@ export function RaidTabs({ raidId, tabs }: { raidId: string; tabs: RaidTab[] }) 
           return (
             <li key={tab.segment}>
               <Link
-                href={tab.segment ? `/raids/${raidId}/${tab.segment}` : `/raids/${raidId}`}
+                href={tab.segment ? `/raids/${raidSlug}/${tab.segment}` : `/raids/${raidSlug}`}
                 aria-current={selected ? "page" : undefined}
                 className={`flex items-baseline gap-2 whitespace-nowrap border-b-2 px-3 py-2 text-sm ${
                   selected ? "border-accent font-medium" : "border-transparent opacity-70 hover:opacity-100"

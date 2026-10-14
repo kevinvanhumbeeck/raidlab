@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { getRaid } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import {
   ATTENDANCE_LABELS,
@@ -15,7 +15,8 @@ const CHECKED: Record<AttendanceStatus, string> = {
   present: "peer-checked:bg-emerald-500",
   late: "peer-checked:bg-amber-400",
   benched: "peer-checked:bg-sky-500",
-  absent: "peer-checked:bg-red-500",
+  absent: "peer-checked:bg-zinc-400",
+  no_show: "peer-checked:bg-red-500",
 };
 
 type CharacterJoin = {
@@ -23,41 +24,41 @@ type CharacterJoin = {
   name: string;
   class_id: string;
   owner_id: string;
-  profiles: { display_name: string } | null;
+  profiles: { slug: string; display_name: string } | null;
 };
 
 export default async function RaidAttendancePage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
   searchParams: Promise<{ saved?: string }>;
 }) {
-  const { id } = await params;
+  const { slug } = await params;
+  const raid = await getRaid(slug);
+  const { id } = raid;
   const { saved } = await searchParams;
   const { supabase, isOfficer } = await requireViewer();
 
-  const [{ data: raid }, { data: signups }, { data: slots }, { data: attendance }, { data: classes }] =
+  const [{ data: signups }, { data: slots }, { data: attendance }, { data: classes }] =
     await Promise.all([
-      supabase.from("raids").select("id").eq("id", id).maybeSingle(),
       supabase
         .from("signups")
-        .select("status, characters(id, name, class_id, owner_id, profiles(display_name))")
+        .select("status, characters(id, name, class_id, owner_id, profiles(slug, display_name))")
         .eq("raid_id", id)
         .overrideTypes<{ status: SignupStatus; characters: CharacterJoin | null }[], { merge: false }>(),
       supabase
         .from("comp_slots")
-        .select("characters(id, name, class_id, owner_id, profiles(display_name))")
+        .select("characters(id, name, class_id, owner_id, profiles(slug, display_name))")
         .eq("raid_id", id)
         .overrideTypes<{ characters: CharacterJoin | null }[], { merge: false }>(),
       supabase
         .from("attendance")
-        .select("status, characters(id, name, class_id, owner_id, profiles(display_name))")
+        .select("status, characters(id, name, class_id, owner_id, profiles(slug, display_name))")
         .eq("raid_id", id)
         .overrideTypes<{ status: AttendanceStatus; characters: CharacterJoin | null }[], { merge: false }>(),
       supabase.from("classes").select("id, color"),
     ]);
-  if (!raid) notFound();
 
   const color = new Map(classes?.map((c) => [c.id, c.color]));
   const recorded = (attendance?.length ?? 0) > 0;
@@ -94,12 +95,12 @@ export default async function RaidAttendancePage({
       {sorted.length === 0 ? (
         <p className="opacity-70">Nobody signed up or was placed in this raid.</p>
       ) : (
-        <form action={saveAttendance.bind(null, raid.id)} className="space-y-4">
-          <ul className="divide-y divide-border rounded border border-border bg-panel">
+        <form action={saveAttendance.bind(null, raid.id, raid.slug)} className="space-y-4">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
             {sorted.map(({ character, status }) => (
               <li key={character.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2">
                 <Link
-                  href={playerHref(character.owner_id, character.id)}
+                  href={playerHref(character.profiles?.slug ?? "", character.name)}
                   className="w-40 font-medium hover:underline"
                   style={{ color: color.get(character.class_id) }}
                 >

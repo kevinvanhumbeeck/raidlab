@@ -186,7 +186,7 @@ export function CompBoard({
       <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
         <div className="grid gap-4 sm:grid-cols-2">
           {Array.from({ length: groups }, (_, g) => (
-            <div key={g} className="rounded border border-border bg-panel p-3">
+            <div key={g} className="rounded-xl border border-border bg-panel p-3">
               <h3 className="mb-2 text-sm font-semibold opacity-80">Group {g + 1}</h3>
               <div className="space-y-1.5">
                 {Array.from({ length: 5 }, (_, p) => {
@@ -271,7 +271,7 @@ function Summary({
   }
 
   return (
-    <section className="space-y-2 rounded border border-border bg-panel p-3">
+    <section className="space-y-2 rounded-xl border border-border bg-panel p-3">
       <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm">
         <span className="text-base font-semibold">
           {placed.length}/{size} placed
@@ -362,6 +362,11 @@ function Card({
         {c.name}
       </span>
       <span className="ml-auto flex items-center gap-1.5">
+        {role && c.status !== "accepted" && (
+          <span className="text-xs text-amber-400">
+            {c.status ? STATUS_LABELS[c.status].toLowerCase() : "not signed up"}
+          </span>
+        )}
         {c.elsewhere && (
           <span className="text-xs text-amber-400" title={`Also in ${c.elsewhere}`}>
             ⚠
@@ -402,7 +407,7 @@ function Duties({
   const sorted = [...placed].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <section className="grid gap-3 rounded border border-border bg-panel p-3 sm:grid-cols-4">
+    <section className="grid gap-3 rounded-xl border border-border bg-panel p-3 sm:grid-cols-4">
       {RAID_DUTIES.map((duty) => (
         <label key={duty} className="space-y-1 text-sm">
           <span className="opacity-80">{DUTY_LABELS[duty]}</span>

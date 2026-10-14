@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { CharacterSpecs, SpecIcon } from "@/components/spec-icon";
 import { attendanceSummary, betterStatus, type RecordedRaid } from "@/lib/attendance";
+import { getPlayer } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import {
   ATTENDANCE_COLORS,
@@ -25,26 +25,23 @@ import {
 
 const RECENT = 20;
 
-type RaidInfo = { id: string; title: string; instance: string; starts_at: string };
+type RaidInfo = { id: string; slug: string; title: string; instance: string; starts_at: string };
 
 export default async function PlayerPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
   searchParams: Promise<{ character?: string }>;
 }) {
-  const { id } = await params;
+  const { slug } = await params;
+  const profile = await getPlayer(slug);
+  const { id } = profile;
   const { character: highlighted } = await searchParams;
   const { supabase, user } = await requireViewer();
 
-  const [{ data: profile }, { data: characters }, { data: classes }, { data: specs }, { data: recorded }] =
+  const [{ data: characters }, { data: classes }, { data: specs }, { data: recorded }] =
     await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, display_name, avatar_url, is_officer, created_at")
-        .eq("id", id)
-        .maybeSingle(),
       supabase
         .from("characters")
         .select("id, name, class_id, main_spec_id, off_spec_ids, is_main")
@@ -59,7 +56,6 @@ export default async function PlayerPage({
         .select("raid_id, raids(title, starts_at)")
         .overrideTypes<{ raid_id: string; raids: { title: string; starts_at: string } | null }[], { merge: false }>(),
     ]);
-  if (!profile) notFound();
 
   const characterIds = (characters ?? []).map((c) => c.id);
   const [{ data: signups }, { data: slots }, { data: attendance }, { data: duties }] = await Promise.all([
@@ -77,7 +73,7 @@ export default async function PlayerPage({
   ];
   const { data: raids } = await supabase
     .from("raids")
-    .select("id, title, instance, starts_at")
+    .select("id, slug, title, instance, starts_at")
     .in("id", raidIds)
     .order("starts_at", { ascending: false })
     .overrideTypes<RaidInfo[], { merge: false }>();
@@ -175,7 +171,7 @@ export default async function PlayerPage({
       </section>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <section className="space-y-3 rounded border border-border bg-panel p-4">
+        <section className="space-y-3 rounded-xl border border-border bg-panel p-4">
           <h2 className="font-semibold">Characters</h2>
           {characters?.length ? (
             <ul className="space-y-1.5 text-sm">
@@ -185,7 +181,7 @@ export default async function PlayerPage({
                   <li
                     key={c.id}
                     className={`flex items-center gap-2 rounded px-1.5 py-1 ${
-                      c.id === highlighted ? "bg-accent/15 ring-1 ring-accent/60" : ""
+                      c.name.toLowerCase() === highlighted?.toLowerCase() ? "bg-accent/15 ring-1 ring-accent/60" : ""
                     }`}
                   >
                     <CharacterSpecs mainSpecId={c.main_spec_id} offSpecIds={c.off_spec_ids} specName={specName} />
@@ -205,7 +201,7 @@ export default async function PlayerPage({
           )}
         </section>
 
-        <section className="space-y-3 rounded border border-border bg-panel p-4">
+        <section className="space-y-3 rounded-xl border border-border bg-panel p-4">
           <h2 className="font-semibold">Attendance</h2>
           {summary.total ? (
             <>
@@ -252,11 +248,11 @@ export default async function PlayerPage({
       {upcoming.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Upcoming</h2>
-          <ul className="divide-y divide-border rounded border border-border bg-panel">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
             {upcoming.map((h) => (
               <li key={h.raid.id}>
                 <Link
-                  href={`/raids/${h.raid.id}`}
+                  href={`/raids/${h.raid.slug}`}
                   className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 text-sm hover:bg-white/5"
                 >
                   <span className="font-medium">{h.raid.title}</span>
@@ -279,7 +275,7 @@ export default async function PlayerPage({
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Raid history</h2>
         {past.length ? (
-          <div className="overflow-x-auto rounded border border-border bg-panel">
+          <div className="overflow-x-auto rounded-xl border border-border bg-panel">
             <table className="w-full text-sm">
               <thead className="text-left text-xs opacity-70">
                 <tr className="border-b border-border">
@@ -295,7 +291,7 @@ export default async function PlayerPage({
                 {past.map((h) => (
                   <tr key={h.raid.id}>
                     <td className="px-3 py-2">
-                      <Link href={`/raids/${h.raid.id}/attendance`} className="font-medium hover:underline">
+                      <Link href={`/raids/${h.raid.slug}/attendance`} className="font-medium hover:underline">
                         {h.raid.title}
                       </Link>
                       <div className="text-xs opacity-60">{formatRaidTime(h.raid.starts_at)}</div>

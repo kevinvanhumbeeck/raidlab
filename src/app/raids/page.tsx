@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireViewer } from "@/lib/viewer";
-import { formatRaidTime, upcomingCutoff } from "@/lib/wow";
+import { formatRaidTime, isLocked, upcomingCutoff } from "@/lib/wow";
 import { NewRaidForm } from "./new-raid-form";
 
 export default async function RaidsPage() {
@@ -9,7 +9,7 @@ export default async function RaidsPage() {
   const [{ data: raids }, { data: mySignups }, { data: pastRaids }, { data: instances }] = await Promise.all([
     supabase
       .from("raids")
-      .select("id, title, instance, size, starts_at, signups(status)")
+      .select("id, slug, title, instance, size, starts_at, locked_at, signups(status)")
       .gte("starts_at", upcomingCutoff())
       .order("starts_at"),
     supabase
@@ -18,7 +18,7 @@ export default async function RaidsPage() {
       .eq("characters.owner_id", user.id),
     supabase
       .from("raids")
-      .select("id, title, instance, starts_at, attendance(count)")
+      .select("id, slug, title, instance, starts_at, attendance(count)")
       .lt("starts_at", upcomingCutoff())
       .order("starts_at", { ascending: false })
       .limit(15),
@@ -32,18 +32,19 @@ export default async function RaidsPage() {
       <section className="space-y-3">
         <h1 className="text-2xl font-semibold">Upcoming raids</h1>
         {raids?.length ? (
-          <ul className="divide-y divide-border rounded border border-border bg-panel">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
             {raids.map((raid) => {
               const accepted = raid.signups.filter((s) => s.status === "accepted").length;
               const mine = myStatus.get(raid.id);
               return (
                 <li key={raid.id}>
-                  <Link href={`/raids/${raid.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-white/5">
+                  <Link href={`/raids/${raid.slug}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-white/5">
                     <span className="font-medium">{raid.title}</span>
                     <span className="text-sm opacity-70">
                       {raid.instance} · {raid.size}-man
                     </span>
                     <span className="text-sm opacity-70">{formatRaidTime(raid.starts_at)}</span>
+                    {isLocked(raid) && <span className="text-xs text-red-400">🔒 Locked</span>}
                     <span className="ml-auto text-sm">
                       {accepted}/{raid.size} accepted
                     </span>
@@ -63,13 +64,13 @@ export default async function RaidsPage() {
       {pastRaids && pastRaids.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Past raids</h2>
-          <ul className="divide-y divide-border rounded border border-border bg-panel">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
             {pastRaids.map((raid) => {
               const recorded = (raid.attendance[0]?.count ?? 0) > 0;
               return (
                 <li key={raid.id}>
                   <Link
-                    href={`/raids/${raid.id}/attendance`}
+                    href={`/raids/${raid.slug}/attendance`}
                     className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-white/5"
                   >
                     <span className="font-medium">{raid.title}</span>

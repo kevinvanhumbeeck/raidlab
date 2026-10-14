@@ -6,6 +6,7 @@ import { requireViewer } from "@/lib/viewer";
 export type CharacterFormState = { error: string | null; saved: number };
 
 // Adds a character, or updates it when the form has an id. Class can't change after creation.
+// A player has one main: marking a character as main turns their other characters into alts.
 export async function saveCharacter(prev: CharacterFormState, formData: FormData): Promise<CharacterFormState> {
   const { supabase, user } = await requireViewer();
 
@@ -37,12 +38,25 @@ export async function saveCharacter(prev: CharacterFormState, formData: FormData
     is_main: formData.get("is_main") === "on",
   };
 
-  const { error } = id
-    ? await supabase.from("characters").update(fields).eq("id", id)
-    : await supabase.from("characters").insert({ ...fields, owner_id: user.id, class_id: classId });
+  const { data: saved, error } = await (id
+    ? supabase.from("characters").update(fields).eq("id", id)
+    : supabase.from("characters").insert({ ...fields, owner_id: user.id, class_id: classId })
+  )
+    .select("id")
+    .single();
 
   if (error?.code === "23505") return { ...prev, error: `A character named ${name} is already registered.` };
   if (error) return { ...prev, error: error.message };
+
+  if (fields.is_main) {
+    const { error: demoteError } = await supabase
+      .from("characters")
+      .update({ is_main: false })
+      .eq("owner_id", user.id)
+      .eq("is_main", true)
+      .neq("id", saved.id);
+    if (demoteError) return { ...prev, error: demoteError.message };
+  }
 
   revalidatePath("/characters");
   revalidatePath("/");

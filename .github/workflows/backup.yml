@@ -1,0 +1,34 @@
+name: backup
+
+# Nightly encrypted data dump, kept as a workflow artifact for 90 days. See "Backups" in the README.
+# Scheduled runs only start once this file is on the default branch; run it by hand from the Actions tab.
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # pg_dump must be at least the server's version (Postgres 17); the runner ships an older one.
+      - name: Install pg_dump 17
+        run: |
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y postgresql-client-17
+
+      - run: scripts/backup.sh backups
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_number }}
+          path: backups/
+          retention-days: 90
+          if-no-files-found: error

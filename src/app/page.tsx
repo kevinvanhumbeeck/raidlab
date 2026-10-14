@@ -17,10 +17,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
   if (!user) {
     return (
       <div className="flex flex-col items-center gap-5 py-6 text-center">
-        <Image src="/crest-512.webp" alt="Breakfast at Booty Bay crest" width={288} height={288} priority />
+        <Image src="/raidlab.svg" alt="RaidLab logo" width={184} height={231} priority />
         <div className="space-y-2">
-          <h1 className="font-display text-3xl font-bold tracking-wide text-accent sm:text-4xl">
-            Breakfast at Booty Bay
+          <h1 className="font-display text-3xl font-bold tracking-wide sm:text-4xl">
+            Raid<span className="text-accent">Lab</span>
           </h1>
           <p className="opacity-80">Raid roster, sign-ups and compositions for our WoW Forever raids.</p>
         </div>
