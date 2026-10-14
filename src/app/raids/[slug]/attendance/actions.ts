@@ -6,7 +6,7 @@ import { requireViewer } from "@/lib/viewer";
 import { ATTENDANCE_STATUSES, type AttendanceStatus } from "@/lib/wow";
 
 // Form fields are named "status:<characterId>".
-export async function saveAttendance(raidId: string, formData: FormData) {
+export async function saveAttendance(raidId: string, raidSlug: string, formData: FormData) {
   const { supabase, isOfficer } = await requireViewer();
   if (!isOfficer) throw new Error("Only officers can record attendance");
 
@@ -22,7 +22,7 @@ export async function saveAttendance(raidId: string, formData: FormData) {
   const { error } = await supabase.from("attendance").upsert(rows);
   if (error) throw error;
 
-  revalidatePath("/raids/[id]", "layout");
+  revalidatePath("/raids/[slug]", "layout");
   revalidatePath("/attendance");
-  redirect(`/raids/${raidId}/attendance?saved=1`);
+  redirect(`/raids/${raidSlug}/attendance?saved=1`);
 }

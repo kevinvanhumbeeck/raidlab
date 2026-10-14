@@ -20,7 +20,7 @@ import { setSignupStatus, withdraw } from "../actions";
 
 export type SignupRow = {
   characterId: string;
-  playerId: string;
+  playerSlug: string;
   name: string;
   player: string | null;
   color: string;
@@ -157,7 +157,7 @@ function PlayerRow({
     >
       <SpecIcon specId={r.specId} name={r.specName} />
       <Link
-        href={playerHref(r.playerId, r.characterId)}
+        href={playerHref(r.playerSlug, r.name)}
         className="truncate font-medium hover:underline"
         style={{ color: r.color }}
         title={r.player ?? undefined}

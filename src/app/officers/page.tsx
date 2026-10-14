@@ -11,7 +11,7 @@ export default async function OfficersPage() {
   if (!isOfficer) redirect("/");
 
   const [{ data: profiles }, { data: characters }, { data: classes }, { data: instances }] = await Promise.all([
-    supabase.from("profiles").select("id, display_name, avatar_url, is_officer, is_member, created_at"),
+    supabase.from("profiles").select("id, slug, display_name, avatar_url, is_officer, is_member, created_at"),
     supabase.from("characters").select("id, owner_id, name, class_id, is_main").order("is_main", { ascending: false }),
     supabase.from("classes").select("id, color"),
     supabase.from("instances").select("name, size, tanks, healers, dps").order("sort"),
@@ -54,7 +54,7 @@ export default async function OfficersPage() {
               )}
               <div className="min-w-40">
                 <div className="font-medium">
-                  <Link href={playerHref(p.id)} className="hover:underline">
+                  <Link href={playerHref(p.slug)} className="hover:underline">
                     {p.display_name}
                   </Link>
                   {p.id === user.id && <span className="ml-2 text-xs opacity-60">you</span>}
@@ -65,7 +65,7 @@ export default async function OfficersPage() {
                       <span key={c.name}>
                         {i > 0 && ", "}
                         <Link
-                          href={playerHref(p.id, c.id)}
+                          href={playerHref(p.slug, c.name)}
                           className="hover:underline"
                           style={{ color: color.get(c.class_id) }}
                         >
