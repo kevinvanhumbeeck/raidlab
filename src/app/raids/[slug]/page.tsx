@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ConfirmButton } from "@/components/confirm-button";
 import { getRaid } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
-import { SIGNUP_STATUSES, STATUS_LABELS, primaryRole, requirementsOf, type SignupStatus } from "@/lib/wow";
+import { SIGNUP_STATUSES, STATUS_LABELS, isLocked, primaryRole, requirementsOf, type SignupStatus } from "@/lib/wow";
 import { deleteRaid, officerSignUp, signUp, withdraw } from "../actions";
 import { SignupBoard, type SignupRow as SignupRowView } from "./signup-board";
 import { SignupForm } from "./signup-form";
@@ -103,21 +103,35 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
         <h2 className="text-lg font-semibold">Your sign-up</h2>
         {formCharacters.length ? (
           <>
-            <SignupForm
-              action={signUp.bind(null, raid.id)}
-              withdrawAction={mine ? withdraw.bind(null, raid.id, mine.characterId) : undefined}
-              characters={formCharacters}
-              current={
-                mine && mySignup
-                  ? {
-                      characterId: mine.characterId,
-                      specId: mySignup.spec_id,
-                      status: mine.status,
-                      note: mine.note,
-                    }
-                  : undefined
-              }
-            />
+            {isLocked(raid) && !isOfficer ? (
+              <p className="rounded-xl border border-border bg-panel p-4 text-sm">
+                Sign-ups are locked.{" "}
+                {mine ? (
+                  <>
+                    You&apos;re signed up as <strong>{STATUS_LABELS[mine.status]}</strong> on {mine.name}.
+                  </>
+                ) : (
+                  "You didn't sign up for this raid."
+                )}{" "}
+                <span className="opacity-70">Ask an officer if something changed.</span>
+              </p>
+            ) : (
+              <SignupForm
+                action={signUp.bind(null, raid.id)}
+                withdrawAction={mine ? withdraw.bind(null, raid.id, mine.characterId) : undefined}
+                characters={formCharacters}
+                current={
+                  mine && mySignup
+                    ? {
+                        characterId: mine.characterId,
+                        specId: mySignup.spec_id,
+                        status: mine.status,
+                        note: mine.note,
+                      }
+                    : undefined
+                }
+              />
+            )}
             {mySlot ? (
               <p className="text-sm text-emerald-400">
                 You&apos;re in group {mySlot.group_no}
