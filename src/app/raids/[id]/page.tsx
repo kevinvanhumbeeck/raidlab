@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ConfirmButton } from "@/components/confirm-button";
 import { requireViewer } from "@/lib/viewer";
 import { SIGNUP_STATUSES, STATUS_LABELS, primaryRole, requirementsOf, type SignupStatus } from "@/lib/wow";
 import { deleteRaid, officerSignUp, signUp, withdraw } from "../actions";
@@ -105,6 +106,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
           <>
             <SignupForm
               action={signUp.bind(null, raid.id)}
+              withdrawAction={mine ? withdraw.bind(null, raid.id, mine.characterId) : undefined}
               characters={formCharacters}
               current={
                 mine && mySignup
@@ -117,11 +119,6 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
                   : undefined
               }
             />
-            {mine && (
-              <form action={withdraw.bind(null, raid.id, mine.characterId)}>
-                <button className="text-sm text-red-400 hover:text-red-300">Remove my sign-up</button>
-              </form>
-            )}
             {mySlot ? (
               <p className="text-sm text-emerald-400">
                 You&apos;re in group {mySlot.group_no}
@@ -163,7 +160,7 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
           <h3 className="text-sm font-medium opacity-80">Sign up a player</h3>
           <form
             action={officerSignUp.bind(null, raid.id)}
-            className="flex flex-wrap items-end gap-3 rounded border border-border bg-panel p-4"
+            className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-panel p-4"
           >
             <label className="space-y-1">
               <span className="block text-sm">Character</span>
@@ -196,7 +193,12 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
             </button>
           </form>
           <form action={deleteRaid.bind(null, raid.id)}>
-            <button className="text-sm text-red-400 hover:text-red-300">Delete raid</button>
+            <ConfirmButton
+              message="Delete this raid? This also removes its sign-ups, composition and attendance."
+              className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300"
+            >
+              Delete raid
+            </ConfirmButton>
           </form>
         </section>
       )}

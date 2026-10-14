@@ -32,7 +32,7 @@ export default async function RaidsPage() {
       <section className="space-y-3">
         <h1 className="text-2xl font-semibold">Upcoming raids</h1>
         {raids?.length ? (
-          <ul className="divide-y divide-border rounded border border-border bg-panel">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
             {raids.map((raid) => {
               const accepted = raid.signups.filter((s) => s.status === "accepted").length;
               const mine = myStatus.get(raid.id);
@@ -63,7 +63,7 @@ export default async function RaidsPage() {
       {pastRaids && pastRaids.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Past raids</h2>
-          <ul className="divide-y divide-border rounded border border-border bg-panel">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
             {pastRaids.map((raid) => {
               const recorded = (raid.attendance[0]?.count ?? 0) > 0;
               return (

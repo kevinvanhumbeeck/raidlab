@@ -1,8 +1,9 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { ConfirmButton } from "@/components/confirm-button";
 import { SpecPicker } from "@/components/spec-picker";
-import { saveCharacter, type CharacterFormState } from "./actions";
+import { deleteCharacter, saveCharacter, type CharacterFormState } from "./actions";
 
 type ClassOption = { id: string; name: string; color: string };
 type SpecOption = { id: string; class_id: string; name: string };
@@ -13,9 +14,12 @@ export function CharacterForm({
   classes,
   specs,
   character,
+  currentMain,
 }: {
   classes: ClassOption[];
   specs: SpecOption[];
+  // The player's main, if they have one (and it isn't this character).
+  currentMain?: string;
   // Present when editing an existing character.
   character?: { id: string; name: string; class_id: string; main_spec_id: string; off_spec_ids: string[]; is_main: boolean };
 }) {
@@ -28,7 +32,7 @@ export function CharacterForm({
   const classSpecs = specs.filter((s) => s.class_id === classId);
 
   return (
-    <form action={action} className="space-y-4 rounded border border-border bg-panel p-4">
+    <form action={action} className="space-y-4 rounded-xl border border-border bg-panel p-4">
       {character && <input type="hidden" name="id" value={character.id} />}
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="space-y-1">
@@ -80,18 +84,28 @@ export function CharacterForm({
         />
       </fieldset>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="is_main" defaultChecked={character?.is_main ?? true} />
+      <label className="flex flex-wrap items-center gap-x-2 text-sm">
+        <input type="checkbox" name="is_main" defaultChecked={character ? character.is_main : !currentMain} />
         Main character
+        {currentMain && <span className="text-xs text-muted">(replaces {currentMain} as your main)</span>}
       </label>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           disabled={pending}
           className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover disabled:opacity-60"
         >
           {character ? "Save changes" : "Add character"}
         </button>
+        {character && (
+          <ConfirmButton
+            formAction={deleteCharacter}
+            message={`Delete ${character.name}? This also removes their sign-ups and attendance.`}
+            className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300"
+          >
+            Delete {character.name}
+          </ConfirmButton>
+        )}
         {state.error && <span className="text-sm text-red-400">{state.error}</span>}
         {!state.error && state.saved > 0 && <span className="text-sm text-emerald-400">Saved.</span>}
       </div>

@@ -84,7 +84,7 @@ export default async function AttendancePage() {
       {players.length === 0 ? (
         <p className="opacity-70">No players yet.</p>
       ) : (
-        <div className="overflow-x-auto rounded border border-border bg-panel">
+        <div className="overflow-x-auto rounded-xl border border-border bg-panel">
           <table className="w-full text-sm">
             <thead className="text-left text-xs opacity-70">
               <tr className="border-b border-border">

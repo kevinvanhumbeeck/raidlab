@@ -1,6 +1,5 @@
 import { CharacterSpecs } from "@/components/spec-icon";
 import { requireViewer } from "@/lib/viewer";
-import { deleteCharacter } from "./actions";
 import { CharacterForm } from "./character-form";
 
 export default async function CharactersPage() {
@@ -19,13 +18,14 @@ export default async function CharactersPage() {
 
   const classById = new Map(classes?.map((c) => [c.id, c]));
   const specById = new Map(specs?.map((s) => [s.id, s]));
+  const main = characters?.find((c) => c.is_main);
 
   return (
     <div className="space-y-8">
       <section className="space-y-3">
         <h1 className="text-2xl font-semibold">My characters</h1>
         {characters?.length ? (
-          <ul className="divide-y divide-border rounded border border-border bg-panel">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
             {characters.map((ch) => (
               <li key={ch.id} className="px-4 py-3">
                 <details className="group">
@@ -42,14 +42,13 @@ export default async function CharactersPage() {
                     <span className="ml-auto text-sm text-accent group-open:hidden">Edit</span>
                     <span className="ml-auto hidden text-sm opacity-70 group-open:inline">Close</span>
                   </summary>
-                  <div className="mt-3 space-y-3">
-                    <CharacterForm classes={classes ?? []} specs={specs ?? []} character={ch} />
-                    <form action={deleteCharacter}>
-                      <input type="hidden" name="id" value={ch.id} />
-                      <button className="text-sm text-red-400 hover:text-red-300">
-                        Delete {ch.name} (also removes their sign-ups and attendance)
-                      </button>
-                    </form>
+                  <div className="mt-3">
+                    <CharacterForm
+                      classes={classes ?? []}
+                      specs={specs ?? []}
+                      character={ch}
+                      currentMain={main && main.id !== ch.id ? main.name : undefined}
+                    />
                   </div>
                 </details>
               </li>
@@ -62,7 +61,7 @@ export default async function CharactersPage() {
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Add a character</h2>
-        <CharacterForm classes={classes ?? []} specs={specs ?? []} />
+        <CharacterForm classes={classes ?? []} specs={specs ?? []} currentMain={main?.name} />
       </section>
     </div>
   );

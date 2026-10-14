@@ -1,32 +1,109 @@
 @import "tailwindcss";
 
-/* Warm tavern palette taken from the guild crest. */
+/* Themes: picked in the nav, stored in the "theme" cookie, set as data-theme on <html> (see lib/theme.ts). */
+
+/* Tavern (default): warm palette, gold to match the RaidLab logo. */
 :root {
   --background: #15110d;
   --foreground: #ece3d4;
-  --panel: #1f1a14;
-  --border: #3a3026;
+  --panel: #1c1813;
+  --panel-raised: #221d17;
+  --border: #2f271f;
+  --muted: #a89c8a;
   --accent: #d9a441;
   --accent-hover: #e6b65a;
   --accent-foreground: #1a1208;
   --discord: #5865f2;
 }
 
+/* Slate: cool greys and soft purple, after guildmanager.app. */
+[data-theme="slate"] {
+  --background: #111318;
+  --foreground: #f2f3f5;
+  --panel: #1a1c23;
+  --panel-raised: #1f222b;
+  --border: #2a2e39;
+  --muted: #949ba4;
+  --accent: #a594f9;
+  --accent-hover: #b8abfb;
+  --accent-foreground: #16131f;
+}
+
+/* Frost: icy blues. */
+[data-theme="frost"] {
+  --background: #0b1318;
+  --foreground: #e3eef2;
+  --panel: #111c22;
+  --panel-raised: #16242b;
+  --border: #213540;
+  --muted: #8aa4b0;
+  --accent: #7cc8e8;
+  --accent-hover: #9ad6ef;
+  --accent-foreground: #0a1a22;
+}
+
+/* Fel: dark greens. */
+[data-theme="fel"] {
+  --background: #0d120c;
+  --foreground: #e4ecdc;
+  --panel: #131a11;
+  --panel-raised: #182116;
+  --border: #27341f;
+  --muted: #93a487;
+  --accent: #8fd14f;
+  --accent-hover: #a3dd6a;
+  --accent-foreground: #10180a;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-panel: var(--panel);
+  --color-panel-raised: var(--panel-raised);
+  --color-muted: var(--muted);
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-foreground: var(--accent-foreground);
   --color-discord: var(--discord);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-exo-2);
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-cinzel);
+  --font-heading: var(--font-zen-dots);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* In the base layer so a font-* utility (e.g. the RaidLab wordmark) still wins. Zen Dots has one weight: no faux bold. */
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-zen-dots), sans-serif;
+    font-synthesis-weight: none;
+  }
+
+  /* Tailwind v4 dropped the pointer cursor on buttons; bring it back for everything clickable. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  select:not(:disabled),
+  input:is([type="checkbox"], [type="radio"]):not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* Own chevron with room to breathe: the native one sits against the border. Unlayered so it beats px-* utilities. */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23909096' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1rem;
+  padding-right: 2rem;
 }

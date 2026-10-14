@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
+import { useCallback, useOptimistic, useRef, useState, useTransition } from "react";
 import { RoleCount } from "@/components/role-count";
 import { SpecIcon } from "@/components/spec-icon";
+import { useDismiss } from "@/lib/use-dismiss";
 import {
   ROLES,
   ROLE_LABELS,
@@ -81,8 +82,8 @@ export function SignupBoard({
         <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>
       )}
 
-      <section className="rounded border border-border bg-panel">
-        <header className="flex flex-wrap items-baseline gap-x-5 gap-y-1 border-b border-border px-4 py-3">
+      <section className="rounded-xl border border-border bg-panel">
+        <header className="flex flex-wrap items-baseline gap-x-5 gap-y-1 rounded-t-xl border-b border-border bg-panel-raised px-4 py-3">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
             <span className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT.accepted}`} />
             Accepted
@@ -119,8 +120,8 @@ export function SignupBoard({
         {others.map((status) => {
           const list = rows.filter((r) => r.status === status).sort(byRoleThenName);
           return (
-            <section key={status} className="rounded border border-border bg-panel">
-              <h2 className="flex items-center gap-2 border-b border-border px-4 py-2.5 font-semibold">
+            <section key={status} className="rounded-xl border border-border bg-panel">
+              <h2 className="flex items-center gap-2 rounded-t-xl border-b border-border bg-panel-raised px-4 py-2.5 font-semibold">
                 <span className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT[status]}`} />
                 {STATUS_LABELS[status]}
                 <span className="tabular-nums opacity-70">{list.length}</span>
@@ -187,18 +188,8 @@ function StatusMenu({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent | KeyboardEvent) => {
-      if (e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("keydown", close);
-    };
-  }, [open]);
+  const close = useCallback(() => setOpen(false), []);
+  useDismiss(ref, open, close);
 
   function pick(status: SignupStatus | null) {
     setOpen(false);
@@ -222,7 +213,7 @@ function StatusMenu({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded border border-border bg-panel py-1 text-sm shadow-xl"
+          className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded-xl border border-border bg-panel py-1 text-sm shadow-xl"
         >
           <p className="px-3 pb-1 pt-0.5 text-xs opacity-50">Move to</p>
           {SIGNUP_STATUSES.filter((s) => s !== current).map((s) => (

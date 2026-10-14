@@ -10,10 +10,12 @@ const input = "w-full rounded border border-border bg-background px-2 py-1.5";
 
 export function SignupForm({
   action,
+  withdrawAction,
   characters,
   current,
 }: {
   action: (formData: FormData) => Promise<void>;
+  withdrawAction?: () => Promise<void>;
   characters: Character[];
   current?: { characterId: string; specId: string | null; status: SignupStatus; note: string | null };
 }) {
@@ -21,7 +23,7 @@ export function SignupForm({
   const character = characters.find((c) => c.id === characterId);
 
   return (
-    <form action={action} className="grid gap-4 rounded border border-border bg-panel p-4 sm:grid-cols-3">
+    <form action={action} className="grid gap-4 rounded-xl border border-border bg-panel p-4 sm:grid-cols-3">
       <label className="space-y-1">
         <span className="text-sm">Character</span>
         <select
@@ -64,10 +66,19 @@ export function SignupForm({
           ]}
         />
       </fieldset>
-      <div className="sm:col-span-3">
+      <div className="flex flex-wrap gap-3 sm:col-span-3">
         <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
           {current ? "Update sign-up" : "Sign up"}
         </button>
+        {withdrawAction && (
+          <button
+            formAction={withdrawAction}
+            formNoValidate
+            className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300"
+          >
+            Remove my sign-up
+          </button>
+        )}
       </div>
     </form>
   );

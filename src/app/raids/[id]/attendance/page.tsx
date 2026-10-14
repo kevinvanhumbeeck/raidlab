@@ -95,7 +95,7 @@ export default async function RaidAttendancePage({
         <p className="opacity-70">Nobody signed up or was placed in this raid.</p>
       ) : (
         <form action={saveAttendance.bind(null, raid.id)} className="space-y-4">
-          <ul className="divide-y divide-border rounded border border-border bg-panel">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
             {sorted.map(({ character, status }) => (
               <li key={character.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2">
                 <Link

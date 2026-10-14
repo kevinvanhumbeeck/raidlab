@@ -8,7 +8,7 @@ function Fields({ instance }: { instance?: Instance }) {
     <>
       <label className="space-y-1 text-xs">
         <span className="block opacity-70">Size</span>
-        <select name="size" defaultValue={instance?.size ?? 10} className={number}>
+        <select name="size" defaultValue={instance?.size ?? 10} className={number.replace("w-16", "w-20")}>
           {[10, 20, 40].map((n) => (
             <option key={n}>{n}</option>
           ))}
@@ -40,7 +40,7 @@ export function InstanceSettings({ instances }: { instances: Instance[] }) {
         Minimum players per role. Comp boards and sign-up pages show how far each raid is from these numbers; the rest
         of the raid is flexible.
       </p>
-      <ul className="divide-y divide-border rounded border border-border bg-panel">
+      <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
         {instances.map((instance) => {
           const flexible =
             instance.size - ROLES.reduce((sum, role) => sum + instance[ROLE_REQUIREMENT_KEYS[role]], 0);
