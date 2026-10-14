@@ -43,3 +43,25 @@ export async function unreserveItem(raidId: string, characterId: string, itemId:
   if (error) throw error;
   revalidatePath("/raids/[slug]", "layout");
 }
+
+// Officers keep items out of rolls; the database drops the soft reserves on them.
+async function requireOfficer() {
+  const { supabase, isOfficer } = await requireViewer();
+  if (!isOfficer) throw new Error("Only officers can hard-reserve items");
+  return supabase;
+}
+
+export async function hardReserveItem(raidId: string, itemId: number) {
+  const supabase = await requireOfficer();
+  const { error } = await supabase.from("hard_reserves").insert({ raid_id: raidId, item_id: itemId });
+  if (error?.code === "23505") return;
+  if (error) throw new Error(error.message);
+  revalidatePath("/raids/[slug]", "layout");
+}
+
+export async function unhardReserveItem(raidId: string, itemId: number) {
+  const supabase = await requireOfficer();
+  const { error } = await supabase.from("hard_reserves").delete().eq("raid_id", raidId).eq("item_id", itemId);
+  if (error) throw error;
+  revalidatePath("/raids/[slug]", "layout");
+}

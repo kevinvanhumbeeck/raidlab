@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ConfirmButton } from "@/components/confirm-button";
 import { CopyButton, DownloadButton } from "@/components/copy-button";
 import { ItemLink } from "@/components/item-link";
 import { gargulExport, softresCsv, type ReserveExportRow } from "@/lib/gargul";
@@ -6,7 +7,7 @@ import { groupByBoss, type LootItem } from "@/lib/loot";
 import { getRaid } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import { STATUS_LABELS, isLocked, playerHref, type SignupStatus } from "@/lib/wow";
-import { reserveItem, unreserveItem } from "./actions";
+import { hardReserveItem, reserveItem, unhardReserveItem, unreserveItem } from "./actions";
 import { LootFilter } from "./loot-filter";
 
 type ReserveCharacter = { name: string; class_id: string; profiles: { slug: string } | null };
@@ -14,15 +15,22 @@ type ReserveRow = { character_id: string; item_id: number; created_at: string; c
 
 const button = "rounded border border-border px-2 py-0.5 text-xs hover:bg-white/5";
 
-// Soft reserves: players pick items from the instance's loot table, officers export them to Gargul.
+// Soft reserves: players pick items from the instance's loot table, officers export them to Gargul. Officers can
+// hard-reserve items, which keeps them out of rolls.
 export default async function LootPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const raid = await getRaid(slug);
   const { id } = raid;
   const { supabase, user, isOfficer } = await requireViewer();
 
-  const [{ data: instance }, { data: items }, { data: reserveRows }, { data: mySignups }, { data: classes }] =
-    await Promise.all([
+  const [
+    { data: instance },
+    { data: items },
+    { data: reserveRows },
+    { data: hardReserveRows },
+    { data: mySignups },
+    { data: classes },
+  ] = await Promise.all([
       supabase.from("instances").select("reserves").eq("name", raid.instance).maybeSingle(),
       supabase
         .from("loot_items")
@@ -40,6 +48,7 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
           (Omit<ReserveRow, "characters"> & { signups: { characters: ReserveCharacter | null } | null })[],
           { merge: false }
         >(),
+      supabase.from("hard_reserves").select("item_id").eq("raid_id", id),
       supabase
         .from("signups")
         .select("character_id, status, characters!inner(name, owner_id)")
@@ -61,6 +70,9 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
   const classById = new Map(classes?.map((c) => [c.id, c]));
   const lootItems = (items ?? []) as LootItem[];
   const itemById = new Map(lootItems.map((item) => [item.id, item]));
+
+  const hardReserved = new Set(hardReserveRows?.map((r) => r.item_id));
+  const hardReservedItems = lootItems.filter((item) => hardReserved.has(item.id));
 
   const reservesByItem = new Map<number, ReserveRow[]>();
   for (const r of reserves) reservesByItem.set(r.item_id, [...(reservesByItem.get(r.item_id) ?? []), r]);
@@ -117,16 +129,36 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
         </p>
       </section>
 
+      {hardReservedItems.length > 0 && (
+        <section className="space-y-2 rounded-xl border border-border bg-panel p-4 text-sm">
+          <h2 className="font-sans font-semibold">Hard reserved</h2>
+          <p className="opacity-60">The officers keep these items out of rolls, so they can&apos;t be soft-reserved.</p>
+          <ul className="flex flex-wrap gap-x-4 gap-y-1">
+            {hardReservedItems.map((item) => (
+              <li key={item.id}>
+                <ItemLink item={item} size="sm" />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {isOfficer && (
         <section className="space-y-2 rounded-xl border border-border bg-panel p-4 text-sm">
           <h2 className="font-sans font-semibold">Export for the loot master</h2>
           <p className="opacity-70">
-            {exportRows.length} reserves. In game, type <code>/gl sr</code> (Gargul), paste the copied string and
-            import. The CSV is a softres.it-style fallback for other loot addons.
+            {exportRows.length} reserves, {hardReservedItems.length} hard reserves. In game, type{" "}
+            <code>/gl sr</code> (Gargul), paste the copied string and import. The CSV is a softres.it-style
+            fallback for other loot addons.
           </p>
           <div className="flex flex-wrap gap-2">
             <CopyButton
-              text={gargulExport(raid, exportRows, `https://www.raidlab.net/raids/${raid.slug}/loot`)}
+              text={gargulExport(
+                raid,
+                exportRows,
+                hardReservedItems.map((item) => item.id),
+                `https://www.raidlab.net/raids/${raid.slug}/loot`,
+              )}
               className="rounded bg-accent px-3 py-1 font-medium text-accent-foreground hover:bg-accent-hover"
             >
               Copy for Gargul
@@ -172,6 +204,12 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
                 {bossItems.map((item) => {
                   const itemReserves = reservesByItem.get(item.id) ?? [];
                   const reserved = myReserves.has(item.id);
+                  const hard = hardReserved.has(item.id);
+                  const showReserve = canReserve && !!mine && !hard;
+                  const n = itemReserves.length;
+                  const hardMessage = n
+                    ? `Hard-reserve ${item.name}? Its ${n} soft reserve${n === 1 ? " is" : "s are"} removed.`
+                    : `Hard-reserve ${item.name}? Nobody can soft-reserve it.`;
                   return (
                     <li
                       key={item.id}
@@ -182,6 +220,11 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
                         <ItemLink item={item} />
                       </div>
                       <div className="flex flex-1 flex-wrap gap-x-2 text-sm">
+                        {hard && (
+                          <span className="rounded border border-amber-500/40 px-1.5 text-xs text-amber-400">
+                            Hard reserved
+                          </span>
+                        )}
                         {itemReserves.map((r) => (
                           <span key={r.character_id} className="inline-flex items-center gap-1">
                             <Link
@@ -201,7 +244,7 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
                           </span>
                         ))}
                       </div>
-                      {canReserve && mine && (
+                      {showReserve && mine && (
                         <form
                           action={(reserved ? unreserveItem : reserveItem).bind(null, id, mine.character_id, item.id)}
                           className="ml-auto"
@@ -212,6 +255,27 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
                           >
                             {reserved ? "Reserved ✓" : "Reserve"}
                           </button>
+                        </form>
+                      )}
+                      {isOfficer && (
+                        <form className={showReserve ? "" : "ml-auto"}>
+                          {hard ? (
+                            <button
+                              formAction={unhardReserveItem.bind(null, id, item.id)}
+                              title="Allow soft reserves again"
+                              className={`${button} border-amber-500/40 text-amber-400`}
+                            >
+                              HR ✓
+                            </button>
+                          ) : (
+                            <ConfirmButton
+                              message={hardMessage}
+                              formAction={hardReserveItem.bind(null, id, item.id)}
+                              className={button}
+                            >
+                              HR
+                            </ConfirmButton>
+                          )}
                         </form>
                       )}
                     </li>
