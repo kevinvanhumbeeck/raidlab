@@ -88,6 +88,14 @@ body {
     font-family: var(--font-zen-dots), sans-serif;
     font-synthesis-weight: none;
   }
+
+  /* Tailwind v4 dropped the pointer cursor on buttons; bring it back for everything clickable. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  select:not(:disabled),
+  input:is([type="checkbox"], [type="radio"]):not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 /* Own chevron with room to breathe: the native one sits against the border. Unlayered so it beats px-* utilities. */
