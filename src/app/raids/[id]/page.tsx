@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ConfirmButton } from "@/components/confirm-button";
 import { requireViewer } from "@/lib/viewer";
 import { SIGNUP_STATUSES, STATUS_LABELS, primaryRole, requirementsOf, type SignupStatus } from "@/lib/wow";
 import { deleteRaid, officerSignUp, signUp, withdraw } from "../actions";
@@ -192,9 +193,12 @@ export default async function RaidPage({ params }: { params: Promise<{ id: strin
             </button>
           </form>
           <form action={deleteRaid.bind(null, raid.id)}>
-            <button className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300">
+            <ConfirmButton
+              message="Delete this raid? This also removes its sign-ups, composition and attendance."
+              className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300"
+            >
               Delete raid
-            </button>
+            </ConfirmButton>
           </form>
         </section>
       )}
