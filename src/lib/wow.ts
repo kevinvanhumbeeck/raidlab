@@ -83,7 +83,8 @@ export const DUTY_LABELS: Record<RaidDuty, string> = {
   loot_lead: "Loot lead",
 };
 
-export const ATTENDANCE_STATUSES = ["present", "late", "benched", "absent"] as const;
+// Best to worst. Absent is a missed raid; a no-show signed up as accepted and didn't come.
+export const ATTENDANCE_STATUSES = ["present", "late", "benched", "absent", "no_show"] as const;
 export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number];
 
 export const ATTENDANCE_LABELS: Record<AttendanceStatus, string> = {
@@ -91,13 +92,15 @@ export const ATTENDANCE_LABELS: Record<AttendanceStatus, string> = {
   late: "Late",
   benched: "Benched",
   absent: "Absent",
+  no_show: "No-show",
 };
 
 export const ATTENDANCE_COLORS: Record<AttendanceStatus, string> = {
   present: "bg-emerald-500",
   late: "bg-amber-400",
   benched: "bg-sky-500",
-  absent: "bg-red-500",
+  absent: "bg-zinc-400",
+  no_show: "bg-red-500",
 };
 
 // Benched players showed up and were available, so they count as attended.
@@ -107,7 +110,7 @@ export const STATUS_DOT: Record<SignupStatus, string> = {
   accepted: "bg-emerald-500",
   tentative: "bg-amber-400",
   bench: "bg-sky-500",
-  absent: "bg-red-500",
+  absent: "bg-zinc-400",
 };
 
 // Wall-clock parts of an instant in realm time.
@@ -147,6 +150,11 @@ export function realmTimeToDate(date: string, time: string) {
 
 export function hasStarted(iso: string) {
   return new Date(iso).getTime() <= Date.now();
+}
+
+// A raid is locked from its locked_at on (by default its start). Null means an officer reopened it.
+export function isLocked(raid: { locked_at: string | null }) {
+  return raid.locked_at !== null && hasStarted(raid.locked_at);
 }
 
 // Profile page of the player owning a character, opened on that character.

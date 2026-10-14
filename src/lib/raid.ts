@@ -9,7 +9,7 @@ export const getRaid = cache(async (slug: string) => {
   const { supabase } = await requireViewer();
   const { data: raid } = await supabase
     .from("raids")
-    .select("id, slug, title, instance, size, starts_at, notes")
+    .select("id, slug, title, instance, size, starts_at, locked_at, notes")
     .eq(UUID.test(slug) ? "id" : "slug", slug)
     .maybeSingle();
   if (!raid) notFound();

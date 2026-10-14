@@ -15,7 +15,8 @@ const CHECKED: Record<AttendanceStatus, string> = {
   present: "peer-checked:bg-emerald-500",
   late: "peer-checked:bg-amber-400",
   benched: "peer-checked:bg-sky-500",
-  absent: "peer-checked:bg-red-500",
+  absent: "peer-checked:bg-zinc-400",
+  no_show: "peer-checked:bg-red-500",
 };
 
 type CharacterJoin = {

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireViewer } from "@/lib/viewer";
-import { formatRaidTime, upcomingCutoff } from "@/lib/wow";
+import { formatRaidTime, isLocked, upcomingCutoff } from "@/lib/wow";
 import { NewRaidForm } from "./new-raid-form";
 
 export default async function RaidsPage() {
@@ -9,7 +9,7 @@ export default async function RaidsPage() {
   const [{ data: raids }, { data: mySignups }, { data: pastRaids }, { data: instances }] = await Promise.all([
     supabase
       .from("raids")
-      .select("id, slug, title, instance, size, starts_at, signups(status)")
+      .select("id, slug, title, instance, size, starts_at, locked_at, signups(status)")
       .gte("starts_at", upcomingCutoff())
       .order("starts_at"),
     supabase
@@ -44,6 +44,7 @@ export default async function RaidsPage() {
                       {raid.instance} · {raid.size}-man
                     </span>
                     <span className="text-sm opacity-70">{formatRaidTime(raid.starts_at)}</span>
+                    {isLocked(raid) && <span className="text-xs text-red-400">🔒 Locked</span>}
                     <span className="ml-auto text-sm">
                       {accepted}/{raid.size} accepted
                     </span>
