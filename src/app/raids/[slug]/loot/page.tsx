@@ -9,12 +9,8 @@ import { STATUS_LABELS, isLocked, playerHref, type SignupStatus } from "@/lib/wo
 import { reserveItem, unreserveItem } from "./actions";
 import { LootFilter } from "./loot-filter";
 
-type ReserveRow = {
-  character_id: string;
-  item_id: number;
-  created_at: string;
-  characters: { name: string; class_id: string; profiles: { slug: string } | null } | null;
-};
+type ReserveCharacter = { name: string; class_id: string; profiles: { slug: string } | null };
+type ReserveRow = { character_id: string; item_id: number; created_at: string; characters: ReserveCharacter | null };
 
 const button = "rounded border border-border px-2 py-0.5 text-xs hover:bg-white/5";
 
@@ -25,7 +21,7 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
   const { id } = raid;
   const { supabase, user, isOfficer } = await requireViewer();
 
-  const [{ data: instance }, { data: items }, { data: reserves }, { data: mySignups }, { data: classes }] =
+  const [{ data: instance }, { data: items }, { data: reserveRows }, { data: mySignups }, { data: classes }] =
     await Promise.all([
       supabase.from("instances").select("reserves").eq("name", raid.instance).maybeSingle(),
       supabase
@@ -35,10 +31,15 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
         .order("sort"),
       supabase
         .from("reserves")
-        .select("character_id, item_id, created_at, characters(name, class_id, profiles(slug))")
+        // Through the sign-up: reserves have no foreign key to characters of their own (see the
+        // 20261022000000 migration).
+        .select("character_id, item_id, created_at, signups(characters(name, class_id, profiles(slug)))")
         .eq("raid_id", id)
         .order("created_at")
-        .overrideTypes<ReserveRow[], { merge: false }>(),
+        .overrideTypes<
+          (Omit<ReserveRow, "characters"> & { signups: { characters: ReserveCharacter | null } | null })[],
+          { merge: false }
+        >(),
       supabase
         .from("signups")
         .select("character_id, status, characters!inner(name, owner_id)")
@@ -51,6 +52,10 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
       supabase.from("classes").select("id, name, color"),
     ]);
 
+  const reserves: ReserveRow[] = (reserveRows ?? []).map(({ signups, ...r }) => ({
+    ...r,
+    characters: signups?.characters ?? null,
+  }));
   const limit = instance?.reserves ?? 0;
   const locked = isLocked(raid);
   const classById = new Map(classes?.map((c) => [c.id, c]));
@@ -58,19 +63,17 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
   const itemById = new Map(lootItems.map((item) => [item.id, item]));
 
   const reservesByItem = new Map<number, ReserveRow[]>();
-  for (const r of reserves ?? []) reservesByItem.set(r.item_id, [...(reservesByItem.get(r.item_id) ?? []), r]);
+  for (const r of reserves) reservesByItem.set(r.item_id, [...(reservesByItem.get(r.item_id) ?? []), r]);
 
   // Each player signs up with one character per raid.
   const mine = mySignups?.[0];
   const canReserve = !!mine && mine.status !== "absent" && (!locked || isOfficer);
-  const myReserves = new Set(
-    (reserves ?? []).filter((r) => r.character_id === mine?.character_id).map((r) => r.item_id),
-  );
+  const myReserves = new Set(reserves.filter((r) => r.character_id === mine?.character_id).map((r) => r.item_id));
   const full = !isOfficer && myReserves.size >= limit;
 
   let exportRows: ReserveExportRow[] = [];
   if (isOfficer) {
-    exportRows = (reserves ?? []).flatMap((r) => {
+    exportRows = reserves.flatMap((r) => {
       const item = itemById.get(r.item_id);
       if (!item || !r.characters) return [];
       return [
