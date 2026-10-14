@@ -119,7 +119,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
                         <span className={m === 0 ? "text-warn" : ""}>{s.name}</span>
                         <span
                           className="ml-auto cursor-help tabular-nums"
-                          title={`Main characters: ${c.main} main spec, ${c.mainOff} off-spec\nAlts: ${c.alt} main spec, ${c.altOff} off-spec`}
+                          title={`Mains: ${c.main} main spec, ${c.mainOff} off-spec\nAlts: ${c.alt} main spec, ${c.altOff} off-spec`}
                         >
                           <strong className={m === 0 ? "text-warn" : ""}>{m}</strong>
                           <span className="text-muted"> · {c.mainOff + c.alt + c.altOff}</span>
