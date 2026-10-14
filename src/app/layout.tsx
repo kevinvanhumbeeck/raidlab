@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { Cinzel, Exo_2, Geist_Mono, Zen_Dots } from "next/font/google";
+import { Exo_2, Zen_Dots } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { DiscordLoginButton } from "@/components/discord-login-button";
 import { SiteNav } from "@/components/site-nav";
 import { THEME_COOKIE, parseTheme } from "@/lib/theme";
@@ -13,17 +15,6 @@ import "./globals.css";
 const exo2 = Exo_2({
   variable: "--font-exo-2",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const cinzel = Cinzel({
-  variable: "--font-cinzel",
-  subsets: ["latin"],
-  weight: ["600", "700"],
 });
 
 const zenDots = Zen_Dots({
@@ -58,7 +49,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" data-theme={theme}>
-      <body className={`${exo2.variable} ${geistMono.variable} ${cinzel.variable} ${zenDots.variable} font-sans antialiased`}>
+      <body className={`${exo2.variable} ${zenDots.variable} font-sans antialiased`}>
         <header className="border-b border-border bg-panel">
           <SiteNav
             brand={
@@ -87,6 +78,8 @@ export default async function RootLayout({
           />
         </header>
         <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

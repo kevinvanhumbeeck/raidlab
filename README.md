@@ -38,7 +38,7 @@ update profiles set is_officer = true where display_name = 'YourName';
   other branches (including `development`) get Vercel preview URLs.
 - **Hosting**: Vercel project `raidlab`, env vars `NEXT_PUBLIC_SUPABASE_URL`,
   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (sensitive), `DISCORD_GUILD_ID` and the role IDs
-  `DISCORD_RAIDER_ROLE_ID`, `DISCORD_PUG_ROLE_ID`, `DISCORD_OFFICER_ROLE_ID`.
+  `DISCORD_RAIDER_ROLE_ID` (comma-separated: @raider and @pug), `DISCORD_OFFICER_ROLE_ID`.
   Don't add Vercel's Supabase/Postgres integration.
 - **Access**: only members of Discord server `1230423637182382132` with the @raider, @pug or @officer role
   get in; @officer also makes them an officer in the app. Checked at every login (OAuth scope
