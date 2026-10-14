@@ -51,6 +51,40 @@ update profiles set is_officer = true where display_name = 'YourName';
 - **Database changes are not deployed automatically**: run new files in `supabase/migrations/`
   in the Supabase SQL editor before pushing code that depends on them.
 
+## Backups
+
+The free Supabase tier has no downloadable backups, so `scripts/backup.sh` makes its own: a `pg_dump` of the
+data (the `public` schema plus `auth.users` and `auth.identities`, so profiles keep their Discord logins),
+gzipped and encrypted with a passphrase. The schema itself comes from `supabase/migrations`.
+
+- **Nightly**: `.github/workflows/backup.yml` runs it at 03:17 UTC and keeps each dump as a workflow artifact
+  for 90 days. Run it by hand from the Actions tab. The repo is public and anyone logged in to GitHub can
+  download artifacts, which is why the dumps are encrypted.
+- **On demand**, e.g. before a risky migration (needs `pg_dump` 17 or newer):
+  `SUPABASE_DB_URL=... BACKUP_PASSPHRASE=... scripts/backup.sh` writes to `backups/` (git-ignored).
+- **Secrets** (repo → Settings → Secrets and variables → Actions):
+  - `SUPABASE_DB_URL`: the **Session pooler** connection string from the dashboard's Connect panel, with the
+    database password filled in. GitHub runners only have IPv4; the direct connection is IPv6-only.
+  - `BACKUP_PASSPHRASE`: keep a copy in a password manager. Without it the backups can't be decrypted.
+- GitHub pauses scheduled workflows in public repos after 60 days without commits, and emails when a run fails.
+
+**Restoring** into a fresh Supabase project:
+
+1. Apply `supabase/migrations` (not `seed.sql`; the dump has that data).
+2. Decrypt the dump and load it with `psql` 17.6 or newer (older versions don't know the dump's `\restrict` line),
+   emptying the tables the migrations filled first. Triggers are off while loading, so new profiles and slugs
+   aren't generated over the restored ones:
+
+   ```sh
+   gpg --decrypt raidlab-<date>.sql.gz.gpg | gunzip > restore.sql
+   psql "$SUPABASE_DB_URL" --single-transaction -v ON_ERROR_STOP=1 \
+     -c "set session_replication_role = replica" \
+     -c "do \$\$ declare t text; begin for t in select format('%I.%I', schemaname, tablename) from pg_tables where schemaname = 'public' loop execute 'truncate ' || t || ' cascade'; end loop; end \$\$" \
+     -f restore.sql
+   ```
+
+3. Redo the Discord provider and auth URL settings from Setup.
+
 ## Test data
 
 `supabase/dev/sample_data.sql` adds the roster from the spreadsheet as fake players with a sample raid;
