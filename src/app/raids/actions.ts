@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireViewer } from "@/lib/viewer";
-import { SIGNUP_STATUSES, isLocked, type SignupStatus } from "@/lib/wow";
+import { assertOpen } from "@/lib/raid";
+import { SIGNUP_STATUSES, type SignupStatus } from "@/lib/wow";
 
 type Supabase = Awaited<ReturnType<typeof requireViewer>>["supabase"];
 
@@ -68,12 +69,6 @@ export async function setRaidLock(raidId: string, locked: boolean) {
 
   revalidatePath("/raids/[slug]", "layout");
   revalidatePath("/raids");
-}
-
-// RLS enforces the lock too; this gives players a readable error instead.
-async function assertOpen(supabase: Supabase, raidId: string) {
-  const { data: raid } = await supabase.from("raids").select("locked_at").eq("id", raidId).single();
-  if (!raid || isLocked(raid)) throw new Error("Sign-ups are locked");
 }
 
 // A player signs up with one of their characters. Signing up with another

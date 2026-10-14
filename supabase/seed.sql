@@ -45,6 +45,7 @@ on conflict (id) do update set class_id = excluded.class_id, name = excluded.nam
 
 -- Raid instances and their minimum role requirements (also created by the instance_requirements migration).
 insert into public.instances (name, size, tanks, healers, dps, sort) values
+  ('Ragefire Chasm',  5, 1, 1,  0, 0),
   ('Barrow Deeps',  10, 2, 3,  4, 1),
   ('Hyjal Summit',  20, 3, 5, 10, 2),
   ('Onyxia''s Lair', 40, 3, 9, 24, 3)

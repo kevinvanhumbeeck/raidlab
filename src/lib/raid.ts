@@ -1,6 +1,9 @@
 import { cache } from "react";
 import { notFound, permanentRedirect } from "next/navigation";
 import { requireViewer } from "@/lib/viewer";
+import { isLocked } from "@/lib/wow";
+
+type Supabase = Awaited<ReturnType<typeof requireViewer>>["supabase"];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -29,3 +32,9 @@ export const getPlayer = cache(async (slug: string) => {
   if (profile.slug !== slug) permanentRedirect(`/players/${profile.slug}`);
   return profile;
 });
+
+// RLS enforces the lock too; this gives players a readable error instead.
+export async function assertOpen(supabase: Supabase, raidId: string, message = "Sign-ups are locked") {
+  const { data: raid } = await supabase.from("raids").select("locked_at").eq("id", raidId).single();
+  if (!raid || isLocked(raid)) throw new Error(message);
+}

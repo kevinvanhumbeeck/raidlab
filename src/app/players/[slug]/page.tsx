@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CharacterSpecs, SpecIcon } from "@/components/spec-icon";
 import { attendanceSummary, betterStatus, type RecordedRaid } from "@/lib/attendance";
+import { iconUrl, qualityColor } from "@/lib/loot";
 import { getPlayer } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import {
@@ -58,15 +59,25 @@ export default async function PlayerPage({
     ]);
 
   const characterIds = (characters ?? []).map((c) => c.id);
-  const [{ data: signups }, { data: slots }, { data: attendance }, { data: duties }] = await Promise.all([
-    supabase.from("signups").select("raid_id, character_id, status, spec_id").in("character_id", characterIds),
-    supabase
-      .from("comp_slots")
-      .select("raid_id, character_id, group_no, spec_id, role")
-      .in("character_id", characterIds),
-    supabase.from("attendance").select("raid_id, character_id, status").in("character_id", characterIds),
-    supabase.from("raid_duties").select("raid_id, duty").in("character_id", characterIds),
-  ]);
+  const [{ data: signups }, { data: slots }, { data: attendance }, { data: duties }, { data: reserves }] =
+    await Promise.all([
+      supabase.from("signups").select("raid_id, character_id, status, spec_id").in("character_id", characterIds),
+      supabase
+        .from("comp_slots")
+        .select("raid_id, character_id, group_no, spec_id, role")
+        .in("character_id", characterIds),
+      supabase.from("attendance").select("raid_id, character_id, status").in("character_id", characterIds),
+      supabase.from("raid_duties").select("raid_id, duty").in("character_id", characterIds),
+      supabase
+        .from("reserves")
+        .select("raid_id, loot_items(id, name, quality, icon)")
+        .in("character_id", characterIds)
+        .order("created_at")
+        .overrideTypes<
+          { raid_id: string; loot_items: { id: number; name: string; quality: number; icon: string | null } | null }[],
+          { merge: false }
+        >(),
+    ]);
 
   const raidIds = [
     ...new Set([...(signups ?? []), ...(slots ?? []), ...(attendance ?? []), ...(duties ?? [])].map((r) => r.raid_id)),
@@ -112,6 +123,7 @@ export default async function PlayerPage({
       group: slot?.group_no ?? null,
       role: slot ? effectiveRole(specById.get(specId ?? ""), slot.role as Role | null) : null,
       duties: (duties ?? []).filter((d) => d.raid_id === raid.id).map((d) => d.duty as RaidDuty),
+      reserves: (reserves ?? []).flatMap((r) => (r.raid_id === raid.id && r.loot_items ? [r.loot_items] : [])),
       signup: (signup?.status ?? null) as SignupStatus | null,
       // Recorded raids without a record for this player count as absent.
       status: perRaid.get(raid.id) ?? (recordedRaids.has(raid.id) ? "absent" : null),
@@ -265,6 +277,22 @@ export default async function PlayerPage({
                     {STATUS_LABELS[h.signup!]}
                     {h.group && <span className="opacity-70">· group {h.group}</span>}
                   </span>
+                  {h.reserves.length > 0 && (
+                    <span className="flex w-full flex-wrap gap-x-3 gap-y-1 text-xs">
+                      <span className="opacity-60">Reserved</span>
+                      {h.reserves.map((item) => (
+                        <span
+                          key={item.id}
+                          className="inline-flex items-center gap-1"
+                          style={{ color: qualityColor(item.quality) }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={iconUrl(item.icon)} alt="" className="h-4 w-4 rounded" />
+                          {item.name}
+                        </span>
+                      ))}
+                    </span>
+                  )}
                 </Link>
               </li>
             ))}
