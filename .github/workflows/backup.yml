@@ -14,12 +14,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # pg_dump must be at least the server's version (Postgres 17); the runner ships an older one.
+      # pg_dump must be at least the server's version (Postgres 17). The runner ships Postgres 16, and
+      # Ubuntu's pg_dump wrapper picks the local server's version, so put 17's binaries first on the PATH.
       - name: Install pg_dump 17
         run: |
           sudo apt-get install -y postgresql-common
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
           sudo apt-get install -y postgresql-client-17
+          echo /usr/lib/postgresql/17/bin >> "$GITHUB_PATH"
 
       - run: scripts/backup.sh backups
         env:
