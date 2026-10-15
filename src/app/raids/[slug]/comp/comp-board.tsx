@@ -14,6 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { RoleCount } from "@/components/role-count";
 import { SpecIcon } from "@/components/spec-icon";
+import { coverageSummary, roleCoverage, type RoleOption } from "@/lib/coverage";
 import { createClient } from "@/lib/supabase/client";
 import {
   DUTY_LABELS,
@@ -40,6 +41,8 @@ export type BoardCharacter = {
   // Primary role of the spec, and every role the spec can fill.
   role: Role;
   roles: Role[];
+  // Every role the character can fill, offspecs included, for the minimums check.
+  options: RoleOption[];
   status: SignupStatus | null;
   note: string | null;
   // Title of another raid around the same time where this player is already placed.
@@ -247,10 +250,13 @@ function Summary({
   duties: Partial<Record<RaidDuty, string>>;
 }) {
   const count = (role: Role) => placed.filter((c) => c.role === role).length;
+  const coverage = roleCoverage(placed, requirements);
+  const summary = coverageSummary(coverage);
   const warnings = [
     ...ROLES.filter((role) => requirements && count(role) < requirements[role]).map(
       (role) => `${requirements![role] - count(role)} more ${ROLE_LABELS[role].toLowerCase()} needed`,
     ),
+    summary,
     ...placed
       .filter((c) => c.status !== "accepted")
       .map((c) => `${c.name} is ${c.status ? STATUS_LABELS[c.status].toLowerCase() : "no longer signed up"}`),
@@ -275,7 +281,12 @@ function Summary({
           <span key={role} className="flex items-baseline gap-1.5">
             {ROLE_LABELS[role]}
             <strong>
-              <RoleCount count={count(role)} needed={requirements?.[role]} />
+              <RoleCount
+                count={count(role)}
+                needed={requirements?.[role]}
+                state={coverage.states[role]}
+                hint={coverage.states[role] === "offspec" ? summary : undefined}
+              />
             </strong>
           </span>
         ))}

@@ -44,6 +44,12 @@ update profiles set is_officer = true where display_name = 'YourName';
   get in; @officer also makes them an officer in the app. Checked at every login (OAuth scope
   `guilds.members.read`, no bot needed), so role changes apply at the next login. Officers can revoke access
   at `/officers` until that player's next login.
+- **Discord bot** (optional, #49): announces new raids in `DISCORD_RAID_CHANNEL_ID` with In / Out /
+  Character-spec buttons and keeps the post up to date. Needs `DISCORD_PUBLIC_KEY` and `DISCORD_BOT_TOKEN`
+  from the same Discord app as the login, and its **Interactions Endpoint URL** set to
+  `https://www.raidlab.net/api/discord/interactions`. Invite it with the `bot` and `applications.commands`
+  scopes and the View Channel, Send Messages, Embed Links and Read Message History permissions. Officers
+  can post or refresh a raid by hand from the raid page.
 - **Domain**: `www.raidlab.net` is primary; `raidlab.net` redirects to it. DNS at Cloudflare,
   records DNS-only (grey cloud) pointing to Vercel.
 - **Supabase auth URLs**: Site URL `https://www.raidlab.net`; redirect URLs

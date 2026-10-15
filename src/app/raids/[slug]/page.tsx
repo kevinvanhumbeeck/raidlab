@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { ConfirmButton } from "@/components/confirm-button";
+import { roleOptions } from "@/lib/coverage";
+import { botEnabled } from "@/lib/discord-bot";
 import { getRaid } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import { SIGNUP_STATUSES, STATUS_LABELS, isLocked, primaryRole, requirementsOf, type SignupStatus } from "@/lib/wow";
-import { deleteRaid, officerSignUp, signUp, withdraw } from "../actions";
+import { deleteRaid, officerSignUp, postToDiscord, signUp, withdraw } from "../actions";
 import { SignupBoard, type SignupRow as SignupRowView } from "./signup-board";
 import { SignupForm } from "./signup-form";
 
@@ -17,6 +19,7 @@ type SignupRow = {
     name: string;
     class_id: string;
     main_spec_id: string;
+    off_spec_ids: string[];
     owner_id: string;
     profiles: { slug: string; display_name: string } | null;
   } | null;
@@ -38,7 +41,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
     supabase
       .from("signups")
       .select(
-        "character_id, status, spec_id, note, characters(name, class_id, main_spec_id, owner_id, profiles(slug, display_name))",
+        "character_id, status, spec_id, note, characters(name, class_id, main_spec_id, off_spec_ids, owner_id, profiles(slug, display_name))",
       )
       .eq("raid_id", id)
       .overrideTypes<SignupRow[], { merge: false }>(),
@@ -79,6 +82,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
       specId,
       specName: spec?.name ?? "",
       role: primaryRole(spec),
+      options: roleOptions([specId, ch.main_spec_id, ...ch.off_spec_ids], specById),
     };
     return [row];
   });
@@ -205,6 +209,13 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
               Add
             </button>
           </form>
+          {botEnabled() && (
+            <form action={postToDiscord.bind(null, raid.id)}>
+              <button className="rounded border border-border px-3 py-1.5 text-sm hover:bg-white/5">
+                Post or refresh in Discord
+              </button>
+            </form>
+          )}
           <form action={deleteRaid.bind(null, raid.id)}>
             <ConfirmButton
               message="Delete this raid? This also removes its sign-ups, composition and attendance."
