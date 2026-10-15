@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { INSTANCE_SIZES, ROLES, ROLE_LABELS, ROLE_REQUIREMENT_KEYS, type Instance } from "@/lib/wow";
+import { FIXED_ROLES, INSTANCE_SIZES, ROLE_LABELS, ROLE_REQUIREMENT_KEYS, type Instance } from "@/lib/wow";
 import { addInstance, saveInstance } from "./actions";
 
 const number = "w-16 rounded border border-border bg-background px-2 py-1 text-right tabular-nums";
@@ -17,7 +17,7 @@ function Fields({ instance }: { instance?: InstanceRow }) {
           ))}
         </select>
       </label>
-      {ROLES.map((role) => (
+      {FIXED_ROLES.map((role) => (
         <label key={role} className="space-y-1 text-xs">
           <span className="block opacity-70">{ROLE_LABELS[role]}</span>
           <input
@@ -45,39 +45,36 @@ function Fields({ instance }: { instance?: InstanceRow }) {
   );
 }
 
-// Officer settings: minimum players per role and soft reserves for each raid instance.
+// Officer settings: tanks and healers (DPS is the rest) and soft reserves for each raid instance.
 export function InstanceSettings({ instances }: { instances: InstanceRow[] }) {
   return (
     <section className="space-y-3">
       <h2 className="text-lg font-semibold">Raid instances</h2>
       <p className="text-sm opacity-70">
-        Minimum players per role. Comp boards and sign-up pages show how far each raid is from these numbers; the rest
-        of the raid is flexible. Reserves is how many items each player can soft-reserve per raid.
+        Tanks and healers each raid needs; the rest of the raid is DPS. Comp boards warn when a comp has more or
+        fewer, and locking sign-ups asks first when they&apos;re short. Reserves is how many items each player can
+        soft-reserve per raid.
       </p>
       <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
-        {instances.map((instance) => {
-          const flexible =
-            instance.size - ROLES.reduce((sum, role) => sum + instance[ROLE_REQUIREMENT_KEYS[role]], 0);
-          return (
-            <li key={instance.name} className="px-4 py-3">
-              <form action={saveInstance} className="flex flex-wrap items-end gap-3">
-                <input type="hidden" name="name" value={instance.name} />
-                <div className="min-w-40 pb-1">
-                  <div className="font-medium">{instance.name}</div>
-                  <div className="text-xs opacity-60">{flexible} flexible</div>
-                </div>
-                <Fields instance={instance} />
-                <button className="rounded border border-border px-3 py-1 text-sm hover:bg-white/5">Save</button>
-                <Link
-                  href={`/officers/loot/${encodeURIComponent(instance.name)}`}
-                  className="rounded border border-border px-3 py-1 text-sm hover:bg-white/5"
-                >
-                  Loot table
-                </Link>
-              </form>
-            </li>
-          );
-        })}
+        {instances.map((instance) => (
+          <li key={instance.name} className="px-4 py-3">
+            <form action={saveInstance} className="flex flex-wrap items-end gap-3">
+              <input type="hidden" name="name" value={instance.name} />
+              <div className="min-w-40 pb-1">
+                <div className="font-medium">{instance.name}</div>
+                <div className="text-xs opacity-60">{instance.dps} DPS</div>
+              </div>
+              <Fields instance={instance} />
+              <button className="rounded border border-border px-3 py-1 text-sm hover:bg-white/5">Save</button>
+              <Link
+                href={`/officers/loot/${encodeURIComponent(instance.name)}`}
+                className="rounded border border-border px-3 py-1 text-sm hover:bg-white/5"
+              >
+                Loot table
+              </Link>
+            </form>
+          </li>
+        ))}
         <li className="px-4 py-3">
           <form action={addInstance} className="flex flex-wrap items-end gap-3">
             <label className="min-w-40 space-y-1 text-xs">

@@ -7,6 +7,7 @@ import { SpecIcon } from "@/components/spec-icon";
 import { coverageSummary, roleCoverage, type RoleOption } from "@/lib/coverage";
 import { useDismiss } from "@/lib/use-dismiss";
 import {
+  FIXED_ROLES,
   ROLES,
   ROLE_LABELS,
   SIGNUP_STATUSES,
@@ -110,7 +111,7 @@ export function SignupBoard({
                   <RoleCount
                     count={inRole.length}
                     needed={requirements?.[role]}
-                    state={coverage.states[role]}
+                    state={FIXED_ROLES.includes(role) ? coverage.states[role] : undefined}
                     hint={coverage.states[role] === "offspec" ? summary : undefined}
                   />
                 </h3>

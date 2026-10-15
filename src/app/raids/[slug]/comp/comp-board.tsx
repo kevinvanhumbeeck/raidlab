@@ -12,12 +12,13 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { RoleCount } from "@/components/role-count";
+import { RoleCount, type RoleCountState } from "@/components/role-count";
 import { SpecIcon } from "@/components/spec-icon";
 import { coverageSummary, roleCoverage, type RoleOption } from "@/lib/coverage";
 import { createClient } from "@/lib/supabase/client";
 import {
   DUTY_LABELS,
+  FIXED_ROLES,
   RAID_DUTIES,
   ROLES,
   ROLE_LABELS,
@@ -26,6 +27,7 @@ import {
   type Role,
   type RoleRequirements,
   type SignupStatus,
+  rolesText,
 } from "@/lib/wow";
 import { moveToSlot, removeFromComp, setDuty, setSlotRole } from "./actions";
 
@@ -252,10 +254,13 @@ function Summary({
   const count = (role: Role) => placed.filter((c) => c.role === role).length;
   const coverage = roleCoverage(placed, requirements);
   const summary = coverageSummary(coverage);
+  // Tanks and healers should match the instance exactly (#27); officers can still go over or under.
+  const off = (role: Role) => (requirements && FIXED_ROLES.includes(role) ? count(role) - requirements[role] : 0);
+  const stateOf = (role: Role): RoleCountState | undefined =>
+    !FIXED_ROLES.includes(role) ? undefined : off(role) > 0 ? "over" : coverage.states[role];
   const warnings = [
-    ...ROLES.filter((role) => requirements && count(role) < requirements[role]).map(
-      (role) => `${requirements![role] - count(role)} more ${ROLE_LABELS[role].toLowerCase()} needed`,
-    ),
+    ...FIXED_ROLES.filter((role) => off(role) < 0).map((role) => `${rolesText(-off(role), role)} short`),
+    ...FIXED_ROLES.filter((role) => off(role) > 0).map((role) => `${rolesText(off(role), role)} too many`),
     summary,
     ...placed
       .filter((c) => c.status !== "accepted")
@@ -284,7 +289,7 @@ function Summary({
               <RoleCount
                 count={count(role)}
                 needed={requirements?.[role]}
-                state={coverage.states[role]}
+                state={stateOf(role)}
                 hint={coverage.states[role] === "offspec" ? summary : undefined}
               />
             </strong>

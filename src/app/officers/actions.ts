@@ -20,8 +20,8 @@ export async function setMember(profileId: string, value: boolean) {
   revalidatePath("/officers");
 }
 
-// Instance settings: size, minimum players per role and reserves per player.
-// Form fields: name, size, tanks, healers, dps, reserves.
+// Instance settings: size, tanks, healers and reserves per player. DPS is generated: the rest of the raid.
+// Form fields: name, size, tanks, healers, reserves.
 function readInstance(formData: FormData) {
   const num = (key: string) => {
     const value = formData.get(key);
@@ -31,9 +31,9 @@ function readInstance(formData: FormData) {
   };
   const size = num("size");
   if (!INSTANCE_SIZES.includes(size)) throw new Error(`Size must be ${INSTANCE_SIZES.join(", ")}`);
-  const fields = { size, tanks: num("tanks"), healers: num("healers"), dps: num("dps"), reserves: num("reserves") };
-  if (fields.tanks + fields.healers + fields.dps > size) {
-    throw new Error("Requirements add up to more than the raid size");
+  const fields = { size, tanks: num("tanks"), healers: num("healers"), reserves: num("reserves") };
+  if (fields.tanks + fields.healers > size) {
+    throw new Error("Tanks and healers add up to more than the raid size");
   }
   return fields;
 }

@@ -1,7 +1,8 @@
 import { cache } from "react";
 import { notFound, permanentRedirect } from "next/navigation";
+import { roleCoverage, roleOptions } from "@/lib/coverage";
 import { requireViewer } from "@/lib/viewer";
-import { isLocked } from "@/lib/wow";
+import { FIXED_ROLES, isLocked, primaryRole, requirementsOf, rolesText } from "@/lib/wow";
 
 type Supabase = Awaited<ReturnType<typeof requireViewer>>["supabase"];
 
@@ -37,4 +38,49 @@ export const getPlayer = cache(async (slug: string) => {
 export async function assertOpen(supabase: Supabase, raidId: string, message = "Sign-ups are locked") {
   const { data: raid } = await supabase.from("raids").select("locked_at").eq("id", raidId).single();
   if (!raid || isLocked(raid)) throw new Error(message);
+}
+
+// Officers locking sign-ups get asked first when the accepted sign-ups can't fill the tanks and healers, even
+// with offspecs (#27). Null when they can.
+export async function lockWarning(supabase: Supabase, raid: { id: string; instance: string }) {
+  const [{ data: signups }, { data: specs }, { data: instance }] = await Promise.all([
+    supabase
+      .from("signups")
+      .select("character_id, spec_id, characters(name, main_spec_id, off_spec_ids)")
+      .eq("raid_id", raid.id)
+      .eq("status", "accepted")
+      .overrideTypes<
+        {
+          character_id: string;
+          spec_id: string | null;
+          characters: { name: string; main_spec_id: string; off_spec_ids: string[] } | null;
+        }[],
+        { merge: false }
+      >(),
+    supabase.from("specs").select("id, name, roles"),
+    supabase.from("instances").select("name, size, tanks, healers, dps").eq("name", raid.instance).maybeSingle(),
+  ]);
+  const requirements = requirementsOf(instance);
+  if (!requirements) return null;
+
+  const specById = new Map(specs?.map((s) => [s.id, s]));
+  const players = (signups ?? []).flatMap((s) => {
+    const ch = s.characters;
+    if (!ch) return [];
+    const specId = s.spec_id ?? ch.main_spec_id;
+    return [
+      {
+        id: s.character_id,
+        name: ch.name,
+        role: primaryRole(specById.get(specId)),
+        options: roleOptions([specId, ch.main_spec_id, ...ch.off_spec_ids], specById),
+      },
+    ];
+  });
+  const { states } = roleCoverage(players, requirements);
+  const short = FIXED_ROLES.filter((role) => states[role] === "short").map((role) => {
+    const have = players.filter((p) => p.role === role).length;
+    return `${rolesText(have, role)} of ${requirements[role]}`;
+  });
+  return short.length ? `Only ${short.join(" and ")} signed up, even with offspecs. Lock sign-ups anyway?` : null;
 }
