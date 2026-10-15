@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { getRaid } from "@/lib/raid";
+import { getRaid, lockWarning } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import { formatRaidTime, hasStarted, isLocked } from "@/lib/wow";
 import { setRaidLock } from "../actions";
+import { LockButton } from "./lock-button";
 import { RaidTabs } from "./raid-tabs";
 
 // Shared header and tabs for a raid's sign-ups, composition, loot and attendance pages.
@@ -30,6 +31,7 @@ export default async function RaidLayout({
 
   const started = hasStarted(raid.starts_at);
   const locked = isLocked(raid);
+  const warning = isOfficer && !locked ? await lockWarning(supabase, raid) : null;
 
   return (
     <div className="space-y-6">
@@ -43,11 +45,7 @@ export default async function RaidLayout({
             <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-medium text-red-400">🔒 Locked</span>
           )}
           {isOfficer && (
-            <form action={setRaidLock.bind(null, id, !locked)} className="ml-auto">
-              <button className="rounded border border-border px-3 py-1 text-sm hover:bg-white/5">
-                {locked ? "Unlock sign-ups" : "Lock sign-ups"}
-              </button>
-            </form>
+            <LockButton action={setRaidLock.bind(null, id, !locked)} locked={locked} warning={warning} />
           )}
         </div>
         <p className="opacity-80">
