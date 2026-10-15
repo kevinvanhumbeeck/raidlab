@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
+import { deleteRaidMessage, syncRaidMessage } from "@/lib/discord-bot";
 import { requireViewer } from "@/lib/viewer";
 import { assertOpen } from "@/lib/raid";
 import { SIGNUP_STATUSES, type SignupStatus } from "@/lib/wow";
@@ -35,10 +37,11 @@ export async function createRaid(formData: FormData) {
       notes,
       created_by: user.id,
     })
-    .select("slug")
+    .select("id, slug")
     .single();
   if (error) throw error;
 
+  after(() => syncRaidMessage(data.id));
   revalidatePath("/raids");
   redirect(`/raids/${data.slug}`);
 }
@@ -47,8 +50,10 @@ export async function deleteRaid(raidId: string) {
   const { supabase, isOfficer } = await requireViewer();
   if (!isOfficer) throw new Error("Only officers can delete raids");
 
+  const { data: raid } = await supabase.from("raids").select("discord_message_id").eq("id", raidId).single();
   const { error } = await supabase.from("raids").delete().eq("id", raidId);
   if (error) throw error;
+  after(() => deleteRaidMessage(raid?.discord_message_id ?? null));
 
   revalidatePath("/raids");
   redirect("/raids");
@@ -64,6 +69,7 @@ export async function setRaidLock(raidId: string, locked: boolean) {
     .update({ locked_at: locked ? new Date().toISOString() : null })
     .eq("id", raidId);
   if (error) throw error;
+  after(() => syncRaidMessage(raidId));
 
   revalidatePath("/raids/[slug]", "layout");
   revalidatePath("/raids");
@@ -113,6 +119,7 @@ export async function signUp(raidId: string, formData: FormData) {
   });
   if (error) throw error;
   if (status === "declined") await dropFromComp(supabase, raidId, character.id);
+  after(() => syncRaidMessage(raidId));
 
   revalidatePath("/raids/[slug]", "layout");
   revalidatePath("/raids");
@@ -134,6 +141,7 @@ export async function withdraw(raidId: string, characterId: string) {
     .eq("character_id", characterId);
   if (error) throw error;
   if (isOfficer) await dropFromComp(supabase, raidId, characterId);
+  after(() => syncRaidMessage(raidId));
 
   revalidatePath("/raids/[slug]", "layout");
   revalidatePath("/raids");
@@ -152,6 +160,7 @@ export async function setSignupStatus(raidId: string, characterId: string, statu
     .eq("character_id", characterId);
   if (error) throw error;
   if (status === "declined") await dropFromComp(supabase, raidId, characterId);
+  after(() => syncRaidMessage(raidId));
 
   revalidatePath("/raids/[slug]", "layout");
 }
@@ -179,7 +188,16 @@ export async function officerSignUp(raidId: string, formData: FormData) {
     updated_at: new Date().toISOString(),
   });
   if (error) throw error;
+  after(() => syncRaidMessage(raidId));
 
   revalidatePath("/raids/[slug]", "layout");
   revalidatePath("/raids");
+}
+
+// Officers post a raid to Discord by hand, e.g. one created before the bot was set up, or update its post.
+export async function postToDiscord(raidId: string) {
+  const { isOfficer } = await requireViewer();
+  if (!isOfficer) throw new Error("Only officers can post raids to Discord");
+  await syncRaidMessage(raidId);
+  revalidatePath("/raids/[slug]", "layout");
 }
