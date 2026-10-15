@@ -50,14 +50,13 @@ export function effectiveRole(spec: { roles: string[] } | null | undefined, over
   return override && spec?.roles.includes(override) ? override : primaryRole(spec);
 }
 
-export const SIGNUP_STATUSES = ["accepted", "tentative", "bench", "absent"] as const;
+// No sign-up means no response. Bench isn't a sign-up state: it's signed up but not placed in the comp.
+export const SIGNUP_STATUSES = ["accepted", "declined"] as const;
 export type SignupStatus = (typeof SIGNUP_STATUSES)[number];
 
 export const STATUS_LABELS: Record<SignupStatus, string> = {
   accepted: "Accepted",
-  tentative: "Tentative",
-  bench: "Bench",
-  absent: "Absent",
+  declined: "Declined",
 };
 
 export function formatRaidTime(iso: string) {
@@ -87,12 +86,11 @@ export const DUTY_LABELS: Record<RaidDuty, string> = {
 };
 
 // Best to worst. Absent is a missed raid; a no-show signed up as accepted and didn't come.
-export const ATTENDANCE_STATUSES = ["present", "late", "benched", "absent", "no_show"] as const;
+export const ATTENDANCE_STATUSES = ["present", "benched", "absent", "no_show"] as const;
 export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number];
 
 export const ATTENDANCE_LABELS: Record<AttendanceStatus, string> = {
   present: "Present",
-  late: "Late",
   benched: "Benched",
   absent: "Absent",
   no_show: "No-show",
@@ -100,20 +98,17 @@ export const ATTENDANCE_LABELS: Record<AttendanceStatus, string> = {
 
 export const ATTENDANCE_COLORS: Record<AttendanceStatus, string> = {
   present: "bg-emerald-500",
-  late: "bg-amber-400",
   benched: "bg-sky-500",
   absent: "bg-zinc-400",
   no_show: "bg-red-500",
 };
 
 // Benched players showed up and were available, so they count as attended.
-export const COUNTS_AS_ATTENDED: AttendanceStatus[] = ["present", "late", "benched"];
+export const COUNTS_AS_ATTENDED: AttendanceStatus[] = ["present", "benched"];
 
 export const STATUS_DOT: Record<SignupStatus, string> = {
   accepted: "bg-emerald-500",
-  tentative: "bg-amber-400",
-  bench: "bg-sky-500",
-  absent: "bg-zinc-400",
+  declined: "bg-zinc-400",
 };
 
 // Wall-clock parts of an instant in realm time.

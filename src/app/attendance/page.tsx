@@ -72,7 +72,7 @@ export default async function AttendancePage() {
       <h1 className="text-2xl font-semibold">Attendance</h1>
       <p className="text-sm opacity-70">
         Over {raidList.length} raid{raidList.length === 1 ? "" : "s"} with recorded attendance, counting only raids
-        since each player joined. Present, late and benched count as attended.
+        since each player joined. Present and benched count as attended.
       </p>
       <div className="flex flex-wrap gap-3 text-xs">
         {ATTENDANCE_STATUSES.map((s) => (

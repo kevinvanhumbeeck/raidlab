@@ -8,8 +8,6 @@ import { SIGNUP_STATUSES, type SignupStatus } from "@/lib/wow";
 
 type Supabase = Awaited<ReturnType<typeof requireViewer>>["supabase"];
 
-const OUT_OF_COMP: SignupStatus[] = ["bench", "absent"];
-
 export async function createRaid(formData: FormData) {
   const { supabase, user, isOfficer } = await requireViewer();
   if (!isOfficer) throw new Error("Only officers can create raids");
@@ -114,14 +112,13 @@ export async function signUp(raidId: string, formData: FormData) {
     updated_at: new Date().toISOString(),
   });
   if (error) throw error;
-  if (OUT_OF_COMP.includes(status)) await dropFromComp(supabase, raidId, character.id);
+  if (status === "declined") await dropFromComp(supabase, raidId, character.id);
 
   revalidatePath("/raids/[slug]", "layout");
   revalidatePath("/raids");
 }
 
-// An officer benching or removing a placed player takes them out of the comp too. When players change
-// their own sign-up they stay placed, and the comp page flags them for an officer to decide.
+// Declining, or an officer removing a sign-up, takes the character out of the comp too.
 async function dropFromComp(supabase: Supabase, raidId: string, characterId: string) {
   const { error } = await supabase.from("comp_slots").delete().eq("raid_id", raidId).eq("character_id", characterId);
   if (error) throw error;
@@ -142,7 +139,7 @@ export async function withdraw(raidId: string, characterId: string) {
   revalidatePath("/raids");
 }
 
-// Officers can move anyone between accepted / tentative / bench / absent.
+// Officers can mark anyone accepted or declined, e.g. for players who replied in Discord.
 export async function setSignupStatus(raidId: string, characterId: string, status: SignupStatus) {
   const { supabase, isOfficer } = await requireViewer();
   if (!isOfficer) throw new Error("Only officers can change other sign-ups");
@@ -154,7 +151,7 @@ export async function setSignupStatus(raidId: string, characterId: string, statu
     .eq("raid_id", raidId)
     .eq("character_id", characterId);
   if (error) throw error;
-  if (OUT_OF_COMP.includes(status)) await dropFromComp(supabase, raidId, characterId);
+  if (status === "declined") await dropFromComp(supabase, raidId, characterId);
 
   revalidatePath("/raids/[slug]", "layout");
 }

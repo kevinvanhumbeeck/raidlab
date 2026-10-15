@@ -79,7 +79,7 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
 
   // Each player signs up with one character per raid.
   const mine = mySignups?.[0];
-  const canReserve = !!mine && mine.status !== "absent" && (!locked || isOfficer);
+  const canReserve = !!mine && mine.status !== "declined" && (!locked || isOfficer);
   const myReserves = new Set(reserves.filter((r) => r.character_id === mine?.character_id).map((r) => r.item_id));
   const full = !isOfficer && myReserves.size >= limit;
 
@@ -111,8 +111,8 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
             </Link>{" "}
             to soft-reserve up to {limit} items.
           </p>
-        ) : mine.status === "absent" ? (
-          <p className="opacity-70">You signed up as absent, so you can&apos;t reserve items.</p>
+        ) : mine.status === "declined" ? (
+          <p className="opacity-70">You declined this raid, so you can&apos;t reserve items.</p>
         ) : (
           <p>
             <span className="font-medium">{mine.characters.name}</span>{" "}

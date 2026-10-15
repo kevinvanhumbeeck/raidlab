@@ -48,7 +48,6 @@ export type BoardCharacter = {
 
 type Placement = Record<string, string>; // "group-position" -> character id
 
-const POOL_STATUSES: SignupStatus[] = ["accepted", "tentative", "bench"];
 const ROLE_ORDER: Record<Role, number> = { tank: 0, healer: 1, dps: 2 };
 
 export function CompBoard({
@@ -174,7 +173,7 @@ export function CompBoard({
   }
 
   const pool = Object.values(characters)
-    .filter((c) => !slotOf.has(c.id) && c.status && c.status !== "absent")
+    .filter((c) => !slotOf.has(c.id) && c.status === "accepted")
     .sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.name.localeCompare(b.name));
 
   return (
@@ -211,21 +210,17 @@ export function CompBoard({
         </div>
 
         <Pool disabled={!canEdit}>
-          {POOL_STATUSES.map((status) => {
-            const list = pool.filter((c) => c.status === status);
-            if (!list.length) return null;
-            return (
-              <div key={status} className="space-y-1.5">
-                <h3 className="font-sans text-sm font-semibold opacity-80">
-                  {STATUS_LABELS[status]} ({list.length})
-                </h3>
-                {list.map((c) => (
-                  <Card key={c.id} character={c} disabled={!canEdit} />
-                ))}
-              </div>
-            );
-          })}
-          {!pool.length && <p className="text-sm opacity-60">Everyone who signed up is placed.</p>}
+          {pool.length ? (
+            <div className="space-y-1.5">
+              {/* Signed up but not placed: that's the bench. */}
+              <h3 className="font-sans text-sm font-semibold opacity-80">Bench ({pool.length})</h3>
+              {pool.map((c) => (
+                <Card key={c.id} character={c} disabled={!canEdit} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm opacity-60">Everyone who signed up is placed.</p>
+          )}
         </Pool>
       </div>
 

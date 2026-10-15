@@ -59,7 +59,7 @@ begin
       roll := abs(hashtext(ch.name || ':' || i)) % 100;
 
       if roll < reliability then
-        st := case when roll % 9 = 0 then 'late' else 'present' end;
+        st := 'present';
       elsif roll < reliability + 15 then
         st := 'benched';
       else
@@ -67,11 +67,11 @@ begin
       end if;
 
       -- Raid full: extra players sit on the bench.
-      if st in ('present', 'late') and placed >= raid_size then
+      if st = 'present' and placed >= raid_size then
         st := 'benched';
       end if;
 
-      if st in ('present', 'late') then
+      if st = 'present' then
         insert into public.comp_slots (raid_id, group_no, position, character_id, spec_id)
         values (raid, placed / 5 + 1, placed % 5 + 1, ch.id, ch.main_spec_id);
         placed := placed + 1;
@@ -81,7 +81,7 @@ begin
       values (
         raid,
         ch.id,
-        case st when 'benched' then 'bench' when 'absent' then 'absent' else 'accepted' end::public.signup_status,
+        case st when 'absent' then 'declined' else 'accepted' end::public.signup_status,
         ch.main_spec_id
       );
 
