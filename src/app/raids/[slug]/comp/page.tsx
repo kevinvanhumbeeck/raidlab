@@ -1,3 +1,4 @@
+import { roleOptions } from "@/lib/coverage";
 import { getRaid } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import { primaryRole, requirementsOf, type RaidDuty, type Role, type SignupStatus } from "@/lib/wow";
@@ -8,6 +9,7 @@ type CharacterJoin = {
   name: string;
   class_id: string;
   main_spec_id: string;
+  off_spec_ids: string[];
   owner_id: string;
   profiles: { display_name: string } | null;
 };
@@ -34,7 +36,7 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
     supabase
       .from("signups")
       .select(
-        "character_id, status, spec_id, note, characters(id, name, class_id, main_spec_id, owner_id, profiles(display_name))",
+        "character_id, status, spec_id, note, characters(id, name, class_id, main_spec_id, off_spec_ids, owner_id, profiles(display_name))",
       )
       .eq("raid_id", id)
       .overrideTypes<
@@ -50,7 +52,7 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
     supabase
       .from("comp_slots")
       .select(
-        "group_no, position, character_id, spec_id, role, characters(id, name, class_id, main_spec_id, owner_id, profiles(display_name))",
+        "group_no, position, character_id, spec_id, role, characters(id, name, class_id, main_spec_id, off_spec_ids, owner_id, profiles(display_name))",
       )
       .eq("raid_id", id)
       .overrideTypes<
@@ -97,6 +99,7 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
       specName: spec?.name ?? "",
       role: primaryRole(spec),
       roles: (spec?.roles ?? []) as Role[],
+      options: roleOptions([resolvedSpecId, ch.main_spec_id, ...ch.off_spec_ids], specById),
       status,
       note,
       elsewhere: elsewhere.get(ch.owner_id) ?? null,
