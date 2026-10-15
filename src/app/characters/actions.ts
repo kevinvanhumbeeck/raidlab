@@ -70,3 +70,30 @@ export async function deleteCharacter(formData: FormData) {
   revalidatePath("/characters");
   revalidatePath("/");
 }
+
+// Away from one date to another (realm dates): open raids in that range get a declined sign-up (#50).
+export async function addAbsence(formData: FormData) {
+  const { supabase, user } = await requireViewer();
+  const startsOn = String(formData.get("starts_on") ?? "");
+  const endsOn = String(formData.get("ends_on") ?? "") || startsOn;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startsOn) || !/^\d{4}-\d{2}-\d{2}$/.test(endsOn)) throw new Error("Pick the dates");
+  if (endsOn < startsOn) throw new Error("The last day is before the first day");
+
+  const { error } = await supabase.from("absences").insert({
+    profile_id: user.id,
+    starts_on: startsOn,
+    ends_on: endsOn,
+    note: String(formData.get("note") ?? "").trim() || null,
+  });
+  if (error) throw error;
+  revalidatePath("/characters");
+  revalidatePath("/raids", "layout");
+}
+
+export async function deleteAbsence(formData: FormData) {
+  const { supabase } = await requireViewer();
+  const { error } = await supabase.from("absences").delete().eq("id", String(formData.get("id")));
+  if (error) throw error;
+  revalidatePath("/characters");
+  revalidatePath("/raids", "layout");
+}
