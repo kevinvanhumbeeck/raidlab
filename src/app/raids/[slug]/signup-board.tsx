@@ -72,7 +72,7 @@ export function SignupBoard({
   }
 
   const accepted = rows.filter((r) => r.status === "accepted");
-  const others = SIGNUP_STATUSES.filter((s) => s !== "accepted");
+  const declined = rows.filter((r) => r.status === "declined").sort(byRoleThenName);
 
   if (!rows.length) return <p className="opacity-70">No sign-ups yet.</p>;
 
@@ -116,26 +116,20 @@ export function SignupBoard({
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {others.map((status) => {
-          const list = rows.filter((r) => r.status === status).sort(byRoleThenName);
-          return (
-            <section key={status} className="rounded-xl border border-border bg-panel">
-              <h2 className="flex items-center gap-2 rounded-t-xl border-b border-border bg-panel-raised px-4 py-2.5 font-sans font-semibold">
-                <span className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT[status]}`} />
-                {STATUS_LABELS[status]}
-                <span className="tabular-nums opacity-70">{list.length}</span>
-              </h2>
-              <ul className="space-y-0.5 px-3 py-3">
-                {list.map((r) => (
-                  <PlayerRow key={r.characterId} row={r} canEdit={canEdit} onChange={change} />
-                ))}
-                {!list.length && <li className="px-1 text-sm opacity-40">Nobody</li>}
-              </ul>
-            </section>
-          );
-        })}
-      </div>
+      {declined.length > 0 && (
+        <section className="rounded-xl border border-border bg-panel">
+          <h2 className="flex items-center gap-2 rounded-t-xl border-b border-border bg-panel-raised px-4 py-2.5 font-sans font-semibold">
+            <span className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT.declined}`} />
+            {STATUS_LABELS.declined}
+            <span className="tabular-nums opacity-70">{declined.length}</span>
+          </h2>
+          <ul className="grid gap-x-4 gap-y-0.5 px-3 py-3 sm:grid-cols-2 lg:grid-cols-4">
+            {declined.map((r) => (
+              <PlayerRow key={r.characterId} row={r} canEdit={canEdit} onChange={change} />
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

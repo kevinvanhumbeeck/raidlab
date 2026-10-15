@@ -13,7 +13,6 @@ import { saveAttendance } from "./actions";
 // Written out in full so Tailwind picks up the classes.
 const CHECKED: Record<AttendanceStatus, string> = {
   present: "peer-checked:bg-emerald-500",
-  late: "peer-checked:bg-amber-400",
   benched: "peer-checked:bg-sky-500",
   absent: "peer-checked:bg-zinc-400",
   no_show: "peer-checked:bg-red-500",
@@ -67,7 +66,7 @@ export default async function RaidAttendancePage({
   const rows = new Map<string, { character: CharacterJoin; status: AttendanceStatus }>();
   for (const s of signups ?? []) {
     if (s.characters)
-      rows.set(s.characters.id, { character: s.characters, status: s.status === "bench" ? "benched" : "absent" });
+      rows.set(s.characters.id, { character: s.characters, status: s.status === "accepted" ? "benched" : "absent" });
   }
   for (const s of slots ?? []) {
     if (s.characters) rows.set(s.characters.id, { character: s.characters, status: "present" });
@@ -86,7 +85,7 @@ export default async function RaidAttendancePage({
       <section className="space-y-1">
         {!recorded && isOfficer && sorted.length > 0 && (
           <p className="text-sm text-amber-400">
-            Not saved yet. Suggested from the comp (present) and sign-ups (benched / absent) — adjust and save.
+            Not saved yet. Suggested from the comp: placed is present, bench is benched, declined is absent. Adjust and save.
           </p>
         )}
         {saved && <p className="text-sm text-emerald-400">Attendance saved.</p>}

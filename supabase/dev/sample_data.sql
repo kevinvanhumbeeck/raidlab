@@ -34,14 +34,14 @@ begin
       ('Jamienism',       'druid',   'druid_restoration',    '{}',                                         'accepted',  4, 2),
       ('Braggers',        'shaman',  'shaman_restoration',   '{}',                                         'accepted',  4, 3),
       ('Freija',          'priest',  'priest_discipline',    '{priest_holy,priest_shadow}',                'accepted',  4, 4),
-      -- Standby
-      ('Phex Vader',      'warlock', 'warlock_destruction',  '{}',                                         'bench',     null, null),
-      ('Rinoa',           'hunter',  'hunter_beastmastery',  '{}',                                         'bench',     null, null),
-      ('Jacko',           'hunter',  'hunter_beastmastery',  '{}',                                         'bench',     null, null),
-      -- On the roster but not in a group
-      ('Jazz',            'druid',   'druid_balance',        '{druid_restoration}',                        'tentative', null, null),
-      ('Tristesse',       'rogue',   'rogue_combat',         '{}',                                         'tentative', null, null),
-      ('Pagge',           'shaman',  'shaman_enhancement',   '{}',                                         'tentative', null, null)
+      -- Bench: signed up, not placed
+      ('Phex Vader',      'warlock', 'warlock_destruction',  '{}',                                         'accepted',  null, null),
+      ('Rinoa',           'hunter',  'hunter_beastmastery',  '{}',                                         'accepted',  null, null),
+      ('Jacko',           'hunter',  'hunter_beastmastery',  '{}',                                         'accepted',  null, null),
+      -- Can't make it
+      ('Jazz',            'druid',   'druid_balance',        '{druid_restoration}',                        'declined',  null, null),
+      ('Tristesse',       'rogue',   'rogue_combat',         '{}',                                         'declined',  null, null),
+      ('Pagge',           'shaman',  'shaman_enhancement',   '{}',                                         'declined',  null, null)
     ) as t(character_name, class_id, main_spec_id, off_spec_ids, status, group_no, pos)
   loop
     select id into ch from public.characters where lower(name) = lower(r.character_name);
