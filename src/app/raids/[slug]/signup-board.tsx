@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useOptimistic, useRef, useState, useTransition } from "react";
 import { RoleCount } from "@/components/role-count";
 import { SpecIcon } from "@/components/spec-icon";
+import { coverageSummary, roleCoverage, type RoleOption } from "@/lib/coverage";
 import { useDismiss } from "@/lib/use-dismiss";
 import {
   ROLES,
@@ -27,6 +28,7 @@ export type SignupRow = {
   specId: string;
   specName: string;
   role: Role;
+  options: RoleOption[];
   status: SignupStatus;
   note: string | null;
   isMine: boolean;
@@ -72,6 +74,11 @@ export function SignupBoard({
   }
 
   const accepted = rows.filter((r) => r.status === "accepted");
+  const coverage = roleCoverage(
+    accepted.map((r) => ({ id: r.characterId, name: r.name, role: r.role, options: r.options })),
+    requirements,
+  );
+  const summary = coverageSummary(coverage);
   const declined = rows.filter((r) => r.status === "declined").sort(byRoleThenName);
 
   if (!rows.length) return <p className="opacity-70">No sign-ups yet.</p>;
@@ -91,6 +98,7 @@ export function SignupBoard({
               {accepted.length}/{size}
             </span>
           </h2>
+          {summary && <p className="text-sm text-amber-400">{summary}.</p>}
         </header>
         <div className="grid divide-border sm:grid-cols-[1fr_1fr_2fr] sm:divide-x">
           {ROLES.map((role) => {
@@ -99,7 +107,12 @@ export function SignupBoard({
               <div key={role} className="px-3 py-3">
                 <h3 className="mb-2 flex items-baseline justify-between px-1 font-sans text-xs font-semibold uppercase tracking-wide">
                   <span className="opacity-60">{ROLE_LABELS[role]}</span>
-                  <RoleCount count={inRole.length} needed={requirements?.[role]} />
+                  <RoleCount
+                    count={inRole.length}
+                    needed={requirements?.[role]}
+                    state={coverage.states[role]}
+                    hint={coverage.states[role] === "offspec" ? summary : undefined}
+                  />
                 </h3>
                 {/* DPS is most of the raid, so it gets two columns. */}
                 <ul

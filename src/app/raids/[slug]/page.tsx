@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ConfirmButton } from "@/components/confirm-button";
+import { roleOptions } from "@/lib/coverage";
 import { getRaid } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import { SIGNUP_STATUSES, STATUS_LABELS, isLocked, primaryRole, requirementsOf, type SignupStatus } from "@/lib/wow";
@@ -17,6 +18,7 @@ type SignupRow = {
     name: string;
     class_id: string;
     main_spec_id: string;
+    off_spec_ids: string[];
     owner_id: string;
     profiles: { slug: string; display_name: string } | null;
   } | null;
@@ -38,7 +40,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
     supabase
       .from("signups")
       .select(
-        "character_id, status, spec_id, note, characters(name, class_id, main_spec_id, owner_id, profiles(slug, display_name))",
+        "character_id, status, spec_id, note, characters(name, class_id, main_spec_id, off_spec_ids, owner_id, profiles(slug, display_name))",
       )
       .eq("raid_id", id)
       .overrideTypes<SignupRow[], { merge: false }>(),
@@ -79,6 +81,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
       specId,
       specName: spec?.name ?? "",
       role: primaryRole(spec),
+      options: roleOptions([specId, ch.main_spec_id, ...ch.off_spec_ids], specById),
     };
     return [row];
   });
