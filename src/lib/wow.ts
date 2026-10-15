@@ -150,7 +150,7 @@ export function hasStarted(iso: string) {
   return new Date(iso).getTime() <= Date.now();
 }
 
-// A raid is locked from its locked_at on (by default its start). Null means an officer reopened it.
+// A raid is locked from its locked_at on (by default 1 hour before it starts). Null means an officer reopened it.
 export function isLocked(raid: { locked_at: string | null }) {
   return raid.locked_at !== null && hasStarted(raid.locked_at);
 }

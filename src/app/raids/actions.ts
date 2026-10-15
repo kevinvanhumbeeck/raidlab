@@ -54,7 +54,7 @@ export async function deleteRaid(raidId: string) {
   redirect("/raids");
 }
 
-// Officers lock a raid now, or reopen it. Reopening clears locked_at, so it doesn't lock again at the start.
+// Officers lock a raid now, or reopen it. Reopening clears locked_at, so it doesn't lock again before the start.
 export async function setRaidLock(raidId: string, locked: boolean) {
   const { supabase, isOfficer } = await requireViewer();
   if (!isOfficer) throw new Error("Only officers can lock raids");
