@@ -1,4 +1,6 @@
+import { CopyButton } from "@/components/copy-button";
 import { roleOptions } from "@/lib/coverage";
+import { gargulGroups } from "@/lib/gargul";
 import { getRaid } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import { primaryRole, requirementsOf, type RaidDuty, type Role, type SignupStatus } from "@/lib/wow";
@@ -115,6 +117,15 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
     if (slot.role) slotRoles[slot.character_id] = slot.role;
   }
 
+  const groupsExport = gargulGroups(
+    (slots ?? []).flatMap((slot) => {
+      const ch = characters[slot.character_id];
+      if (!ch) return [];
+      const role = slot.role ?? ch.role;
+      return [{ groupNo: slot.group_no, position: slot.position, name: ch.name, tank: role === "tank" }];
+    }),
+  );
+
   const dutyMap: Partial<Record<RaidDuty, string>> = {};
   for (const d of duties ?? []) dutyMap[d.duty as RaidDuty] = d.character_id;
 
@@ -130,6 +141,23 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
         duties={dutyMap}
         canEdit={isOfficer}
       />
+
+      {isOfficer && (slots ?? []).length > 0 && (
+        <section className="space-y-2 rounded-xl border border-border bg-panel/90 p-4 text-sm">
+          <h2 className="font-sans font-semibold">Invites and groups</h2>
+          <p className="opacity-70">
+            {(slots ?? []).length} players in the comp. In game, type <code>/gl groups</code> (Gargul) and paste
+            the copied roster. From there you can invite everyone, see who&apos;s missing, sort the groups and
+            assign the tanks.
+          </p>
+          <CopyButton
+            text={groupsExport}
+            className="rounded bg-accent px-3 py-1 font-medium text-accent-foreground hover:bg-accent-hover"
+          >
+            Copy for Gargul
+          </CopyButton>
+        </section>
+      )}
     </div>
   );
 }
