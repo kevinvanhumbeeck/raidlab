@@ -14,7 +14,7 @@ export type CoveragePlayer = {
   options: RoleOption[];
 };
 
-export type RoleOption = { role: Role; specName: string };
+export type RoleOption = { role: Role; specId: string; specName: string };
 
 export type Switch = { id: string; name: string; from: Role; to: Role; specName: string };
 
@@ -109,10 +109,12 @@ export function roleOptions(
   specIds: (string | null | undefined)[],
   specById: Map<string, { name: string; roles: string[] }>,
 ): RoleOption[] {
-  const out = new Map<Role, string>();
+  const out = new Map<Role, RoleOption>();
   for (const id of specIds) {
     const spec = id ? specById.get(id) : undefined;
-    for (const r of (spec?.roles ?? []) as Role[]) if (!out.has(r)) out.set(r, spec!.name);
+    for (const r of (spec?.roles ?? []) as Role[]) {
+      if (!out.has(r)) out.set(r, { role: r, specId: id!, specName: spec!.name });
+    }
   }
-  return [...out].map(([role, specName]) => ({ role, specName }));
+  return [...out.values()];
 }

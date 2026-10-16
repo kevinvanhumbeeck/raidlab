@@ -68,3 +68,17 @@ export function softresCsv(rows: ReserveExportRow[]) {
   );
   return ["Item,ItemId,From,Name,Class,Spec,Note,Plus,Date", ...lines].join("\n");
 }
+
+// Roster for Gargul's raid groups window (`/gl groups`): it invites everyone, shows who's missing, sorts the
+// raid into these groups and assigns main tanks. One line per group, "1:Name,Name,...", and line 9 lists the
+// tanks. Format from Gargul's Classes/RaidGroups.lua (applyRaidGroups). Empty groups are left out, as Gargul
+// can't read a line without names.
+export function gargulGroups(slots: { groupNo: number; position: number; name: string; tank: boolean }[]) {
+  const sorted = [...slots].sort((a, b) => a.groupNo - b.groupNo || a.position - b.position);
+  const groups = new Map<number, typeof slots>();
+  for (const slot of sorted) groups.set(slot.groupNo, [...(groups.get(slot.groupNo) ?? []), slot]);
+  const lines = [...groups].map(([groupNo, members]) => `${groupNo}:${members.map((m) => m.name).join(",")}`);
+  const tanks = sorted.filter((slot) => slot.tank).map((slot) => slot.name);
+  if (tanks.length) lines.push(`9:${tanks.join(",")}`);
+  return lines.join("\n");
+}

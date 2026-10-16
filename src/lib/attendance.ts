@@ -23,3 +23,26 @@ export function attendanceSummary(raids: RecordedRaid[], perRaid: Map<string, At
     history: eligible.map((raid, i) => ({ raid, status: statuses[i] })),
   };
 }
+
+export type AttendanceRow = {
+  status: AttendanceStatus;
+  raid_id: string;
+  raids: { title: string; starts_at: string } | null;
+  characters: { owner_id: string } | null;
+};
+
+// Raids with recorded attendance (newest first), and per player and raid the best status across their characters.
+export function attendanceByPlayer(rows: AttendanceRow[]) {
+  const raids = new Map<string, RecordedRaid>();
+  for (const r of rows) {
+    if (r.raids) raids.set(r.raid_id, { id: r.raid_id, title: r.raids.title, startsAt: r.raids.starts_at });
+  }
+  const byPlayer = new Map<string, Map<string, AttendanceStatus>>();
+  for (const r of rows) {
+    if (!r.characters) continue;
+    const perRaid = byPlayer.get(r.characters.owner_id) ?? new Map<string, AttendanceStatus>();
+    perRaid.set(r.raid_id, betterStatus(perRaid.get(r.raid_id), r.status));
+    byPlayer.set(r.characters.owner_id, perRaid);
+  }
+  return { raids: [...raids.values()].sort((a, b) => b.startsAt.localeCompare(a.startsAt)), byPlayer };
+}

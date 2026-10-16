@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ROLES, ROLE_REQUIREMENT_KEYS, ROLE_SHORT, type Instance } from "@/lib/wow";
+import { MAX_SPLITS, ROLES, ROLE_REQUIREMENT_KEYS, ROLE_SHORT, type Instance } from "@/lib/wow";
 import { createRaid } from "./actions";
 import { RaidDatePicker } from "./raid-date-picker";
 
@@ -33,6 +33,16 @@ export function NewRaidForm({ instances }: { instances: Instance[] }) {
       <label className="space-y-1">
         <span className="text-sm">Notes (optional)</span>
         <input name="notes" placeholder="Flasks required, invites 19:45" className={input} />
+      </label>
+      <label className="space-y-1">
+        <span className="text-sm">Splits</span>
+        <select name="splits" defaultValue={1} className={input}>
+          {Array.from({ length: MAX_SPLITS }, (_, i) => (
+            <option key={i} value={i + 1}>
+              {i === 0 ? "1 (one group)" : `${i + 1} groups at the same time`}
+            </option>
+          ))}
+        </select>
       </label>
       <div className="sm:col-span-2">
         <button

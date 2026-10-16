@@ -6,7 +6,7 @@ import { after } from "next/server";
 import { deleteRaidMessage, syncRaidMessage } from "@/lib/discord-bot";
 import { requireViewer } from "@/lib/viewer";
 import { assertOpen } from "@/lib/raid";
-import { SIGNUP_STATUSES, type SignupStatus } from "@/lib/wow";
+import { MAX_SPLITS, SIGNUP_STATUSES, type SignupStatus } from "@/lib/wow";
 
 type Supabase = Awaited<ReturnType<typeof requireViewer>>["supabase"];
 
@@ -26,6 +26,9 @@ export async function createRaid(formData: FormData) {
 
   const title = String(formData.get("title") ?? "").trim() || instance.name;
   const notes = String(formData.get("notes") ?? "").trim() || null;
+  // Several groups of the instance at the same time (#60).
+  const splits = Number(formData.get("splits") ?? 1);
+  if (!Number.isInteger(splits) || splits < 1 || splits > MAX_SPLITS) throw new Error("Invalid number of splits");
 
   const { data, error } = await supabase
     .from("raids")
@@ -33,6 +36,7 @@ export async function createRaid(formData: FormData) {
       title,
       instance: instance.name,
       size: instance.size,
+      splits,
       starts_at: startsAt.toISOString(),
       notes,
       created_by: user.id,
@@ -175,10 +179,18 @@ export async function officerSignUp(raidId: string, formData: FormData) {
 
   const { data: character } = await supabase
     .from("characters")
-    .select("id, main_spec_id")
+    .select("id, owner_id, main_spec_id")
     .eq("id", String(formData.get("character_id")))
     .single();
   if (!character) throw new Error("Unknown character");
+
+  // Same rule as players signing up themselves: one character per player, so this replaces their other sign-up.
+  const { data: playerCharacters } = await supabase.from("characters").select("id").eq("owner_id", character.owner_id);
+  const otherIds = (playerCharacters ?? []).map((c) => c.id).filter((id) => id !== character.id);
+  if (otherIds.length) {
+    const { error } = await supabase.from("signups").delete().eq("raid_id", raidId).in("character_id", otherIds);
+    if (error) throw error;
+  }
 
   const { error } = await supabase.from("signups").upsert({
     raid_id: raidId,

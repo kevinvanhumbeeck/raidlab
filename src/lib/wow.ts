@@ -41,13 +41,22 @@ export function rolesText(n: number, role: Role) {
   return `${n} ${(n === 1 ? ROLE_NAMES[role] : ROLE_LABELS[role]).toLowerCase()}`;
 }
 
-export function requirementsOf(instance: Instance | null | undefined): RoleRequirements | null {
+// For a split night (#60), the whole night: each split needs the instance's tanks and healers.
+export function requirementsOf(instance: Instance | null | undefined, splits = 1): RoleRequirements | null {
   if (!instance) return null;
   return {
-    tank: instance.tanks,
-    healer: instance.healers,
-    dps: instance.dps,
+    tank: instance.tanks * splits,
+    healer: instance.healers * splits,
+    dps: instance.dps * splits,
   };
+}
+
+// Split raids have 1 to 4 splits; a normal raid is one split.
+export const MAX_SPLITS = 4;
+
+// "Split 2 · group 1", or just "group 1" on a normal raid.
+export function slotText(splits: number, splitNo: number, groupNo: number) {
+  return splits > 1 ? `split ${splitNo} · group ${groupNo}` : `group ${groupNo}`;
 }
 
 // The role a spec fills unless an officer picked another one it can do.
@@ -94,7 +103,8 @@ export function upcomingCutoff() {
   return new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
 }
 
-export const RAID_DUTIES = ["raid_lead", "tank_assist", "heal_assist", "loot_lead"] as const;
+// Most important first: the order of the comp board and player profiles.
+export const RAID_DUTIES = ["raid_lead", "loot_lead", "tank_assist", "heal_assist"] as const;
 export type RaidDuty = (typeof RAID_DUTIES)[number];
 
 export const DUTY_LABELS: Record<RaidDuty, string> = {

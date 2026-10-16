@@ -9,7 +9,7 @@ export default async function RaidsPage() {
   const [{ data: raids }, { data: mySignups }, { data: pastRaids }, { data: instances }] = await Promise.all([
     supabase
       .from("raids")
-      .select("id, slug, title, instance, size, starts_at, locked_at, signups(status)")
+      .select("id, slug, title, instance, size, splits, starts_at, locked_at, signups(status)")
       .gte("starts_at", upcomingCutoff())
       .order("starts_at"),
     supabase
@@ -41,12 +41,12 @@ export default async function RaidsPage() {
                   <Link href={`/raids/${raid.slug}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-foreground/5">
                     <span className="font-medium">{raid.title}</span>
                     <span className="text-sm opacity-70">
-                      {raid.instance} · {raid.size}-man
+                      {raid.instance} · {raid.size}-man{raid.splits > 1 && ` × ${raid.splits}`}
                     </span>
                     <span className="text-sm opacity-70">{formatRaidTime(raid.starts_at)}</span>
                     {isLocked(raid) && <span className="text-xs text-danger">🔒 Locked</span>}
                     <span className="ml-auto text-sm">
-                      {accepted}/{raid.size} accepted
+                      {accepted}/{raid.size * raid.splits} accepted
                     </span>
                     <span className={`text-xs ${mine ? "opacity-80" : "text-warn"}`}>
                       {mine ? `You: ${mine}` : "Not signed up"}

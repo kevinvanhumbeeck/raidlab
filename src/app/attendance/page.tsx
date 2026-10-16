@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { attendanceSummary, betterStatus, type RecordedRaid } from "@/lib/attendance";
+import { attendanceByPlayer, attendanceSummary, type AttendanceRow } from "@/lib/attendance";
 import { requireViewer } from "@/lib/viewer";
 import {
   ATTENDANCE_COLORS,
@@ -7,16 +7,8 @@ import {
   ATTENDANCE_STATUSES,
   formatRaidTime,
   playerHref,
-  type AttendanceStatus,
 } from "@/lib/wow";
 import { readable } from "@/lib/theme";
-
-type Row = {
-  status: AttendanceStatus;
-  raid_id: string;
-  raids: { title: string; starts_at: string } | null;
-  characters: { owner_id: string } | null;
-};
 
 const RECENT = 10;
 
@@ -27,27 +19,13 @@ export default async function AttendancePage() {
     supabase
       .from("attendance")
       .select("status, raid_id, raids(title, starts_at), characters(owner_id)")
-      .overrideTypes<Row[], { merge: false }>(),
+      .overrideTypes<AttendanceRow[], { merge: false }>(),
     supabase.from("profiles").select("id, slug, display_name, created_at"),
     supabase.from("characters").select("id, owner_id, name, class_id, is_main").order("is_main", { ascending: false }),
     supabase.from("classes").select("id, color"),
   ]);
 
-  // Raids with recorded attendance, newest first.
-  const raids = new Map<string, RecordedRaid>();
-  for (const r of rows ?? []) {
-    if (r.raids) raids.set(r.raid_id, { id: r.raid_id, title: r.raids.title, startsAt: r.raids.starts_at });
-  }
-  const raidList = [...raids.values()].sort((a, b) => b.startsAt.localeCompare(a.startsAt));
-
-  // Per player and raid, the best status across their characters.
-  const byPlayer = new Map<string, Map<string, AttendanceStatus>>();
-  for (const r of rows ?? []) {
-    if (!r.characters) continue;
-    const perRaid = byPlayer.get(r.characters.owner_id) ?? new Map<string, AttendanceStatus>();
-    perRaid.set(r.raid_id, betterStatus(perRaid.get(r.raid_id), r.status));
-    byPlayer.set(r.characters.owner_id, perRaid);
-  }
+  const { raids: raidList, byPlayer } = attendanceByPlayer(rows ?? []);
 
   const color = new Map(classes?.map((c) => [c.id, c.color]));
   const mainOf = new Map<string, { id: string; name: string; class_id: string }>();

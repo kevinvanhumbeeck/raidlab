@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { officersFromDiscord } from "@/lib/discord";
 import { requireViewer } from "@/lib/viewer";
-import { INSTANCE_SIZES } from "@/lib/wow";
+import { INSTANCE_SIZES, MAX_SPLITS } from "@/lib/wow";
 
 export async function setOfficer(profileId: string, value: boolean) {
   if (officersFromDiscord()) throw new Error("Officers follow the @officer role in Discord");
@@ -64,4 +64,20 @@ export async function addInstance(formData: FormData) {
   if (error?.code === "23505") throw new Error(`${name} already exists`);
   if (error) throw new Error(error.message);
   revalidatePath("/officers");
+}
+
+// Put a character in an instance's standing split roster (#60), or take them out (null).
+export async function setRosterSplit(instance: string, characterId: string, splitNo: number | null) {
+  const { supabase, isOfficer } = await requireViewer();
+  if (!isOfficer) throw new Error("Only officers can change split rosters");
+  if (splitNo !== null && (!Number.isInteger(splitNo) || splitNo < 1 || splitNo > MAX_SPLITS)) {
+    throw new Error("Invalid split");
+  }
+
+  const { error } = splitNo
+    ? await supabase.from("split_rosters").upsert({ instance, character_id: characterId, split_no: splitNo })
+    : await supabase.from("split_rosters").delete().eq("instance", instance).eq("character_id", characterId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/officers/splits/[instance]", "page");
+  revalidatePath("/raids/[slug]", "layout");
 }
