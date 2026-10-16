@@ -1,13 +1,16 @@
+// Grouped in the picker: plain palettes first, then the ones with a background image.
 export const THEMES = [
-  { id: "tavern", label: "Tavern" },
-  { id: "slate", label: "Slate" },
-  { id: "frost", label: "Frost" },
-  { id: "modern", label: "Modern" },
-  { id: "alliance", label: "Alliance" },
-  { id: "horde", label: "Horde" },
-  { id: "illidan", label: "Illidan" },
-  { id: "light", label: "Light" },
+  { id: "tavern", label: "Tavern", group: "Classic" },
+  { id: "slate", label: "Slate", group: "Classic" },
+  { id: "frost", label: "Frost", group: "Classic" },
+  { id: "light", label: "Light", group: "Classic" },
+  { id: "modern", label: "Modern", group: "Artwork" },
+  { id: "alliance", label: "Alliance", group: "Artwork" },
+  { id: "horde", label: "Horde", group: "Artwork" },
+  { id: "illidan", label: "Illidan", group: "Artwork" },
 ] as const;
+
+export const THEME_GROUPS = ["Classic", "Artwork"] as const;
 
 export type Theme = (typeof THEMES)[number]["id"];
 
