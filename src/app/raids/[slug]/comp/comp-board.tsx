@@ -320,9 +320,10 @@ function Summary({
 function Slot({ id, disabled, children }: { id: string; disabled: boolean; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id, disabled });
   return (
+    // Exactly one card tall (32px) plus the dashed border, so a filled slot has no gap and an empty one the same height.
     <div
       ref={setNodeRef}
-      className={`min-h-11 rounded border border-dashed ${isOver ? "border-accent bg-accent/10" : "border-border"}`}
+      className={`min-h-[34px] rounded border border-dashed ${isOver ? "border-accent bg-accent/10" : "border-border"}`}
     >
       {children}
     </div>
