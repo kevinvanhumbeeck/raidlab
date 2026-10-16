@@ -34,13 +34,13 @@
   --accent-foreground: #16131f;
 }
 
-/* Frost: icy blues. */
+/* Frost: icy blues, with sea-green-blue borders that echo the accent. */
 [data-theme="frost"] {
   --background: #0b1318;
   --foreground: #e3eef2;
   --panel: #111c22;
   --panel-raised: #16242b;
-  --border: #213540;
+  --border: #3b8496;
   --muted: #8aa4b0;
   --accent: #7cc8e8;
   --accent-hover: #9ad6ef;
