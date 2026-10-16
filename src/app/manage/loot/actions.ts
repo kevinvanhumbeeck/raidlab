@@ -4,14 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseItemIds } from "@/lib/loot";
 import { requireViewer } from "@/lib/viewer";
+import { lootTableHref } from "@/lib/wow";
 
 async function requireAdmin() {
   const viewer = await requireViewer();
   if (!viewer.isAdmin) throw new Error("Only admins can edit loot tables");
   return viewer.supabase;
 }
-
-const lootHref = (instance: string) => `/manage/loot/${encodeURIComponent(instance)}`;
 
 // Name, quality and icon from Wowhead's Forever item database, or null for unknown items.
 async function fetchItemInfo(id: number) {
@@ -49,15 +48,15 @@ export async function addLootItems(instance: string, formData: FormData) {
     if (error) throw error;
   }
 
-  revalidatePath(lootHref(instance));
-  redirect(missing.length ? `${lootHref(instance)}?missing=${missing.join(",")}` : lootHref(instance));
+  revalidatePath(lootTableHref(instance));
+  redirect(missing.length ? `${lootTableHref(instance)}?missing=${missing.join(",")}` : lootTableHref(instance));
 }
 
 export async function removeLootItem(instance: string, id: number) {
   const supabase = await requireAdmin();
   const { error } = await supabase.from("loot_items").delete().eq("id", id);
   if (error) throw error;
-  revalidatePath(lootHref(instance));
+  revalidatePath(lootTableHref(instance));
 }
 
 // For replacing a stand-in loot table. Removes the reserves on these items too.
@@ -65,5 +64,5 @@ export async function clearLootTable(instance: string) {
   const supabase = await requireAdmin();
   const { error } = await supabase.from("loot_items").delete().eq("instance", instance);
   if (error) throw error;
-  revalidatePath(lootHref(instance));
+  revalidatePath(lootTableHref(instance));
 }

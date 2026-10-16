@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { FIXED_ROLES, INSTANCE_SIZES, ROLE_LABELS, ROLE_REQUIREMENT_KEYS, type Instance } from "@/lib/wow";
+import {
+  FIXED_ROLES,
+  INSTANCE_SIZES,
+  lootTableHref,
+  splitRosterHref,
+  ROLE_LABELS,
+  ROLE_REQUIREMENT_KEYS,
+  type Instance,
+} from "@/lib/wow";
 import { addInstance, saveInstance } from "./actions";
 
 const number = "w-16 rounded border border-border bg-background px-2 py-1 text-right tabular-nums";
@@ -72,7 +80,7 @@ export function InstanceSettings({ instances, editable }: { instances: InstanceR
                 <>
                   <button className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5">Save</button>
                   <Link
-                    href={`/manage/loot/${encodeURIComponent(instance.name)}`}
+                    href={lootTableHref(instance.name)}
                     className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5"
                   >
                     Loot table
@@ -80,7 +88,7 @@ export function InstanceSettings({ instances, editable }: { instances: InstanceR
                 </>
               )}
               <Link
-                href={`/manage/splits/${encodeURIComponent(instance.name)}`}
+                href={splitRosterHref(instance.name)}
                 className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5"
               >
                 Splits
