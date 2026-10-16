@@ -13,6 +13,14 @@ export async function setOfficer(profileId: string, value: boolean) {
   revalidatePath("/officers");
 }
 
+// Admins (#87) are managed here only, never from Discord.
+export async function setAdmin(profileId: string, value: boolean) {
+  const { supabase } = await requireViewer();
+  const { error } = await supabase.rpc("set_admin", { target: profileId, value });
+  if (error) throw new Error(error.message);
+  revalidatePath("/", "layout");
+}
+
 export async function setMember(profileId: string, value: boolean) {
   const { supabase } = await requireViewer();
   const { error } = await supabase.rpc("set_member", { target: profileId, value });
@@ -39,8 +47,8 @@ function readInstance(formData: FormData) {
 }
 
 export async function saveInstance(formData: FormData) {
-  const { supabase, isOfficer } = await requireViewer();
-  if (!isOfficer) throw new Error("Only officers can change instances");
+  const { supabase, isAdmin } = await requireViewer();
+  if (!isAdmin) throw new Error("Only admins can change instances");
 
   const { error } = await supabase
     .from("instances")
@@ -51,8 +59,8 @@ export async function saveInstance(formData: FormData) {
 }
 
 export async function addInstance(formData: FormData) {
-  const { supabase, isOfficer } = await requireViewer();
-  if (!isOfficer) throw new Error("Only officers can add instances");
+  const { supabase, isAdmin } = await requireViewer();
+  if (!isAdmin) throw new Error("Only admins can add instances");
 
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Enter an instance name");

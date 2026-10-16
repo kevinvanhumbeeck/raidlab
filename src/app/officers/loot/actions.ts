@@ -5,9 +5,9 @@ import { redirect } from "next/navigation";
 import { parseItemIds } from "@/lib/loot";
 import { requireViewer } from "@/lib/viewer";
 
-async function requireOfficer() {
+async function requireAdmin() {
   const viewer = await requireViewer();
-  if (!viewer.isOfficer) throw new Error("Only officers can edit loot tables");
+  if (!viewer.isAdmin) throw new Error("Only admins can edit loot tables");
   return viewer.supabase;
 }
 
@@ -22,9 +22,9 @@ async function fetchItemInfo(id: number) {
   return { name: data.name, quality: data.quality ?? 1, icon: data.icon ?? null };
 }
 
-// Officers paste item IDs or Wowhead links for one boss. Items already in a loot table move here.
+// Admins paste item IDs or Wowhead links for one boss. Items already in a loot table move here.
 export async function addLootItems(instance: string, formData: FormData) {
-  const supabase = await requireOfficer();
+  const supabase = await requireAdmin();
   const ids = parseItemIds(String(formData.get("items") ?? ""));
   if (!ids.length) throw new Error("Paste item IDs or Wowhead item links");
   const boss = String(formData.get("boss") ?? "").trim() || null;
@@ -54,7 +54,7 @@ export async function addLootItems(instance: string, formData: FormData) {
 }
 
 export async function removeLootItem(instance: string, id: number) {
-  const supabase = await requireOfficer();
+  const supabase = await requireAdmin();
   const { error } = await supabase.from("loot_items").delete().eq("id", id);
   if (error) throw error;
   revalidatePath(lootHref(instance));
@@ -62,7 +62,7 @@ export async function removeLootItem(instance: string, id: number) {
 
 // For replacing a stand-in loot table. Removes the reserves on these items too.
 export async function clearLootTable(instance: string) {
-  const supabase = await requireOfficer();
+  const supabase = await requireAdmin();
   const { error } = await supabase.from("loot_items").delete().eq("instance", instance);
   if (error) throw error;
   revalidatePath(lootHref(instance));

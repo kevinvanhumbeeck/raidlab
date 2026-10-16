@@ -5,7 +5,15 @@ import { roleOptions } from "@/lib/coverage";
 import { gargulGroups } from "@/lib/gargul";
 import { getRaid, myDutySplits } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
-import { MAX_SPLITS, primaryRole, requirementsOf, type RaidDuty, type Role, type SignupStatus } from "@/lib/wow";
+import {
+  MAX_SPLITS,
+  canEditRaid,
+  primaryRole,
+  requirementsOf,
+  type RaidDuty,
+  type Role,
+  type SignupStatus,
+} from "@/lib/wow";
 import { setSplits } from "./actions";
 import { CompBoard, type BoardCharacter } from "./comp-board";
 
@@ -27,7 +35,9 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const raid = await getRaid(slug);
   const { id } = raid;
-  const { supabase, user, isOfficer } = await requireViewer();
+  const viewer = await requireViewer();
+  const { supabase, user, isOfficer } = viewer;
+  const canEdit = canEditRaid(raid, viewer);
   const leading = await myDutySplits(supabase, id, user.id, "raid_lead");
 
   // Other raids within 6 hours, to flag players already placed in a parallel split.
@@ -177,7 +187,7 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
 
   return (
     <div className="space-y-6">
-      {isOfficer && (
+      {canEdit && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="opacity-70">
             {raid.splits > 1
@@ -219,7 +229,7 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
         slotRoles={slotRoles}
         requirements={requirementsOf(instance)}
         duties={dutyMap}
-        canEdit={isOfficer}
+        canEdit={canEdit}
       />
 
       {visibleExports.length > 0 && (

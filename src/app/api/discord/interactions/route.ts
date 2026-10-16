@@ -54,7 +54,11 @@ export async function POST(request: Request) {
     return reply(`Log in once at ${SITE_URL} with Discord to link your account, then try again.`);
   }
 
-  const { data: raid } = await admin.from("raids").select("id, slug, locked_at").eq("id", raidId).maybeSingle();
+  const { data: raid } = await admin
+    .from("raids")
+    .select("id, slug, starts_at, locked_at")
+    .eq("id", raidId)
+    .maybeSingle();
   if (!raid) return reply("This raid no longer exists.");
   if (isLocked(raid)) return reply("Sign-ups for this raid are locked. Ask an officer if something changed.");
 

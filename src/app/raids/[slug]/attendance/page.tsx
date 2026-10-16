@@ -4,6 +4,8 @@ import { requireViewer } from "@/lib/viewer";
 import {
   ATTENDANCE_LABELS,
   ATTENDANCE_STATUSES,
+  canEditRaid,
+  hasStarted,
   playerHref,
   type AttendanceStatus,
   type SignupStatus,
@@ -38,7 +40,11 @@ export default async function RaidAttendancePage({
   const raid = await getRaid(slug);
   const { id } = raid;
   const { saved } = await searchParams;
-  const { supabase, isOfficer } = await requireViewer();
+  const viewer = await requireViewer();
+  const { supabase, isOfficer } = viewer;
+  const started = hasStarted(raid.starts_at);
+  // Officers record attendance once the raid has started, until the edit window closes (#88).
+  const canEdit = canEditRaid(raid, viewer) && started;
 
   const [{ data: signups }, { data: slots }, { data: attendance }, { data: classes }] = await Promise.all([
     supabase
@@ -83,7 +89,10 @@ export default async function RaidAttendancePage({
   return (
     <div className="space-y-6">
       <section className="space-y-1">
-        {!recorded && isOfficer && sorted.length > 0 && (
+        {isOfficer && !started && (
+          <p className="text-sm opacity-70">Attendance can be saved once the raid has started.</p>
+        )}
+        {!recorded && canEdit && sorted.length > 0 && (
           <p className="text-sm text-warn">
             Not saved yet. Suggested from the comp: placed is present, bench is benched, declined is absent. Adjust and
             save.
@@ -107,7 +116,7 @@ export default async function RaidAttendancePage({
                   {character.name}
                 </Link>
                 <span className="text-xs opacity-60">{character.profiles?.display_name}</span>
-                <fieldset className="ml-auto flex gap-1" disabled={!isOfficer}>
+                <fieldset className="ml-auto flex gap-1" disabled={!canEdit}>
                   {ATTENDANCE_STATUSES.map((s) => (
                     <label key={s} className="cursor-pointer">
                       <input
@@ -128,7 +137,7 @@ export default async function RaidAttendancePage({
               </li>
             ))}
           </ul>
-          {isOfficer && (
+          {canEdit && (
             <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
               Save attendance
             </button>
