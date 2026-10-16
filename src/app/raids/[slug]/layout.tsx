@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { getRaid, lockWarning } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import { formatRaidTime, hasStarted, isLocked } from "@/lib/wow";
 import { setRaidLock } from "../actions";
 import { LockButton } from "./lock-button";
 import { RaidTabs } from "./raid-tabs";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 // Shared header and tabs for a raid's sign-ups, composition, loot and attendance pages.
 export default async function RaidLayout({
@@ -37,9 +37,7 @@ export default async function RaidLayout({
   return (
     <div className="space-y-6">
       <section className="space-y-1">
-        <Link href="/raids" className="text-sm opacity-70 hover:opacity-100">
-          ← All raids
-        </Link>
+        <Breadcrumbs items={[{ label: "Raids", href: "/raids" }, { label: raid.title }]} />
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold">{raid.title}</h1>
           {locked && (

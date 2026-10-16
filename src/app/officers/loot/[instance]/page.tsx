@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ConfirmButton } from "@/components/confirm-button";
 import { ItemLink } from "@/components/item-link";
 import { groupByBoss, type LootItem } from "@/lib/loot";
 import { requireViewer } from "@/lib/viewer";
 import { addLootItems, clearLootTable, removeLootItem } from "../actions";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 // Officers manage an instance's loot table, which players soft-reserve from.
 export default async function LootTablePage({
@@ -31,9 +31,7 @@ export default async function LootTablePage({
   return (
     <div className="space-y-6">
       <section className="space-y-1">
-        <Link href="/officers" className="text-sm opacity-70 hover:opacity-100">
-          ← Officers
-        </Link>
+        <Breadcrumbs items={[{ label: "Manage", href: "/officers" }, { label: `${instance.name} loot` }]} />
         <h1 className="text-2xl font-semibold">{instance.name} loot</h1>
         <p className="text-sm opacity-70">
           Players can soft-reserve {instance.reserves} of these items per raid. Item names and icons come from
