@@ -60,16 +60,16 @@
   --accent-foreground: #121319;
 }
 
-/* Horde: scorched iron and blood red. */
+/* Horde: black iron edged in blood red, over a smouldering ember glow (see body below). */
 [data-theme="horde"] {
-  --background: #120a09;
-  --foreground: #efe3dd;
-  --panel: #1b100e;
-  --panel-raised: #231512;
-  --border: #3a221d;
-  --muted: #ad968e;
-  --accent: #d63a2e;
-  --accent-hover: #e4574c;
+  --background: #080404;
+  --foreground: #f3e6e3;
+  --panel: #130707;
+  --panel-raised: #220908;
+  --border: #5c1612;
+  --muted: #b48b86;
+  --accent: #e0261b;
+  --accent-hover: #f2473c;
   --accent-foreground: #fff4f1;
 }
 
@@ -118,6 +118,13 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+[data-theme="horde"] body {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 115%, rgb(170 20 10 / 0.35), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 50% -10%, rgb(120 10 5 / 0.25), transparent 70%) var(--background);
+  background-attachment: fixed;
 }
 
 [data-theme="modern"] body {
