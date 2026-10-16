@@ -7,7 +7,7 @@ export const THEMES = [
   { id: "modern", label: "Modern", group: "Artwork" },
   { id: "alliance", label: "Alliance", group: "Artwork" },
   { id: "horde", label: "Horde", group: "Artwork" },
-  { id: "illidan", label: "Illidan", group: "Artwork" },
+  { id: "fel", label: "Fel", group: "Artwork" },
 ] as const;
 
 export const THEME_GROUPS = ["Classic", "Artwork"] as const;

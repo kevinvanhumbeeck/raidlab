@@ -86,8 +86,8 @@
   --accent-foreground: #fff3f1;
 }
 
-/* Illidan: fel green and scorched black, over Illidan's Legion art (see body below). */
-[data-theme="illidan"] {
+/* Fel: fel green and scorched black, over Illidan in the Legion art (see body below). */
+[data-theme="fel"] {
   --background: #060a05;
   --foreground: #e6f0dc;
   --panel: #0c140a;
@@ -163,10 +163,10 @@ body {
 }
 
 /* Busy, bright art; a darker veil than Alliance keeps text readable. */
-[data-theme="illidan"] body {
+[data-theme="fel"] body {
   background:
     linear-gradient(rgb(6 10 5 / 0.6), rgb(6 10 5 / 0.6)),
-    var(--background) url("/themes/illidan.jpg") center / cover;
+    var(--background) url("/themes/fel.jpg") center / cover;
   background-attachment: fixed;
 }
 
