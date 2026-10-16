@@ -204,7 +204,8 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
                 ))}
               </select>
             </label>
-            <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
+            {/* Same height as the selects: their 16px text and border vs. this button's 14px text. */}
+            <button className="rounded border border-transparent bg-accent px-3 py-2 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
               Add
             </button>
           </form>
