@@ -203,3 +203,18 @@ export function playerHref(playerSlug: string, characterName?: string) {
     ? `/players/${playerSlug}?character=${encodeURIComponent(characterName.toLowerCase())}`
     : `/players/${playerSlug}`;
 }
+
+// URL slug of an instance name: "Onyxia's Lair" → "onyxias-lair". Computed rather than stored, since there are only
+// a handful of instances; addInstance refuses names whose slug is taken.
+export function instanceSlug(name: string) {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/['\u2019]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+export const lootTableHref = (instance: string) => `/manage/loot/${instanceSlug(instance)}`;
+export const splitRosterHref = (instance: string) => `/manage/splits/${instanceSlug(instance)}`;

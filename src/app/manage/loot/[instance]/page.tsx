@@ -1,7 +1,8 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { ConfirmButton } from "@/components/confirm-button";
 import { ItemLink } from "@/components/item-link";
 import { groupByBoss, type LootItem } from "@/lib/loot";
+import { getInstance } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import { addLootItems, clearLootTable, removeLootItem } from "../actions";
 import { Breadcrumbs } from "@/components/breadcrumbs";
@@ -17,14 +18,14 @@ export default async function LootTablePage({
   const { supabase, isAdmin } = await requireViewer();
   if (!isAdmin) redirect("/");
 
-  const name = decodeURIComponent((await params).instance);
+  const instance = await getInstance((await params).instance, "loot");
   const { missing } = await searchParams;
 
-  const [{ data: instance }, { data: items }] = await Promise.all([
-    supabase.from("instances").select("name, reserves").eq("name", name).maybeSingle(),
-    supabase.from("loot_items").select("id, instance, boss, name, quality, icon").eq("instance", name).order("sort"),
-  ]);
-  if (!instance) notFound();
+  const { data: items } = await supabase
+    .from("loot_items")
+    .select("id, instance, boss, name, quality, icon")
+    .eq("instance", instance.name)
+    .order("sort");
 
   const bosses = groupByBoss((items ?? []) as LootItem[]);
 

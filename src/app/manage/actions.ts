@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { officersFromDiscord } from "@/lib/discord";
 import { requireViewer } from "@/lib/viewer";
-import { INSTANCE_SIZES, MAX_SPLITS } from "@/lib/wow";
+import { INSTANCE_SIZES, MAX_SPLITS, instanceSlug } from "@/lib/wow";
 
 export async function setOfficer(profileId: string, value: boolean) {
   if (officersFromDiscord()) throw new Error("Officers follow the @officer role in Discord");
@@ -63,7 +63,11 @@ export async function addInstance(formData: FormData) {
   if (!isAdmin) throw new Error("Only admins can add instances");
 
   const name = String(formData.get("name") ?? "").trim();
-  if (!name) throw new Error("Enter an instance name");
+  if (!instanceSlug(name)) throw new Error("Enter an instance name");
+  // Instance pages are found by slug, so two instances can't share one.
+  const { data: existing } = await supabase.from("instances").select("name");
+  const clash = existing?.find((i) => instanceSlug(i.name) === instanceSlug(name));
+  if (clash) throw new Error(`${clash.name} already exists`);
 
   const { data: last } = await supabase.from("instances").select("sort").order("sort", { ascending: false }).limit(1);
   const { error } = await supabase

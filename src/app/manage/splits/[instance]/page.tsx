@@ -1,7 +1,8 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { SpecIcon } from "@/components/spec-icon";
 import { readable } from "@/lib/theme";
+import { getInstance } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import { MAX_SPLITS, ROLES, primaryRole, rolesText, type Role } from "@/lib/wow";
 import { setRosterSplit } from "../../actions";
@@ -21,23 +22,21 @@ export default async function SplitRosterPage({ params }: { params: Promise<{ in
   const { supabase, isOfficer } = await requireViewer();
   if (!isOfficer) redirect("/");
 
-  const name = decodeURIComponent((await params).instance);
+  const instance = await getInstance((await params).instance, "splits");
+  const name = instance.name;
 
-  const [{ data: instance }, { data: characters }, { data: roster }, { data: classes }, { data: specs }] =
-    await Promise.all([
-      supabase.from("instances").select("name, size").eq("name", name).maybeSingle(),
-      supabase
-        .from("characters")
-        .select("id, name, class_id, main_spec_id, is_main, profiles(display_name, is_member, is_officer)")
-        .is("archived_at", null)
-        .order("is_main", { ascending: false })
-        .order("name")
-        .overrideTypes<CharacterRow[], { merge: false }>(),
-      supabase.from("split_rosters").select("character_id, split_no").eq("instance", name),
-      supabase.from("classes").select("id, color"),
-      supabase.from("specs").select("id, name, roles"),
-    ]);
-  if (!instance) notFound();
+  const [{ data: characters }, { data: roster }, { data: classes }, { data: specs }] = await Promise.all([
+    supabase
+      .from("characters")
+      .select("id, name, class_id, main_spec_id, is_main, profiles(display_name, is_member, is_officer)")
+      .is("archived_at", null)
+      .order("is_main", { ascending: false })
+      .order("name")
+      .overrideTypes<CharacterRow[], { merge: false }>(),
+    supabase.from("split_rosters").select("character_id, split_no").eq("instance", name),
+    supabase.from("classes").select("id, color"),
+    supabase.from("specs").select("id, name, roles"),
+  ]);
 
   const color = new Map(classes?.map((c) => [c.id, c.color]));
   const specById = new Map(specs?.map((s) => [s.id, s]));
