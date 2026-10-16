@@ -68,12 +68,12 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
         {all.length === 0 ? (
           <p className="opacity-70">Nobody has registered a character yet.</p>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
+          // Same grid and class order as Spec coverage below, empty classes included, so the cards line up.
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {classes?.map((cls) => {
               const inClass = all
                 .filter((c) => c.class_id === cls.id)
                 .sort((a, b) => Number(b.is_main) - Number(a.is_main) || a.name.localeCompare(b.name));
-              if (!inClass.length) return null;
               return (
                 <Card key={cls.id}>
                   <CardHeader
@@ -81,6 +81,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
                     style={{ color: readable(cls.color) }}
                     action={<span className="text-xs tabular-nums text-muted">{inClass.length}</span>}
                   />
+                  {inClass.length === 0 && <p className="px-4 py-2 text-sm text-muted">Nobody yet</p>}
                   <ul className="divide-y divide-border text-sm">
                     {inClass.map((c) => (
                       <li key={c.id} className="flex items-center gap-2 px-4 py-2">
