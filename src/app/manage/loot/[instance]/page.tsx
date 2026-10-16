@@ -6,7 +6,7 @@ import { requireViewer } from "@/lib/viewer";
 import { addLootItems, clearLootTable, removeLootItem } from "../actions";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
-// Officers manage an instance's loot table, which players soft-reserve from.
+// Admins manage an instance's loot table, which players soft-reserve from.
 export default async function LootTablePage({
   params,
   searchParams,
@@ -14,8 +14,8 @@ export default async function LootTablePage({
   params: Promise<{ instance: string }>;
   searchParams: Promise<{ missing?: string }>;
 }) {
-  const { supabase, isOfficer } = await requireViewer();
-  if (!isOfficer) redirect("/");
+  const { supabase, isAdmin } = await requireViewer();
+  if (!isAdmin) redirect("/");
 
   const name = decodeURIComponent((await params).instance);
   const { missing } = await searchParams;
@@ -31,7 +31,7 @@ export default async function LootTablePage({
   return (
     <div className="space-y-6">
       <section className="space-y-1">
-        <Breadcrumbs items={[{ label: "Manage", href: "/officers" }, { label: `${instance.name} loot` }]} />
+        <Breadcrumbs items={[{ label: "Manage", href: "/manage" }, { label: `${instance.name} loot` }]} />
         <h1 className="text-2xl font-semibold">{instance.name} loot</h1>
         <p className="text-sm opacity-70">
           Players can soft-reserve {instance.reserves} of these items per raid. Item names and icons come from

@@ -11,7 +11,7 @@ export function NoResponse({
   missing,
   canPing,
 }: {
-  raid: { id: string; locked_at: string | null; pinged_at: string | null };
+  raid: { id: string; starts_at: string; locked_at: string | null; pinged_at: string | null };
   missing: Missing[];
   canPing: boolean;
 }) {

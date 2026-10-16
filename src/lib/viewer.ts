@@ -2,22 +2,23 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-// The logged-in player and their profile, or nulls when logged out.
+// The logged-in player and their profile, or nulls when logged out. Admins (#87) are officers too.
 export const getViewer = cache(async () => {
   const supabase = await createClient();
   // getClaims verifies the JWT locally (no round trip to Supabase Auth, unlike getUser).
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims.sub ? { id: data.claims.sub } : null;
-  if (!user) return { supabase, user: null, profile: null, isOfficer: false, isMember: false };
+  if (!user) return { supabase, user: null, profile: null, isAdmin: false, isOfficer: false, isMember: false };
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, slug, display_name, avatar_url, is_officer, is_member")
+    .select("id, slug, display_name, avatar_url, is_officer, is_member, is_admin")
     .eq("id", user.id)
     .single();
 
-  const isOfficer = profile?.is_officer ?? false;
-  return { supabase, user, profile, isOfficer, isMember: isOfficer || (profile?.is_member ?? false) };
+  const isAdmin = profile?.is_admin ?? false;
+  const isOfficer = isAdmin || (profile?.is_officer ?? false);
+  return { supabase, user, profile, isAdmin, isOfficer, isMember: isOfficer || (profile?.is_member ?? false) };
 });
 
 // For member-only pages: redirects home when logged out or not in the Discord server.

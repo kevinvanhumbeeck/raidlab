@@ -2,13 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireViewer } from "@/lib/viewer";
-import { ATTENDANCE_STATUSES, type AttendanceStatus } from "@/lib/wow";
+import { requireRaidEditor } from "@/lib/raid";
+import { ATTENDANCE_STATUSES, hasStarted, type AttendanceStatus } from "@/lib/wow";
 
 // Form fields are named "status:<characterId>".
 export async function saveAttendance(raidId: string, raidSlug: string, formData: FormData) {
-  const { supabase, isOfficer } = await requireViewer();
-  if (!isOfficer) throw new Error("Only officers can record attendance");
+  const { supabase } = await requireRaidEditor(raidId, "Only officers can record attendance");
+  const { data: raid } = await supabase.from("raids").select("starts_at").eq("id", raidId).single();
+  if (!raid || !hasStarted(raid.starts_at)) throw new Error("Attendance can be saved once the raid has started");
 
   const rows = [...formData.entries()]
     .filter(([key]) => key.startsWith("status:"))

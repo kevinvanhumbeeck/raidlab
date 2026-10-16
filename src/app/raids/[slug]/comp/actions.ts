@@ -1,14 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireViewer } from "@/lib/viewer";
+import { requireRaidEditor } from "@/lib/raid";
 import type { FilledSlot } from "@/lib/auto-fill";
 import { MAX_SPLITS, RAID_DUTIES, ROLES, type RaidDuty, type Role } from "@/lib/wow";
 
-async function requireOfficer() {
-  const viewer = await requireViewer();
-  if (!viewer.isOfficer) throw new Error("Only officers can edit compositions");
-  return viewer.supabase;
+async function requireOfficer(raidId: string) {
+  const { supabase } = await requireRaidEditor(raidId, "Only officers can edit compositions");
+  return supabase;
 }
 
 // Place a character in a slot. If the slot is taken, the two swap places
@@ -20,7 +19,7 @@ export async function moveToSlot(
   groupNo: number,
   position: number,
 ) {
-  const supabase = await requireOfficer();
+  const supabase = await requireOfficer(raidId);
 
   const [{ data: occupant }, { data: source }, { data: signup }] = await Promise.all([
     supabase
@@ -92,7 +91,7 @@ export async function moveToSlot(
 
 // Set the role a placed hybrid fills (null = the spec's primary role).
 export async function setSlotRole(raidId: string, characterId: string, role: Role | null) {
-  const supabase = await requireOfficer();
+  const supabase = await requireOfficer(raidId);
 
   if (role) {
     if (!ROLES.includes(role)) throw new Error("Unknown role");
@@ -123,7 +122,7 @@ export async function setSlotRole(raidId: string, characterId: string, role: Rol
 }
 
 export async function removeFromComp(raidId: string, characterId: string) {
-  const supabase = await requireOfficer();
+  const supabase = await requireOfficer(raidId);
   const { error } = await supabase.from("comp_slots").delete().eq("raid_id", raidId).eq("character_id", characterId);
   if (error) throw error;
 
@@ -132,7 +131,7 @@ export async function removeFromComp(raidId: string, characterId: string) {
 
 // Each split has its own raid lead, assists and loot lead.
 export async function setDuty(raidId: string, splitNo: number, duty: RaidDuty, characterId: string | null) {
-  const supabase = await requireOfficer();
+  const supabase = await requireOfficer(raidId);
   if (!RAID_DUTIES.includes(duty)) throw new Error("Unknown duty");
 
   const { error } = characterId
@@ -145,7 +144,7 @@ export async function setDuty(raidId: string, splitNo: number, duty: RaidDuty, c
 
 // Add a split to the night, or remove the last one (#60). Its players go back to the bench and its duties are cleared.
 export async function setSplits(raidId: string, splits: number) {
-  const supabase = await requireOfficer();
+  const supabase = await requireOfficer(raidId);
   if (!Number.isInteger(splits) || splits < 1 || splits > MAX_SPLITS) throw new Error("Invalid number of splits");
 
   for (const table of ["comp_slots", "raid_duties"] as const) {
@@ -162,7 +161,7 @@ export async function setSplits(raidId: string, splits: number) {
 // Save an auto-fill draft (#55). It only fills empty slots, so if someone changed the comp in the meantime the
 // insert fails as a whole and the officer runs auto-fill again.
 export async function applyAutoFill(raidId: string, slots: FilledSlot[]) {
-  const supabase = await requireOfficer();
+  const supabase = await requireOfficer(raidId);
   if (!slots.length) return;
 
   const ids = slots.map((s) => s.characterId);
@@ -205,7 +204,7 @@ export async function applyAutoFill(raidId: string, slots: FilledSlot[]) {
 
 // Empty the comp, or one split of it. Duties stay.
 export async function clearComp(raidId: string, splitNo: number | null) {
-  const supabase = await requireOfficer();
+  const supabase = await requireOfficer(raidId);
   let query = supabase.from("comp_slots").delete().eq("raid_id", raidId);
   if (splitNo) query = query.eq("split_no", splitNo);
   const { error } = await query;

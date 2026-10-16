@@ -179,9 +179,22 @@ export function hasStarted(iso: string) {
   return new Date(iso).getTime() <= Date.now();
 }
 
-// A raid is locked from its locked_at on (by default 1 hour before it starts). Null means an officer reopened it.
-export function isLocked(raid: { locked_at: string | null }) {
-  return raid.locked_at !== null && hasStarted(raid.locked_at);
+// A raid is locked from its locked_at on (by default 1 hour before it starts). Null means an officer reopened it,
+// but a raid that has started stays locked: reopening a past raid doesn't let players change it again.
+export function isLocked(raid: { starts_at: string; locked_at: string | null }) {
+  return hasStarted(raid.starts_at) || (raid.locked_at !== null && hasStarted(raid.locked_at));
+}
+
+// Officers change a raid until this many days after it starts; after that only admins can (#88). The database
+// policies (can_edit_raid_at) use the same number.
+export const OFFICER_EDIT_DAYS = 3;
+export const RAID_CLOSED_MESSAGE = `Raids can be changed until ${OFFICER_EDIT_DAYS} days after they start. Ask an admin.`;
+
+// Whether a viewer can still change a raid as an officer: sign-ups of others, comp, reserves and attendance.
+export function canEditRaid(raid: { starts_at: string }, viewer: { isOfficer: boolean; isAdmin: boolean }) {
+  if (viewer.isAdmin) return true;
+  const closesAt = new Date(raid.starts_at).getTime() + OFFICER_EDIT_DAYS * 24 * 60 * 60 * 1000;
+  return viewer.isOfficer && Date.now() < closesAt;
 }
 
 // Profile page of the player owning a character, opened on that character.

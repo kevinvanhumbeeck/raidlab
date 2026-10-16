@@ -43,7 +43,7 @@ export default async function RootLayout({
     ? [
         { href: "/raids", label: "Raids" },
         { href: "/attendance", label: "Attendance" },
-        ...(isOfficer ? [{ href: "/officers", label: "Manage" }] : []),
+        ...(isOfficer ? [{ href: "/manage", label: "Manage" }] : []),
       ]
     : [];
 

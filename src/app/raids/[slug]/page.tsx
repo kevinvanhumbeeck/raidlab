@@ -9,6 +9,7 @@ import { requireViewer } from "@/lib/viewer";
 import {
   SIGNUP_STATUSES,
   STATUS_LABELS,
+  canEditRaid,
   hasStarted,
   isLocked,
   primaryRole,
@@ -40,7 +41,10 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const raid = await getRaid(slug);
   const { id } = raid;
-  const { supabase, user, isOfficer } = await requireViewer();
+  const viewer = await requireViewer();
+  const { supabase, user, isOfficer, isAdmin } = viewer;
+  const started = hasStarted(raid.starts_at);
+  const canEdit = canEditRaid(raid, viewer);
 
   const [
     { data: signups },
@@ -67,7 +71,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
       .eq("owner_id", user.id)
       .order("is_main", { ascending: false }),
     supabase.from("comp_slots").select("split_no, group_no, character_id").eq("raid_id", id),
-    isOfficer
+    canEdit
       ? supabase.from("characters").select("id, name, owner_id, class_id, main_spec_id").order("name")
       : Promise.resolve({
           data: [] as {
@@ -79,7 +83,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
           }[],
         }),
     supabase.from("instances").select("name, size, tanks, healers, dps").eq("name", raid.instance).maybeSingle(),
-    isOfficer && !hasStarted(raid.starts_at) ? noResponse(supabase, id) : Promise.resolve(null),
+    isOfficer && !started ? noResponse(supabase, id) : Promise.resolve(null),
   ]);
 
   const classById = new Map(classes?.map((c) => [c.id, c]));
@@ -132,7 +136,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
         <h2 className="text-lg font-semibold">Your sign-up</h2>
         {formCharacters.length ? (
           <>
-            {isLocked(raid) && !isOfficer ? (
+            {isLocked(raid) && !canEdit ? (
               <p className="rounded-xl border border-border bg-panel/90 p-4 text-sm">
                 Sign-ups are locked.{" "}
                 {mine ? (
@@ -193,7 +197,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
         size={raid.size * raid.splits}
         rows={rows}
         requirements={requirementsOf(instance, raid.splits)}
-        canEdit={isOfficer}
+        canEdit={canEdit}
       />
 
       {isOfficer && (
@@ -205,8 +209,8 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
               <NoResponse raid={raid} missing={missing} canPing={botEnabled()} />
             </>
           )}
-          <h3 className="text-sm font-medium opacity-80">Sign up a player</h3>
-          {unsigned.length === 0 ? (
+          {canEdit && <h3 className="text-sm font-medium opacity-80">Sign up a player</h3>}
+          {!canEdit ? null : unsigned.length === 0 ? (
             <p className="rounded-xl border border-border bg-panel/90 p-4 text-sm opacity-70">
               Every player is signed up.
             </p>
@@ -255,14 +259,17 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
                 </button>
               </form>
             )}
-            <form action={deleteRaid.bind(null, raid.id)}>
-              <ConfirmButton
-                message="Delete this raid? This also removes its sign-ups, composition and attendance."
-                className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300"
-              >
-                Delete raid
-              </ConfirmButton>
-            </form>
+            {/* A raid that has started is history: only admins delete it (#87). */}
+            {(isAdmin || !started) && (
+              <form action={deleteRaid.bind(null, raid.id)}>
+                <ConfirmButton
+                  message="Delete this raid? This also removes its sign-ups, composition and attendance."
+                  className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300"
+                >
+                  Delete raid
+                </ConfirmButton>
+              </form>
+            )}
           </div>
         </section>
       )}
