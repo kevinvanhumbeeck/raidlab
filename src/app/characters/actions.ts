@@ -64,15 +64,51 @@ export async function saveCharacter(prev: CharacterFormState, formData: FormData
   return { error: null, saved: prev.saved + 1 };
 }
 
-export async function deleteCharacter(formData: FormData) {
+// Archiving keeps the character's raid history (#89). The database takes it out of raids that haven't started and
+// makes another character the main.
+export async function archiveCharacter(formData: FormData) {
   const { supabase } = await requireViewer();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("characters")
-    .delete()
-    .eq("id", String(formData.get("id")));
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", String(formData.get("id")))
+    .is("archived_at", null)
+    .select("id");
   if (error) throw error;
-  revalidatePath("/characters");
-  revalidatePath("/");
+  if (!data.length) throw new Error("Character not found");
+  revalidatePath("/", "layout");
+}
+
+// A restored character comes back as an alt, or as the main when the player has none.
+export async function restoreCharacter(characterId: string) {
+  const { supabase } = await requireViewer();
+  const { data: character } = await supabase.from("characters").select("name, owner_id").eq("id", characterId).single();
+  if (!character) throw new Error("Character not found");
+  const { count } = await supabase
+    .from("characters")
+    .select("id", { count: "exact", head: true })
+    .eq("owner_id", character.owner_id)
+    .eq("is_main", true)
+    .is("archived_at", null);
+
+  const { data, error } = await supabase
+    .from("characters")
+    .update({ archived_at: null, is_main: !count })
+    .eq("id", characterId)
+    .select("id");
+  if (error?.code === "23505") throw new Error(`Another character is already called ${character.name}`);
+  if (error) throw error;
+  if (!data.length) throw new Error("Character not found");
+  revalidatePath("/", "layout");
+}
+
+// Admins delete a character for good, with its whole raid history: for typos and sample data.
+export async function deleteCharacter(characterId: string) {
+  const { supabase, isAdmin } = await requireViewer();
+  if (!isAdmin) throw new Error("Only admins can delete characters");
+  const { error } = await supabase.from("characters").delete().eq("id", characterId);
+  if (error) throw error;
+  revalidatePath("/", "layout");
 }
 
 // Players turn the Discord sign-up reminders (#59) on or off.

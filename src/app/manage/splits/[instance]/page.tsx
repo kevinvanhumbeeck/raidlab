@@ -29,6 +29,7 @@ export default async function SplitRosterPage({ params }: { params: Promise<{ in
       supabase
         .from("characters")
         .select("id, name, class_id, main_spec_id, is_main, profiles(display_name, is_member, is_officer)")
+        .is("archived_at", null)
         .order("is_main", { ascending: false })
         .order("name")
         .overrideTypes<CharacterRow[], { merge: false }>(),

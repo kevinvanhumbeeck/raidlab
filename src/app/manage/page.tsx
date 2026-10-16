@@ -23,6 +23,7 @@ export default async function OfficersPage() {
       supabase
         .from("characters")
         .select("id, owner_id, name, class_id, is_main")
+        .is("archived_at", null)
         .order("is_main", { ascending: false }),
       supabase.from("classes").select("id, color"),
       supabase.from("instances").select("name, size, tanks, healers, dps, reserves").order("sort"),

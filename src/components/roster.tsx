@@ -23,6 +23,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
     supabase
       .from("characters")
       .select("id, name, class_id, main_spec_id, off_spec_ids, is_main, owner_id, profiles(slug, display_name)")
+      .is("archived_at", null)
       .order("name")
       .overrideTypes<CharacterRow[], { merge: false }>(),
   ]);
