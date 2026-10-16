@@ -50,7 +50,7 @@ export default async function RootLayout({
   return (
     <html lang="en" data-theme={theme}>
       <body className={`${exo2.variable} ${zenDots.variable} font-sans antialiased`}>
-        <header className="border-b border-border bg-panel">
+        <header className="sticky top-0 z-40 border-b border-border bg-panel">
           <SiteNav
             brand={
               <Link href="/" className="flex shrink-0 items-center gap-2.5">
