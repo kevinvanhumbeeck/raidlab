@@ -11,6 +11,8 @@ export type Missing = {
   slug: string;
   displayName: string;
   discordId: string | null;
+  // Whether they get the reminder DM (#59).
+  discordDms: boolean;
   character: { name: string; color: string } | null;
   // Null for members without a character.
   role: Role | null;
@@ -20,7 +22,10 @@ export type Missing = {
 export async function noResponse(supabase: SupabaseClient, raidId: string): Promise<Missing[]> {
   const [{ data: profiles }, { data: characters }, { data: signups }, { data: specs }, { data: classes }] =
     await Promise.all([
-      supabase.from("profiles").select("id, slug, display_name, discord_id").or("is_member.eq.true,is_officer.eq.true"),
+      supabase
+        .from("profiles")
+        .select("id, slug, display_name, discord_id, discord_dms")
+        .or("is_member.eq.true,is_officer.eq.true"),
       supabase
         .from("characters")
         .select("id, owner_id, name, class_id, main_spec_id")
@@ -48,6 +53,7 @@ export async function noResponse(supabase: SupabaseClient, raidId: string): Prom
         slug: p.slug,
         displayName: p.display_name,
         discordId: p.discord_id,
+        discordDms: p.discord_dms,
         character: main ? { name: main.name, color: color.get(main.class_id) ?? "#ccc" } : null,
         role: main ? primaryRole(specById.get(main.main_spec_id)) : null,
       };

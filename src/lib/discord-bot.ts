@@ -107,18 +107,23 @@ async function buildMessage(raid: RaidForMessage) {
         footer: { text: `${accepted} in · ${declined} declined` },
       },
     ],
-    components: [
-      {
-        type: 1,
-        components: [
-          { type: 2, style: 2, label: "In", emoji: { name: "✅" }, custom_id: `in:${raid.id}`, disabled: locked },
-          { type: 2, style: 2, label: "Out", emoji: { name: "❌" }, custom_id: `out:${raid.id}`, disabled: locked },
-          { type: 2, style: 2, label: "Character / spec", custom_id: `spec:${raid.id}`, disabled: locked },
-          { type: 2, style: 5, label: "Open in RaidLab", url },
-        ],
-      },
-    ],
+    components: signupButtons(raid.id, url, locked),
   };
+}
+
+// In / Out / Character-spec, handled by /api/discord/interactions; they work in the channel and in DMs.
+function signupButtons(raidId: string, url: string, locked = false) {
+  return [
+    {
+      type: 1,
+      components: [
+        { type: 2, style: 2, label: "In", emoji: { name: "✅" }, custom_id: `in:${raidId}`, disabled: locked },
+        { type: 2, style: 2, label: "Out", emoji: { name: "❌" }, custom_id: `out:${raidId}`, disabled: locked },
+        { type: 2, style: 2, label: "Character / spec", custom_id: `spec:${raidId}`, disabled: locked },
+        { type: 2, style: 5, label: "Open in RaidLab", url },
+      ],
+    },
+  ];
 }
 
 const RAID_FIELDS = "id, slug, title, instance, starts_at, locked_at, notes, discord_message_id";
@@ -175,6 +180,37 @@ export async function mentionInChannel(
       console.error("Discord: pinging the raid channel failed", res.status, await res.text());
       return false;
     }
+  }
+  return true;
+}
+
+// The sign-up reminder (#59): a DM with the raid's buttons. Fails for players who don't accept DMs from server
+// members; returns whether it was delivered.
+export async function sendReminder(
+  raid: { id: string; slug: string; title: string; starts_at: string; locked_at: string | null },
+  discordId: string,
+) {
+  if (!botEnabled()) return false;
+  const channel = await discord("POST", "/users/@me/channels", { recipient_id: discordId });
+  if (!channel.ok) {
+    console.error("Discord: opening a DM failed", discordId, channel.status, await channel.text());
+    return false;
+  }
+  const { id } = (await channel.json()) as { id: string };
+  const url = `${SITE_URL}/raids/${raid.slug}`;
+  const res = await discord("POST", `/channels/${id}/messages`, {
+    content: [
+      `**${raid.title}** starts <t:${unix(raid.starts_at)}:R> and you haven't signed up yet. Are you in?`,
+      raid.locked_at && `Sign-ups close <t:${unix(raid.locked_at)}:R>.`,
+      `-# Turn these reminders off at ${SITE_URL}/characters`,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    components: signupButtons(raid.id, url),
+  });
+  if (!res.ok) {
+    console.error("Discord: sending a reminder failed", discordId, res.status, await res.text());
+    return false;
   }
   return true;
 }

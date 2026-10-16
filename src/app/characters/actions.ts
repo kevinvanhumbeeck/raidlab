@@ -74,3 +74,11 @@ export async function deleteCharacter(formData: FormData) {
   revalidatePath("/characters");
   revalidatePath("/");
 }
+
+// Players turn the Discord sign-up reminders (#59) on or off.
+export async function setDiscordDms(value: boolean) {
+  const { supabase, user } = await requireViewer();
+  const { error } = await supabase.from("profiles").update({ discord_dms: value }).eq("id", user.id);
+  if (error) throw error;
+  revalidatePath("/characters");
+}
