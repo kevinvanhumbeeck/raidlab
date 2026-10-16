@@ -5,6 +5,7 @@ export const THEMES = [
   { id: "modern", label: "Modern" },
   { id: "alliance", label: "Alliance" },
   { id: "horde", label: "Horde" },
+  { id: "horde-banner", label: "Horde Banner" },
   { id: "illidan", label: "Illidan" },
   { id: "light", label: "Light" },
 ] as const;

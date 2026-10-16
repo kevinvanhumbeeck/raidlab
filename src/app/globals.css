@@ -86,6 +86,19 @@
   --accent-foreground: #fff4f1;
 }
 
+/* Horde Banner: charcoal stone and blood red, over the cracked Horde crest (see body below). */
+[data-theme="horde-banner"] {
+  --background: #0d0c0c;
+  --foreground: #ede5e3;
+  --panel: #161414;
+  --panel-raised: #1f1a1a;
+  --border: #4a1b18;
+  --muted: #a99894;
+  --accent: #cc231c;
+  --accent-hover: #df3d35;
+  --accent-foreground: #fff3f1;
+}
+
 /* Illidan: fel green and scorched black, over Illidan's Legion art (see body below). */
 [data-theme="illidan"] {
   --background: #060a05;
@@ -151,6 +164,14 @@ body {
   background:
     linear-gradient(rgb(6 12 32 / 0.55), rgb(6 12 32 / 0.55)),
     var(--background) url("/themes/alliance.jpg") center / cover;
+  background-attachment: fixed;
+}
+
+/* Already dark stone; a light veil is enough. */
+[data-theme="horde-banner"] body {
+  background:
+    linear-gradient(rgb(13 12 12 / 0.45), rgb(13 12 12 / 0.45)),
+    var(--background) url("/themes/horde-banner.jpg") center / cover;
   background-attachment: fixed;
 }
 
