@@ -109,9 +109,10 @@
   --font-heading: var(--font-zen-dots);
 }
 
-/* Always reserve the scrollbar's width, so the centred nav doesn't shift between short and long pages. */
+/* Always show the scrollbar, so the centred nav doesn't shift between short and long pages. Unlike
+   scrollbar-gutter: stable, short pages get a native empty track instead of a bare strip beside the sticky header. */
 html {
-  scrollbar-gutter: stable;
+  overflow-y: scroll;
 }
 
 body {
