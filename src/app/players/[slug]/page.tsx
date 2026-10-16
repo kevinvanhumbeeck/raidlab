@@ -23,6 +23,7 @@ import {
   type Role,
   type SignupStatus,
 } from "@/lib/wow";
+import { readable } from "@/lib/theme";
 
 const RECENT = 20;
 
@@ -170,7 +171,7 @@ export default async function PlayerPage({
         <div className="space-y-0.5">
           <h1
             className="text-2xl font-semibold"
-            style={{ color: main ? classById.get(main.class_id)?.color : undefined }}
+            style={{ color: readable(main ? classById.get(main.class_id)?.color : undefined) }}
           >
             {main?.name ?? profile.display_name}
           </h1>
@@ -197,7 +198,7 @@ export default async function PlayerPage({
                     }`}
                   >
                     <CharacterSpecs mainSpecId={c.main_spec_id} offSpecIds={c.off_spec_ids} specName={specName} />
-                    <span className="font-medium" style={{ color: cls?.color }}>
+                    <span className="font-medium" style={{ color: readable(cls?.color) }}>
                       {c.name}
                     </span>
                     <span className="text-xs opacity-60">
@@ -265,12 +266,12 @@ export default async function PlayerPage({
               <li key={h.raid.id}>
                 <Link
                   href={`/raids/${h.raid.slug}`}
-                  className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 text-sm hover:bg-white/5"
+                  className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 text-sm hover:bg-foreground/5"
                 >
                   <span className="font-medium">{h.raid.title}</span>
                   <span className="opacity-70">{formatRaidTime(h.raid.starts_at)}</span>
                   {h.character && (
-                    <span style={{ color: classById.get(h.character.class_id)?.color }}>{h.character.name}</span>
+                    <span style={{ color: readable(classById.get(h.character.class_id)?.color) }}>{h.character.name}</span>
                   )}
                   <span className="ml-auto flex items-center gap-1.5 text-xs">
                     <span className={`h-2 w-2 rounded-full ${STATUS_DOT[h.signup!]}`} />
@@ -284,7 +285,7 @@ export default async function PlayerPage({
                         <span
                           key={item.id}
                           className="inline-flex items-center gap-1"
-                          style={{ color: qualityColor(item.quality) }}
+                          style={{ color: readable(qualityColor(item.quality)) }}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={iconUrl(item.icon)} alt="" className="h-4 w-4 rounded" />
@@ -328,7 +329,7 @@ export default async function PlayerPage({
                       {h.character && (
                         <span className="flex items-center gap-1.5 whitespace-nowrap">
                           {h.specId && <SpecIcon specId={h.specId} name={specName(h.specId)} size={16} />}
-                          <span style={{ color: classById.get(h.character.class_id)?.color }}>{h.character.name}</span>
+                          <span style={{ color: readable(classById.get(h.character.class_id)?.color) }}>{h.character.name}</span>
                         </span>
                       )}
                     </td>

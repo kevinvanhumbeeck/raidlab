@@ -43,7 +43,7 @@ export default async function RaidLayout({
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold">{raid.title}</h1>
           {locked && (
-            <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-medium text-red-400">🔒 Locked</span>
+            <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-medium text-danger">🔒 Locked</span>
           )}
           {isOfficer && (
             <LockButton action={setRaidLock.bind(null, id, !locked)} locked={locked} warning={warning} />

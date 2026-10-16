@@ -106,8 +106,8 @@ export function CharacterForm({
             Delete {character.name}
           </ConfirmButton>
         )}
-        {state.error && <span className="text-sm text-red-400">{state.error}</span>}
-        {!state.error && state.saved > 0 && <span className="text-sm text-emerald-400">Saved.</span>}
+        {state.error && <span className="text-sm text-danger">{state.error}</span>}
+        {!state.error && state.saved > 0 && <span className="text-sm text-success">Saved.</span>}
       </div>
     </form>
   );

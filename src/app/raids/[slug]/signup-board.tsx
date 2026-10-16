@@ -19,6 +19,7 @@ import {
   type SignupStatus,
 } from "@/lib/wow";
 import { setSignupStatus, withdraw } from "../actions";
+import { readable } from "@/lib/theme";
 
 export type SignupRow = {
   characterId: string;
@@ -87,7 +88,7 @@ export function SignupBoard({
   return (
     <div className="space-y-4">
       {error && (
-        <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>
+        <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-danger">{error}</p>
       )}
 
       <section className="rounded-xl border border-border bg-panel/90">
@@ -99,7 +100,7 @@ export function SignupBoard({
               {accepted.length}/{size}
             </span>
           </h2>
-          {summary && <p className="text-sm text-amber-400">{summary}.</p>}
+          {summary && <p className="text-sm text-warn">{summary}.</p>}
         </header>
         <div className="grid divide-border sm:grid-cols-[1fr_1fr_2fr] sm:divide-x">
           {ROLES.map((role) => {
@@ -159,7 +160,7 @@ function PlayerRow({
 }) {
   return (
     <li
-      className={`group flex items-center gap-2 rounded px-1 py-1 text-sm hover:bg-white/5 ${
+      className={`group flex items-center gap-2 rounded px-1 py-1 text-sm hover:bg-foreground/5 ${
         r.isMine ? "bg-accent/10" : ""
       }`}
     >
@@ -167,7 +168,7 @@ function PlayerRow({
       <Link
         href={playerHref(r.playerSlug, r.name)}
         className="truncate font-medium hover:underline"
-        style={{ color: r.color }}
+        style={{ color: readable(r.color) }}
         title={r.player ?? undefined}
       >
         {r.name}
@@ -212,8 +213,8 @@ function StatusMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={`rounded px-1.5 leading-5 opacity-50 hover:bg-white/10 hover:opacity-100 group-hover:opacity-100 ${
-          open ? "bg-white/10 opacity-100" : ""
+        className={`rounded px-1.5 leading-5 opacity-50 hover:bg-foreground/10 hover:opacity-100 group-hover:opacity-100 ${
+          open ? "bg-foreground/10 opacity-100" : ""
         }`}
       >
         ⋯
@@ -230,7 +231,7 @@ function StatusMenu({
               type="button"
               role="menuitem"
               onClick={() => pick(s)}
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-white/5"
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-foreground/5"
             >
               <span className={`h-2 w-2 rounded-full ${STATUS_DOT[s]}`} />
               {STATUS_LABELS[s]}
@@ -241,7 +242,7 @@ function StatusMenu({
             type="button"
             role="menuitem"
             onClick={() => pick(null)}
-            className="w-full px-3 py-1.5 text-left text-red-400 hover:bg-white/5"
+            className="w-full px-3 py-1.5 text-left text-danger hover:bg-foreground/5"
           >
             Remove sign-up
           </button>

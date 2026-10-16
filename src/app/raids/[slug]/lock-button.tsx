@@ -18,7 +18,7 @@ export function LockButton({
       }}
       className="ml-auto"
     >
-      <button className="rounded border border-border px-3 py-1 text-sm hover:bg-white/5">
+      <button className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5">
         {locked ? "Unlock sign-ups" : "Lock sign-ups"}
       </button>
     </form>

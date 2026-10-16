@@ -136,7 +136,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
               />
             )}
             {mySlot ? (
-              <p className="text-sm text-emerald-400">
+              <p className="text-sm text-success">
                 You&apos;re in group {mySlot.group_no}
                 {mySlot.character_id !== mine?.characterId &&
                   ` on ${myCharacters?.find((c) => c.id === mySlot.character_id)?.name}`}

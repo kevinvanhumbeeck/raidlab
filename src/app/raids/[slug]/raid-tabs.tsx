@@ -25,7 +25,7 @@ export function RaidTabs({ raidSlug, tabs }: { raidSlug: string; tabs: RaidTab[]
                 }`}
               >
                 {tab.label}
-                <span className={`text-xs tabular-nums ${tab.warn ? "text-amber-400" : "opacity-60"}`}>{tab.meta}</span>
+                <span className={`text-xs tabular-nums ${tab.warn ? "text-warn" : "opacity-60"}`}>{tab.meta}</span>
               </Link>
             </li>
           );

@@ -14,6 +14,11 @@
   --accent-hover: #e6b65a;
   --accent-foreground: #1a1208;
   --discord: #5865f2;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --success: #34d399;
+  --readable-shade: 0%;
+  color-scheme: dark;
 }
 
 /* Slate: cool greys and soft purple, after guildmanager.app. */
@@ -55,6 +60,37 @@
   --accent-foreground: #121319;
 }
 
+/* Horde: scorched iron and blood red. */
+[data-theme="horde"] {
+  --background: #120a09;
+  --foreground: #efe3dd;
+  --panel: #1b100e;
+  --panel-raised: #231512;
+  --border: #3a221d;
+  --muted: #ad968e;
+  --accent: #d63a2e;
+  --accent-hover: #e4574c;
+  --accent-foreground: #fff4f1;
+}
+
+/* Light: warm paper and ink, with the logo's gold deepened to read on white. */
+[data-theme="light"] {
+  --background: #f3f1ec;
+  --foreground: #1d1b18;
+  --panel: #ffffff;
+  --panel-raised: #f8f6f2;
+  --border: #ddd8cf;
+  --muted: #6b645a;
+  --accent: #9a6a10;
+  --accent-hover: #7f570c;
+  --accent-foreground: #ffffff;
+  --warn: #b45309;
+  --danger: #dc2626;
+  --success: #047857;
+  --readable-shade: 45%;
+  color-scheme: light;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -66,6 +102,9 @@
   --color-accent-hover: var(--accent-hover);
   --color-accent-foreground: var(--accent-foreground);
   --color-discord: var(--discord);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
   --font-sans: var(--font-exo-2);
   --font-heading: var(--font-zen-dots);
 }

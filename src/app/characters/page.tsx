@@ -1,6 +1,7 @@
 import { CharacterSpecs } from "@/components/spec-icon";
 import { requireViewer } from "@/lib/viewer";
 import { CharacterForm } from "./character-form";
+import { readable } from "@/lib/theme";
 
 export default async function CharactersPage() {
   const { supabase, user } = await requireViewer();
@@ -35,7 +36,7 @@ export default async function CharactersPage() {
                       offSpecIds={ch.off_spec_ids}
                       specName={(id) => specById.get(id)?.name ?? ""}
                     />
-                    <span className="font-medium" style={{ color: classById.get(ch.class_id)?.color }}>
+                    <span className="font-medium" style={{ color: readable(classById.get(ch.class_id)?.color) }}>
                       {ch.name}
                     </span>
                     {!ch.is_main && <span className="text-xs opacity-60">alt</span>}

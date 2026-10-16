@@ -9,11 +9,12 @@ import { requireViewer } from "@/lib/viewer";
 import { STATUS_LABELS, isLocked, playerHref, type SignupStatus } from "@/lib/wow";
 import { hardReserveItem, reserveItem, unhardReserveItem, unreserveItem } from "./actions";
 import { LootFilter } from "./loot-filter";
+import { readable } from "@/lib/theme";
 
 type ReserveCharacter = { name: string; class_id: string; profiles: { slug: string } | null };
 type ReserveRow = { character_id: string; item_id: number; created_at: string; characters: ReserveCharacter | null };
 
-const button = "rounded border border-border px-2 py-0.5 text-xs hover:bg-white/5";
+const button = "rounded border border-border px-2 py-0.5 text-xs hover:bg-foreground/5";
 
 // Soft reserves: players pick items from the instance's loot table, officers export them to Gargul. Officers can
 // hard-reserve items, which keeps them out of rolls.
@@ -166,13 +167,13 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
             <DownloadButton
               text={softresCsv(exportRows)}
               filename={`${raid.slug}-reserves.csv`}
-              className="rounded border border-border px-3 py-1 hover:bg-white/5"
+              className="rounded border border-border px-3 py-1 hover:bg-foreground/5"
             >
               Download CSV
             </DownloadButton>
             <Link
               href={`/officers/loot/${encodeURIComponent(raid.instance)}`}
-              className="ml-auto rounded border border-border px-3 py-1 hover:bg-white/5"
+              className="ml-auto rounded border border-border px-3 py-1 hover:bg-foreground/5"
             >
               Edit loot table
             </Link>
@@ -221,7 +222,7 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
                       </div>
                       <div className="flex flex-1 flex-wrap gap-x-2 text-sm">
                         {hard && (
-                          <span className="rounded border border-amber-500/40 px-1.5 text-xs text-amber-400">
+                          <span className="rounded border border-amber-500/40 px-1.5 text-xs text-warn">
                             Hard reserved
                           </span>
                         )}
@@ -230,7 +231,7 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
                             <Link
                               href={playerHref(r.characters?.profiles?.slug ?? "", r.characters?.name)}
                               className="hover:underline"
-                              style={{ color: classById.get(r.characters?.class_id ?? "")?.color }}
+                              style={{ color: readable(classById.get(r.characters?.class_id ?? "")?.color) }}
                             >
                               {r.characters?.name}
                             </Link>
@@ -263,7 +264,7 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
                             <button
                               formAction={unhardReserveItem.bind(null, id, item.id)}
                               title="Allow soft reserves again"
-                              className={`${button} border-amber-500/40 text-amber-400`}
+                              className={`${button} border-amber-500/40 text-warn`}
                             >
                               HR ✓
                             </button>

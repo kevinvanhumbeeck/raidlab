@@ -71,7 +71,7 @@ export default async function LootTablePage({
           />
         </label>
         {missing && (
-          <p className="text-sm text-amber-400">Not found on Wowhead, so not added: {missing.split(",").join(", ")}</p>
+          <p className="text-sm text-warn">Not found on Wowhead, so not added: {missing.split(",").join(", ")}</p>
         )}
         <button className="rounded bg-accent px-3 py-1 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
           Add
@@ -93,7 +93,7 @@ export default async function LootTablePage({
                     <ConfirmButton
                       message={`Remove ${item.name}? Reserves on it are removed too.`}
                       formAction={removeLootItem.bind(null, instance.name, item.id)}
-                      className="ml-auto rounded border border-border px-2 py-0.5 text-xs hover:bg-white/5"
+                      className="ml-auto rounded border border-border px-2 py-0.5 text-xs hover:bg-foreground/5"
                     >
                       Remove
                     </ConfirmButton>
@@ -105,7 +105,7 @@ export default async function LootTablePage({
           <ConfirmButton
             message={`Remove all ${instance.name} loot, and every reserve on it?`}
             formAction={clearLootTable.bind(null, instance.name)}
-            className="rounded border border-red-500/40 px-3 py-1 text-sm text-red-400 hover:bg-red-500/10"
+            className="rounded border border-red-500/40 px-3 py-1 text-sm text-danger hover:bg-red-500/10"
           >
             Clear loot table
           </ConfirmButton>

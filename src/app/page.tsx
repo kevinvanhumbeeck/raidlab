@@ -24,7 +24,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
           </h1>
           <p className="opacity-80">Raid roster, sign-ups and compositions for our WoW Forever raids.</p>
         </div>
-        {errorMessage && <p className="text-sm text-red-400">{errorMessage}</p>}
+        {errorMessage && <p className="text-sm text-danger">{errorMessage}</p>}
         <DiscordLoginButton size="lg" />
         <p className="text-xs opacity-60">For members of our Discord server.</p>
       </div>
@@ -35,7 +35,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
     return (
       <div className="space-y-3">
         <h1 className="text-2xl font-semibold">Guild members only</h1>
-        {errorMessage && <p className="text-sm text-red-400">{errorMessage}</p>}
+        {errorMessage && <p className="text-sm text-danger">{errorMessage}</p>}
         <p className="opacity-80">
           Hi {profile?.display_name}, this planner is for members of our Discord server. Join the server, then log out
           and log in again.

@@ -65,10 +65,10 @@ export function InstanceSettings({ instances }: { instances: InstanceRow[] }) {
                 <div className="text-xs opacity-60">{instance.dps} DPS</div>
               </div>
               <Fields instance={instance} />
-              <button className="rounded border border-border px-3 py-1 text-sm hover:bg-white/5">Save</button>
+              <button className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5">Save</button>
               <Link
                 href={`/officers/loot/${encodeURIComponent(instance.name)}`}
-                className="rounded border border-border px-3 py-1 text-sm hover:bg-white/5"
+                className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5"
               >
                 Loot table
               </Link>

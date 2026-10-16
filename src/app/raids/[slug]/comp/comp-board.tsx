@@ -30,6 +30,7 @@ import {
   rolesText,
 } from "@/lib/wow";
 import { moveToSlot, removeFromComp, setDuty, setSlotRole } from "./actions";
+import { readable } from "@/lib/theme";
 
 export type BoardCharacter = {
   id: string;
@@ -183,7 +184,7 @@ export function CompBoard({
 
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-      {error && <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+      {error && <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-danger">{error}</p>}
 
       <Summary placed={placed} size={size} requirements={requirements} duties={duties} />
 
@@ -299,14 +300,14 @@ function Summary({
       {classCounts.size > 0 && (
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
           {[...classCounts.values()].map((c) => (
-            <span key={c.name} style={{ color: c.color }}>
+            <span key={c.name} style={{ color: readable(c.color) }}>
               {c.name} {c.n}
             </span>
           ))}
         </div>
       )}
       {warnings.length > 0 && (
-        <ul className="space-y-0.5 text-xs text-amber-400">
+        <ul className="space-y-0.5 text-xs text-warn">
           {warnings.map((w) => (
             <li key={w}>⚠ {w}</li>
           ))}
@@ -369,17 +370,17 @@ function Card({
       title={c.note ?? undefined}
     >
       <SpecIcon specId={c.specId} name={c.specName} />
-      <span className="truncate font-medium" style={{ color: c.color }}>
+      <span className="truncate font-medium" style={{ color: readable(c.color) }}>
         {c.name}
       </span>
       <span className="ml-auto flex items-center gap-1.5">
         {role && c.status !== "accepted" && (
-          <span className="text-xs text-amber-400">
+          <span className="text-xs text-warn">
             {c.status ? STATUS_LABELS[c.status].toLowerCase() : "not signed up"}
           </span>
         )}
         {c.elsewhere && (
-          <span className="text-xs text-amber-400" title={`Also in ${c.elsewhere}`}>
+          <span className="text-xs text-warn" title={`Also in ${c.elsewhere}`}>
             ⚠
           </span>
         )}
