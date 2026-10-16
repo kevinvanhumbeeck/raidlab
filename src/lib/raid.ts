@@ -2,7 +2,7 @@ import { cache } from "react";
 import { notFound, permanentRedirect } from "next/navigation";
 import { roleCoverage, roleOptions } from "@/lib/coverage";
 import { requireViewer } from "@/lib/viewer";
-import { FIXED_ROLES, isLocked, primaryRole, requirementsOf, rolesText } from "@/lib/wow";
+import { FIXED_ROLES, isLocked, primaryRole, requirementsOf, rolesText, type RaidDuty } from "@/lib/wow";
 
 type Supabase = Awaited<ReturnType<typeof requireViewer>>["supabase"];
 
@@ -13,7 +13,7 @@ export const getRaid = cache(async (slug: string) => {
   const { supabase } = await requireViewer();
   const { data: raid } = await supabase
     .from("raids")
-    .select("id, slug, title, instance, size, starts_at, locked_at, notes")
+    .select("id, slug, title, instance, size, splits, starts_at, locked_at, notes")
     .eq(UUID.test(slug) ? "id" : "slug", slug)
     .maybeSingle();
   if (!raid) notFound();
@@ -42,7 +42,7 @@ export async function assertOpen(supabase: Supabase, raidId: string, message = "
 
 // Officers locking sign-ups get asked first when the accepted sign-ups can't fill the tanks and healers, even
 // with offspecs (#27). Null when they can.
-export async function lockWarning(supabase: Supabase, raid: { id: string; instance: string }) {
+export async function lockWarning(supabase: Supabase, raid: { id: string; instance: string; splits: number }) {
   const [{ data: signups }, { data: specs }, { data: instance }] = await Promise.all([
     supabase
       .from("signups")
@@ -60,7 +60,7 @@ export async function lockWarning(supabase: Supabase, raid: { id: string; instan
     supabase.from("specs").select("id, name, roles"),
     supabase.from("instances").select("name, size, tanks, healers, dps").eq("name", raid.instance).maybeSingle(),
   ]);
-  const requirements = requirementsOf(instance);
+  const requirements = requirementsOf(instance, raid.splits);
   if (!requirements) return null;
 
   const specById = new Map(specs?.map((s) => [s.id, s]));
@@ -83,4 +83,16 @@ export async function lockWarning(supabase: Supabase, raid: { id: string; instan
     return `${rolesText(have, role)} of ${requirements[role]}`;
   });
   return short.length ? `Only ${short.join(" and ")} signed up, even with offspecs. Lock sign-ups anyway?` : null;
+}
+
+// The splits of a raid where the viewer holds a duty, e.g. the raid lead or loot lead of split 2. They get that
+// split's Gargul exports without being an officer.
+export async function myDutySplits(supabase: Supabase, raidId: string, userId: string, duty: RaidDuty) {
+  const { data } = await supabase
+    .from("raid_duties")
+    .select("split_no, characters!inner(owner_id)")
+    .eq("raid_id", raidId)
+    .eq("duty", duty)
+    .eq("characters.owner_id", userId);
+  return new Set((data ?? []).map((d) => d.split_no as number));
 }

@@ -18,6 +18,7 @@ import {
   effectiveRole,
   formatRaidTime,
   hasStarted,
+  slotText,
   type AttendanceStatus,
   type RaidDuty,
   type Role,
@@ -27,7 +28,7 @@ import { readable } from "@/lib/theme";
 
 const RECENT = 20;
 
-type RaidInfo = { id: string; slug: string; title: string; instance: string; starts_at: string };
+type RaidInfo = { id: string; slug: string; title: string; instance: string; splits: number; starts_at: string };
 
 export default async function PlayerPage({
   params,
@@ -65,7 +66,7 @@ export default async function PlayerPage({
       supabase.from("signups").select("raid_id, character_id, status, spec_id").in("character_id", characterIds),
       supabase
         .from("comp_slots")
-        .select("raid_id, character_id, group_no, spec_id, role")
+        .select("raid_id, character_id, split_no, group_no, spec_id, role")
         .in("character_id", characterIds),
       supabase.from("attendance").select("raid_id, character_id, status").in("character_id", characterIds),
       supabase.from("raid_duties").select("raid_id, duty").in("character_id", characterIds),
@@ -85,7 +86,7 @@ export default async function PlayerPage({
   ];
   const { data: raids } = await supabase
     .from("raids")
-    .select("id, slug, title, instance, starts_at")
+    .select("id, slug, title, instance, splits, starts_at")
     .in("id", raidIds)
     .order("starts_at", { ascending: false })
     .overrideTypes<RaidInfo[], { merge: false }>();
@@ -121,7 +122,9 @@ export default async function PlayerPage({
       raid,
       character,
       specId,
-      group: slot?.group_no ?? null,
+      // "2", or "S2 · 1" on a split night (#60).
+      group: slot ? (raid.splits > 1 ? `S${slot.split_no} · ${slot.group_no}` : String(slot.group_no)) : null,
+      slotText: slot ? slotText(raid.splits, slot.split_no, slot.group_no) : null,
       role: slot ? effectiveRole(specById.get(specId ?? ""), slot.role as Role | null) : null,
       duties: (duties ?? []).filter((d) => d.raid_id === raid.id).map((d) => d.duty as RaidDuty),
       reserves: (reserves ?? []).flatMap((r) => (r.raid_id === raid.id && r.loot_items ? [r.loot_items] : [])),
@@ -276,7 +279,7 @@ export default async function PlayerPage({
                   <span className="ml-auto flex items-center gap-1.5 text-xs">
                     <span className={`h-2 w-2 rounded-full ${STATUS_DOT[h.signup!]}`} />
                     {STATUS_LABELS[h.signup!]}
-                    {h.group && <span className="opacity-70">· group {h.group}</span>}
+                    {h.slotText && <span className="opacity-70">· {h.slotText}</span>}
                   </span>
                   {h.reserves.length > 0 && (
                     <span className="flex w-full flex-wrap gap-x-3 gap-y-1 text-xs">

@@ -72,6 +72,12 @@ export function InstanceSettings({ instances }: { instances: InstanceRow[] }) {
               >
                 Loot table
               </Link>
+              <Link
+                href={`/officers/splits/${encodeURIComponent(instance.name)}`}
+                className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5"
+              >
+                Splits
+              </Link>
             </form>
           </li>
         ))}

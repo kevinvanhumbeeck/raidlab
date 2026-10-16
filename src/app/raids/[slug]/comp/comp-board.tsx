@@ -50,30 +50,37 @@ export type BoardCharacter = {
   note: string | null;
   // Title of another raid around the same time where this player is already placed.
   elsewhere: string | null;
+  // The split this character usually raids in for the instance (standing roster, #60).
+  rosterSplit: number | null;
 };
 
-type Placement = Record<string, string>; // "group-position" -> character id
+type Placement = Record<string, string>; // "split-group-position" -> character id
+type Duties = Partial<Record<RaidDuty, string>>;
 
 const ROLE_ORDER: Record<Role, number> = { tank: 0, healer: 1, dps: 2 };
 
 export function CompBoard({
   raidId,
   size,
+  splits,
   characters,
   placement: serverPlacement,
   slotRoles: serverSlotRoles,
   requirements,
-  duties,
+  duties: serverDuties,
   canEdit,
 }: {
   raidId: string;
+  // Size of one split; a normal raid is one split.
   size: number;
+  splits: number;
   characters: Record<string, BoardCharacter>;
   placement: Placement;
   // Role picked by an officer for placed hybrids (character id -> role).
   slotRoles: Record<string, Role>;
+  // Per split.
   requirements: RoleRequirements | null;
-  duties: Partial<Record<RaidDuty, string>>;
+  duties: Record<number, Duties>;
   canEdit: boolean;
 }) {
   const router = useRouter();
@@ -117,10 +124,12 @@ export function CompBoard({
   const slotOf = new Map(Object.entries(placement).map(([slot, id]) => [id, slot]));
   const roleOf = (c: BoardCharacter) =>
     slotOf.has(c.id) && slotRoles[c.id] && c.roles.includes(slotRoles[c.id]) ? slotRoles[c.id] : c.role;
-  const placed = Object.values(placement)
-    .map((id) => characters[id])
-    .filter(Boolean)
-    .map((c) => ({ ...c, role: roleOf(c) }));
+  const placedIn = (split: number) =>
+    Object.entries(placement)
+      .filter(([slot]) => slot.startsWith(`${split}-`))
+      .map(([, id]) => characters[id])
+      .filter(Boolean)
+      .map((c) => ({ ...c, role: roleOf(c) }));
 
   function run(action: () => Promise<void>, rollback: Placement) {
     setError(null);
@@ -174,46 +183,83 @@ export function CompBoard({
     if (occupant && from) next[from] = occupant;
     setPlacement(next);
 
-    const [groupNo, position] = target.split("-").map(Number);
-    run(() => moveToSlot(raidId, characterId, groupNo, position), before);
+    const [splitNo, groupNo, position] = target.split("-").map(Number);
+    run(() => moveToSlot(raidId, characterId, splitNo, groupNo, position), before);
   }
 
   const pool = Object.values(characters)
     .filter((c) => !slotOf.has(c.id) && c.status === "accepted")
     .sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.name.localeCompare(b.name));
 
+  const split = splits > 1;
+  const groupGrid = (splitNo: number) => (
+    <div className={split ? "space-y-3" : "grid gap-4 sm:grid-cols-2"}>
+      {Array.from({ length: groups }, (_, g) => (
+        <div key={g} className={split ? "" : "rounded-xl border border-border bg-panel/90 p-3"}>
+          <h3 className="mb-2 font-sans text-sm font-semibold opacity-80">Group {g + 1}</h3>
+          <div className="space-y-1.5">
+            {Array.from({ length: 5 }, (_, p) => {
+              const slot = `${splitNo}-${g + 1}-${p + 1}`;
+              const ch = characters[placement[slot]];
+              return (
+                <Slot key={slot} id={slot} disabled={!canEdit}>
+                  {ch && (
+                    <Card
+                      character={ch}
+                      disabled={!canEdit}
+                      role={roleOf(ch)}
+                      onCycleRole={ch.roles.length > 1 ? () => cycleRole(ch) : undefined}
+                      splitNo={split ? splitNo : undefined}
+                    />
+                  )}
+                </Slot>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+  const duties = (splitNo: number) => (
+    <Duties
+      raidId={raidId}
+      splitNo={splitNo}
+      duties={serverDuties[splitNo] ?? {}}
+      placed={placedIn(splitNo)}
+      canEdit={canEdit}
+      stacked={split}
+      onError={setError}
+    />
+  );
+
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
       {error && <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-danger">{error}</p>}
 
-      <Summary placed={placed} size={size} requirements={requirements} duties={duties} />
+      {!split && <Summary placed={placedIn(1)} size={size} requirements={requirements} duties={serverDuties[1] ?? {}} />}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
-        <div className="grid gap-4 sm:grid-cols-2">
-          {Array.from({ length: groups }, (_, g) => (
-            <div key={g} className="rounded-xl border border-border bg-panel/90 p-3">
-              <h3 className="mb-2 font-sans text-sm font-semibold opacity-80">Group {g + 1}</h3>
-              <div className="space-y-1.5">
-                {Array.from({ length: 5 }, (_, p) => {
-                  const slot = `${g + 1}-${p + 1}`;
-                  const ch = characters[placement[slot]];
-                  return (
-                    <Slot key={slot} id={slot} disabled={!canEdit}>
-                      {ch && (
-                        <Card
-                          character={ch}
-                          disabled={!canEdit}
-                          role={roleOf(ch)}
-                          onCycleRole={ch.roles.length > 1 ? () => cycleRole(ch) : undefined}
-                        />
-                      )}
-                    </Slot>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
+        {split ? (
+          // Splits side by side, each with its own counts and duties.
+          <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+            {Array.from({ length: splits }, (_, i) => (
+              <section key={i} className="space-y-3 rounded-xl border border-border bg-panel/90 p-3">
+                <h2 className="font-sans text-lg font-semibold">Split {i + 1}</h2>
+                <Summary
+                  placed={placedIn(i + 1)}
+                  size={size}
+                  requirements={requirements}
+                  duties={serverDuties[i + 1] ?? {}}
+                  compact
+                />
+                {groupGrid(i + 1)}
+                {duties(i + 1)}
+              </section>
+            ))}
+          </div>
+        ) : (
+          groupGrid(1)
+        )}
 
         <Pool disabled={!canEdit}>
           {pool.length ? (
@@ -221,7 +267,7 @@ export function CompBoard({
               {/* Signed up but not placed: that's the bench. */}
               <h3 className="font-sans text-sm font-semibold opacity-80">Bench ({pool.length})</h3>
               {pool.map((c) => (
-                <Card key={c.id} character={c} disabled={!canEdit} />
+                <Card key={c.id} character={c} disabled={!canEdit} showRoster={split} />
               ))}
             </div>
           ) : (
@@ -230,13 +276,7 @@ export function CompBoard({
         </Pool>
       </div>
 
-      <Duties
-        raidId={raidId}
-        duties={duties}
-        placed={placed}
-        canEdit={canEdit}
-        onError={setError}
-      />
+      {!split && duties(1)}
     </DndContext>
   );
 }
@@ -246,11 +286,14 @@ function Summary({
   size,
   requirements,
   duties,
+  compact = false,
 }: {
   placed: BoardCharacter[];
   size: number;
   requirements: RoleRequirements | null;
-  duties: Partial<Record<RaidDuty, string>>;
+  duties: Duties;
+  // Inside a split's column, without a panel of its own.
+  compact?: boolean;
 }) {
   const count = (role: Role) => placed.filter((c) => c.role === role).length;
   const coverage = roleCoverage(placed, requirements);
@@ -278,7 +321,7 @@ function Summary({
   }
 
   return (
-    <section className="space-y-2 rounded-xl border border-border bg-panel/90 p-3">
+    <section className={compact ? "space-y-2" : "space-y-2 rounded-xl border border-border bg-panel/90 p-3"}>
       <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm">
         <span className="text-base font-semibold">
           {placed.length}/{size} placed
@@ -349,13 +392,21 @@ function Card({
   disabled,
   role,
   onCycleRole,
+  splitNo,
+  showRoster = false,
 }: {
   character: BoardCharacter;
   disabled: boolean;
   // Only for placed characters: the role they fill, and a handler when the spec can fill several.
   role?: Role;
   onCycleRole?: () => void;
+  // The split a placed character is in, to flag exceptions to the standing roster.
+  splitNo?: number;
+  // On the bench of a split night: show the split the character usually raids in.
+  showRoster?: boolean;
 }) {
+  const rosterTag =
+    c.rosterSplit && (showRoster || (splitNo !== undefined && splitNo !== c.rosterSplit)) ? c.rosterSplit : null;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: c.id, disabled });
   const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
 
@@ -378,6 +429,14 @@ function Card({
         {role && c.status !== "accepted" && (
           <span className="text-xs text-warn">
             {c.status ? STATUS_LABELS[c.status].toLowerCase() : "not signed up"}
+          </span>
+        )}
+        {rosterTag && (
+          <span
+            className="rounded border border-border px-1 text-[11px] leading-4 opacity-70"
+            title={`Usually in split ${rosterTag}`}
+          >
+            S{rosterTag}
           </span>
         )}
         {c.elsewhere && (
@@ -405,22 +464,29 @@ function Card({
 
 function Duties({
   raidId,
+  splitNo,
   duties,
   placed,
   canEdit,
+  stacked,
   onError,
 }: {
   raidId: string;
-  duties: Partial<Record<RaidDuty, string>>;
+  splitNo: number;
+  duties: Duties;
   placed: BoardCharacter[];
   canEdit: boolean;
+  // One column, inside a split.
+  stacked: boolean;
   onError: (message: string) => void;
 }) {
   const [, startTransition] = useTransition();
   const sorted = [...placed].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <section className="grid gap-3 rounded-xl border border-border bg-panel/90 p-3 sm:grid-cols-4">
+    <section
+      className={stacked ? "grid grid-cols-2 gap-3" : "grid gap-3 rounded-xl border border-border bg-panel/90 p-3 sm:grid-cols-4"}
+    >
       {RAID_DUTIES.map((duty) => (
         <label key={duty} className="space-y-1 text-sm">
           <span className="opacity-80">{DUTY_LABELS[duty]}</span>
@@ -430,7 +496,7 @@ function Duties({
             onChange={(e) =>
               startTransition(async () => {
                 try {
-                  await setDuty(raidId, duty, e.target.value || null);
+                  await setDuty(raidId, splitNo, duty, e.target.value || null);
                 } catch (err) {
                   onError(err instanceof Error ? err.message : "Could not save");
                 }
