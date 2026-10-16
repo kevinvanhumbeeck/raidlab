@@ -1,5 +1,6 @@
 import { ConfirmButton } from "@/components/confirm-button";
 import { CopyButton } from "@/components/copy-button";
+import { attendanceByPlayer, attendanceSummary, type AttendanceRow } from "@/lib/attendance";
 import { roleOptions } from "@/lib/coverage";
 import { gargulGroups } from "@/lib/gargul";
 import { getRaid, myDutySplits } from "@/lib/raid";
@@ -15,8 +16,12 @@ type CharacterJoin = {
   main_spec_id: string;
   off_spec_ids: string[];
   owner_id: string;
-  profiles: { display_name: string } | null;
+  is_main: boolean;
+  profiles: { display_name: string; created_at: string } | null;
 };
+
+const CHARACTER =
+  "id, name, class_id, main_spec_id, off_spec_ids, owner_id, is_main, profiles(display_name, created_at)";
 
 export default async function CompPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -38,12 +43,11 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
     { data: nearby },
     { data: instance },
     { data: roster },
+    { data: attendanceRows },
   ] = await Promise.all([
     supabase
       .from("signups")
-      .select(
-        "character_id, status, spec_id, note, characters(id, name, class_id, main_spec_id, off_spec_ids, owner_id, profiles(display_name))",
-      )
+      .select(`character_id, status, spec_id, note, characters(${CHARACTER})`)
       .eq("raid_id", id)
       .overrideTypes<
         {
@@ -57,9 +61,7 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
       >(),
     supabase
       .from("comp_slots")
-      .select(
-        "split_no, group_no, position, character_id, spec_id, role, characters(id, name, class_id, main_spec_id, off_spec_ids, owner_id, profiles(display_name))",
-      )
+      .select(`split_no, group_no, position, character_id, spec_id, role, characters(${CHARACTER})`)
       .eq("raid_id", id)
       .overrideTypes<
         {
@@ -85,12 +87,22 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
       .overrideTypes<{ raids: { id: string; title: string }; characters: { owner_id: string } }[], { merge: false }>(),
     supabase.from("instances").select("name, size, tanks, healers, dps").eq("name", raid.instance).maybeSingle(),
     supabase.from("split_rosters").select("character_id, split_no").eq("instance", raid.instance),
+    // For auto-fill, which ranks contested spots by attendance.
+    isOfficer
+      ? supabase
+          .from("attendance")
+          .select("status, raid_id, raids(title, starts_at), characters(owner_id)")
+          .overrideTypes<AttendanceRow[], { merge: false }>()
+      : Promise.resolve({ data: [] as AttendanceRow[] }),
   ]);
 
   const classById = new Map(classes?.map((c) => [c.id, c]));
   const specById = new Map(specs?.map((s) => [s.id, s]));
   const elsewhere = new Map(nearby?.map((n) => [n.characters.owner_id, n.raids.title]));
   const rosterSplit = new Map(roster?.map((r) => [r.character_id, r.split_no]));
+  const { raids: recordedRaids, byPlayer } = attendanceByPlayer(attendanceRows ?? []);
+  const attendanceOf = (ch: CharacterJoin) =>
+    attendanceSummary(recordedRaids, byPlayer.get(ch.owner_id) ?? new Map(), ch.profiles?.created_at ?? "").pct;
 
   const characters: Record<string, BoardCharacter> = {};
   const addCharacter = (ch: CharacterJoin, specId: string | null, status: SignupStatus | null, note: string | null) => {
@@ -113,10 +125,26 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
       note,
       elsewhere: elsewhere.get(ch.owner_id) ?? null,
       rosterSplit: rosterSplit.get(ch.id) ?? null,
+      isMain: ch.is_main,
+      attendance: isOfficer ? attendanceOf(ch) : null,
     };
   };
-  for (const slot of slots ?? []) if (slot.characters) addCharacter(slot.characters, slot.spec_id, null, null);
+  const signupOf = new Map(signups?.map((s) => [s.character_id, s]));
   for (const s of signups ?? []) if (s.characters) addCharacter(s.characters, s.spec_id, s.status, s.note);
+  for (const slot of slots ?? []) {
+    if (!slot.characters) continue;
+    const signup = signupOf.get(slot.character_id);
+    const signupSpec = specById.get(signup?.spec_id ?? slot.characters.main_spec_id);
+    // Placed in an offspec (auto-fill switching a dps to healer, say): show that spec. Otherwise the signed-up
+    // spec, which follows the player changing their sign-up.
+    const offspec = !!slot.role && !!slot.spec_id && !signupSpec?.roles.includes(slot.role);
+    addCharacter(
+      slot.characters,
+      offspec ? slot.spec_id : (signup?.spec_id ?? slot.spec_id),
+      signup?.status ?? null,
+      signup?.note ?? null,
+    );
+  }
 
   const placement: Record<string, string> = {};
   const slotRoles: Record<string, Role> = {};

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireViewer } from "@/lib/viewer";
+import type { FilledSlot } from "@/lib/auto-fill";
 import { MAX_SPLITS, RAID_DUTIES, ROLES, type RaidDuty, type Role } from "@/lib/wow";
 
 async function requireOfficer() {
@@ -32,7 +33,7 @@ export async function moveToSlot(
       .maybeSingle(),
     supabase
       .from("comp_slots")
-      .select("split_no, group_no, position, role")
+      .select("split_no, group_no, position, spec_id, role")
       .eq("raid_id", raidId)
       .eq("character_id", characterId)
       .maybeSingle(),
@@ -61,7 +62,8 @@ export async function moveToSlot(
       group_no: groupNo,
       position,
       character_id: characterId,
-      spec_id: signup?.spec_id ?? null,
+      // A placed character keeps the spec they were placed with (an offspec, say).
+      spec_id: source?.spec_id ?? signup?.spec_id ?? null,
       role: source?.role ?? null,
     },
   ];
@@ -162,4 +164,59 @@ export async function setSplits(raidId: string, splits: number) {
 
   revalidatePath("/raids/[slug]", "layout");
   revalidatePath("/raids");
+}
+
+// Save an auto-fill draft (#55). It only fills empty slots, so if someone changed the comp in the meantime the
+// insert fails as a whole and the officer runs auto-fill again.
+export async function applyAutoFill(raidId: string, slots: FilledSlot[]) {
+  const supabase = await requireOfficer();
+  if (!slots.length) return;
+
+  const ids = slots.map((s) => s.characterId);
+  const [{ data: signups }, { data: characters }, { data: specs }] = await Promise.all([
+    supabase
+      .from("signups")
+      .select("character_id")
+      .eq("raid_id", raidId)
+      .eq("status", "accepted")
+      .in("character_id", ids),
+    supabase.from("characters").select("id, main_spec_id, off_spec_ids").in("id", ids),
+    supabase.from("specs").select("id, roles"),
+  ]);
+  const accepted = new Set(signups?.map((s) => s.character_id));
+  const characterById = new Map(characters?.map((c) => [c.id, c]));
+  const rolesOf = new Map(specs?.map((s) => [s.id, s.roles as string[]]));
+  for (const slot of slots) {
+    const ch = characterById.get(slot.characterId);
+    if (!accepted.has(slot.characterId) || !ch) throw new Error("Only accepted sign-ups can be placed");
+    const ownSpec = slot.specId === ch.main_spec_id || ch.off_spec_ids.includes(slot.specId);
+    if (!ownSpec || !rolesOf.get(slot.specId)?.includes(slot.role)) throw new Error("Invalid spec or role");
+  }
+
+  const { error } = await supabase.from("comp_slots").insert(
+    slots.map((s) => ({
+      raid_id: raidId,
+      split_no: s.splitNo,
+      group_no: s.groupNo,
+      position: s.position,
+      character_id: s.characterId,
+      spec_id: s.specId,
+      role: s.role,
+    })),
+  );
+  if (error?.code === "23505") throw new Error("The comp changed in the meantime. Run auto-fill again.");
+  if (error) throw error;
+
+  revalidatePath("/raids/[slug]", "layout");
+}
+
+// Empty the comp, or one split of it. Duties stay.
+export async function clearComp(raidId: string, splitNo: number | null) {
+  const supabase = await requireOfficer();
+  let query = supabase.from("comp_slots").delete().eq("raid_id", raidId);
+  if (splitNo) query = query.eq("split_no", splitNo);
+  const { error } = await query;
+  if (error) throw error;
+
+  revalidatePath("/raids/[slug]", "layout");
 }

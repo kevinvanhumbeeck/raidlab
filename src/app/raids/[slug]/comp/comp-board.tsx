@@ -14,6 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { RoleCount, type RoleCountState } from "@/components/role-count";
 import { SpecIcon } from "@/components/spec-icon";
+import { autoFill, type FillResult } from "@/lib/auto-fill";
 import { coverageSummary, roleCoverage, type RoleOption } from "@/lib/coverage";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -29,7 +30,7 @@ import {
   type SignupStatus,
   rolesText,
 } from "@/lib/wow";
-import { moveToSlot, removeFromComp, setDuty, setSlotRole } from "./actions";
+import { applyAutoFill, clearComp, moveToSlot, removeFromComp, setDuty, setSlotRole } from "./actions";
 import { readable } from "@/lib/theme";
 
 export type BoardCharacter = {
@@ -52,6 +53,9 @@ export type BoardCharacter = {
   elsewhere: string | null;
   // The split this character usually raids in for the instance (standing roster, #60).
   rosterSplit: number | null;
+  // For auto-fill (#55): mains before alts, and the player's attendance percentage (officers only).
+  isMain: boolean;
+  attendance: number | null;
 };
 
 type Placement = Record<string, string>; // "split-group-position" -> character id
@@ -120,16 +124,32 @@ export function CompBoard({
     useSensor(KeyboardSensor),
   );
 
+  // An auto-fill draft (#55) shows on the board, on top of the comp, until it's accepted or discarded. Nothing can
+  // be dragged meanwhile.
+  const [draft, setDraft] = useState<FillResult | null>(null);
+  const draftByCharacter = new Map(draft?.slots.map((s) => [s.characterId, s]));
+  const shown: Placement = { ...placement };
+  for (const s of draft?.slots ?? []) shown[`${s.splitNo}-${s.groupNo}-${s.position}`] = s.characterId;
+  const editable = canEdit && !draft;
+  // A drafted character in the spec and role auto-fill picked.
+  const asDrafted = (c: BoardCharacter): BoardCharacter => {
+    const d = draftByCharacter.get(c.id);
+    if (!d) return c;
+    const option = c.options.find((o) => o.specId === d.specId && o.role === d.role);
+    return { ...c, specId: d.specId, specName: option?.specName ?? c.specName, role: d.role, roles: [d.role] };
+  };
+
   const groups = size / 5;
-  const slotOf = new Map(Object.entries(placement).map(([slot, id]) => [id, slot]));
+  const slotOf = new Map(Object.entries(shown).map(([slot, id]) => [id, slot]));
   const roleOf = (c: BoardCharacter) =>
-    slotOf.has(c.id) && slotRoles[c.id] && c.roles.includes(slotRoles[c.id]) ? slotRoles[c.id] : c.role;
+    draftByCharacter.get(c.id)?.role ??
+    (slotOf.has(c.id) && slotRoles[c.id] && c.roles.includes(slotRoles[c.id]) ? slotRoles[c.id] : c.role);
   const placedIn = (split: number) =>
-    Object.entries(placement)
+    Object.entries(shown)
       .filter(([slot]) => slot.startsWith(`${split}-`))
       .map(([, id]) => characters[id])
       .filter(Boolean)
-      .map((c) => ({ ...c, role: roleOf(c) }));
+      .map((c) => ({ ...asDrafted(c), role: roleOf(c) }));
 
   function run(action: () => Promise<void>, rollback: Placement) {
     setError(null);
@@ -192,6 +212,68 @@ export function CompBoard({
     .sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.name.localeCompare(b.name));
 
   const split = splits > 1;
+
+  function runAutoFill() {
+    setError(null);
+    const dutySplit = new Map<string, number>();
+    for (const [no, d] of Object.entries(serverDuties)) {
+      for (const id of Object.values(d)) if (id && !dutySplit.has(id)) dutySplit.set(id, Number(no));
+    }
+    const placed = Object.entries(placement).flatMap(([slot, id]) => {
+      const c = characters[id];
+      if (!c) return [];
+      const [splitNo, groupNo, position] = slot.split("-").map(Number);
+      return [{ splitNo, groupNo, position, role: roleOf(c) }];
+    });
+    setDraft(
+      autoFill({
+        size,
+        splits,
+        requirements,
+        placed,
+        candidates: pool.map((c) => ({
+          id: c.id,
+          name: c.name,
+          isMain: c.isMain,
+          attendance: c.attendance,
+          rosterSplit: split ? c.rosterSplit : null,
+          dutySplit: dutySplit.get(c.id) ?? null,
+          options: c.options.map((o) => ({ role: o.role, specId: o.specId })),
+        })),
+      }),
+    );
+  }
+
+  function acceptDraft() {
+    if (!draft) return;
+    const before = { placement, slotRoles, draft };
+    setPlacement(shown);
+    setSlotRoles({ ...slotRoles, ...Object.fromEntries(draft.slots.map((s) => [s.characterId, s.role])) });
+    setDraft(null);
+    setError(null);
+    startTransition(async () => {
+      try {
+        await applyAutoFill(raidId, before.draft.slots);
+      } catch (e) {
+        setPlacement(before.placement);
+        setSlotRoles(before.slotRoles);
+        setDraft(before.draft);
+        setError(e instanceof Error ? e.message : "Something went wrong");
+      }
+    });
+  }
+
+  // Empty the comp, or one split. Duties stay.
+  function clear(splitNo: number | null) {
+    const label = splitNo && split ? `split ${splitNo}` : "the comp";
+    if (!window.confirm(`Clear ${label}? Everyone goes back to the bench; duties stay.`)) return;
+    const before = placement;
+    setPlacement(
+      splitNo ? Object.fromEntries(Object.entries(placement).filter(([slot]) => !slot.startsWith(`${splitNo}-`))) : {},
+    );
+    run(() => clearComp(raidId, splitNo), before);
+  }
+
   const groupGrid = (splitNo: number) => (
     <div className={split ? "space-y-3" : "grid gap-4 sm:grid-cols-2"}>
       {Array.from({ length: groups }, (_, g) => (
@@ -200,16 +282,18 @@ export function CompBoard({
           <div className="space-y-1.5">
             {Array.from({ length: 5 }, (_, p) => {
               const slot = `${splitNo}-${g + 1}-${p + 1}`;
-              const ch = characters[placement[slot]];
+              const ch = characters[shown[slot]];
+              const drafted = !!ch && draftByCharacter.has(ch.id);
               return (
-                <Slot key={slot} id={slot} disabled={!canEdit}>
+                <Slot key={slot} id={slot} disabled={!editable}>
                   {ch && (
                     <Card
-                      character={ch}
-                      disabled={!canEdit}
+                      character={asDrafted(ch)}
+                      disabled={!editable}
                       role={roleOf(ch)}
-                      onCycleRole={ch.roles.length > 1 ? () => cycleRole(ch) : undefined}
+                      onCycleRole={ch.roles.length > 1 && !drafted ? () => cycleRole(ch) : undefined}
                       splitNo={split ? splitNo : undefined}
+                      drafted={drafted}
                     />
                   )}
                 </Slot>
@@ -226,7 +310,7 @@ export function CompBoard({
       splitNo={splitNo}
       duties={serverDuties[splitNo] ?? {}}
       placed={placedIn(splitNo)}
-      canEdit={canEdit}
+      canEdit={editable}
       stacked={split}
       onError={setError}
     />
@@ -236,6 +320,18 @@ export function CompBoard({
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
       {error && <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-danger">{error}</p>}
 
+      {canEdit && (
+        <AutoFillBar
+          draft={draft}
+          characters={characters}
+          hasPlaced={Object.keys(placement).length > 0}
+          onRun={runAutoFill}
+          onAccept={acceptDraft}
+          onDiscard={() => setDraft(null)}
+          onClear={() => clear(null)}
+        />
+      )}
+
       {!split && <Summary placed={placedIn(1)} size={size} requirements={requirements} duties={serverDuties[1] ?? {}} />}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
@@ -244,7 +340,18 @@ export function CompBoard({
           <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
             {Array.from({ length: splits }, (_, i) => (
               <section key={i} className="space-y-3 rounded-xl border border-border bg-panel/90 p-3">
-                <h2 className="font-sans text-lg font-semibold">Split {i + 1}</h2>
+                <h2 className="flex items-center justify-between font-sans text-lg font-semibold">
+                  Split {i + 1}
+                  {editable && placedIn(i + 1).length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => clear(i + 1)}
+                      className="rounded border border-border px-2 py-0.5 text-xs font-normal hover:bg-foreground/5"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </h2>
                 <Summary
                   placed={placedIn(i + 1)}
                   size={size}
@@ -261,13 +368,20 @@ export function CompBoard({
           groupGrid(1)
         )}
 
-        <Pool disabled={!canEdit}>
+        <Pool disabled={!editable}>
           {pool.length ? (
             <div className="space-y-1.5">
               {/* Signed up but not placed: that's the bench. */}
               <h3 className="font-sans text-sm font-semibold opacity-80">Bench ({pool.length})</h3>
               {pool.map((c) => (
-                <Card key={c.id} character={c} disabled={!canEdit} showRoster={split} />
+                <div key={c.id}>
+                  <Card character={c} disabled={!editable} showRoster={split} />
+                  {draft && (
+                    <p className="px-2 pt-0.5 text-[11px] text-warn">
+                      {draft.skipped.find((s) => s.characterId === c.id)?.reason}
+                    </p>
+                  )}
+                </div>
               ))}
             </div>
           ) : (
@@ -360,6 +474,77 @@ function Summary({
   );
 }
 
+function AutoFillBar({
+  draft,
+  characters,
+  hasPlaced,
+  onRun,
+  onAccept,
+  onDiscard,
+  onClear,
+}: {
+  draft: FillResult | null;
+  characters: Record<string, BoardCharacter>;
+  hasPlaced: boolean;
+  onRun: () => void;
+  onAccept: () => void;
+  onDiscard: () => void;
+  onClear: () => void;
+}) {
+  const button = "rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5 disabled:opacity-40";
+  if (!draft) {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={onRun}
+          className="rounded bg-accent px-3 py-1 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
+        >
+          Auto-fill
+        </button>
+        <button type="button" onClick={onClear} disabled={!hasPlaced} className={button}>
+          Clear
+        </button>
+        <span className="text-xs opacity-60">
+          Auto-fill places accepted sign-ups in the empty spots: duties first, then tanks and healers, then DPS.
+        </span>
+      </div>
+    );
+  }
+  const n = draft.slots.length;
+  return (
+    <section className="space-y-2 rounded-xl border border-accent/60 bg-accent/10 p-3 text-sm">
+      <p>
+        {n ? (
+          <>
+            Auto-fill would place <strong>{n}</strong> player{n === 1 ? "" : "s"} (outlined).
+          </>
+        ) : (
+          "Nothing to place: there are no empty spots or nobody left on the bench."
+        )}
+        {draft.skipped.length > 0 &&
+          ` ${draft.skipped.length} stay${draft.skipped.length === 1 ? "s" : ""} on the bench: ${draft.skipped
+            .map((s) => characters[s.characterId]?.name)
+            .join(", ")}.`}{" "}
+        Nothing is saved until you accept.
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onAccept}
+          disabled={!n}
+          className="rounded bg-accent px-3 py-1 font-medium text-accent-foreground hover:bg-accent-hover disabled:opacity-50"
+        >
+          Accept
+        </button>
+        <button type="button" onClick={onDiscard} className={button}>
+          Discard
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function Slot({ id, disabled, children }: { id: string; disabled: boolean; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id, disabled });
   return (
@@ -394,6 +579,7 @@ function Card({
   onCycleRole,
   splitNo,
   showRoster = false,
+  drafted = false,
 }: {
   character: BoardCharacter;
   disabled: boolean;
@@ -404,6 +590,8 @@ function Card({
   splitNo?: number;
   // On the bench of a split night: show the split the character usually raids in.
   showRoster?: boolean;
+  // Placed by an auto-fill draft that isn't saved yet.
+  drafted?: boolean;
 }) {
   const rosterTag =
     c.rosterSplit && (showRoster || (splitNo !== undefined && splitNo !== c.rosterSplit)) ? c.rosterSplit : null;
@@ -418,7 +606,7 @@ function Card({
       {...attributes}
       className={`flex items-center gap-2 rounded bg-background px-2 py-1.5 text-sm ${
         disabled ? "" : "cursor-grab touch-none"
-      } ${isDragging ? "relative z-10 opacity-80 shadow-lg" : ""}`}
+      } ${isDragging ? "relative z-10 opacity-80 shadow-lg" : ""} ${drafted ? "ring-1 ring-accent" : ""}`}
       title={c.note ?? undefined}
     >
       <SpecIcon specId={c.specId} name={c.specName} />
