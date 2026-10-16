@@ -180,7 +180,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
           >
             <label className="space-y-1">
               <span className="block text-sm">Character</span>
-              <select name="character_id" required className="rounded border border-border bg-background px-2 py-1.5">
+              <select name="character_id" required className="h-9.5 rounded border border-border bg-background px-2">
                 {allCharacters
                   ?.filter((c) => !rows.some((r) => r.characterId === c.id))
                   .map((c) => (
@@ -195,7 +195,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
               <select
                 name="status"
                 defaultValue="accepted"
-                className="rounded border border-border bg-background px-2 py-1.5"
+                className="h-9.5 rounded border border-border bg-background px-2"
               >
                 {SIGNUP_STATUSES.map((s) => (
                   <option key={s} value={s}>
@@ -204,8 +204,9 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
                 ))}
               </select>
             </label>
-            {/* Same height as the selects: their 16px text and border vs. this button's 14px text. */}
-            <button className="rounded border border-transparent bg-accent px-3 py-2 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
+            {/* Same box as the selects. The fill stops inside a transparent border, because the selects' dim
+                border reads as background and a full-bleed fill looks a pixel taller on each side. */}
+            <button className="h-9.5 rounded border border-transparent bg-accent bg-clip-padding px-3 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
               Add
             </button>
           </form>
