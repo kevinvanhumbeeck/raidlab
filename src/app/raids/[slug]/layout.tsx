@@ -1,6 +1,6 @@
 import { getRaid, lockWarning } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
-import { formatRaidTime, hasStarted, isLocked } from "@/lib/wow";
+import { formatRaidDate, formatRaidTime, hasStarted, isLocked } from "@/lib/wow";
 import { setRaidLock } from "../actions";
 import { LockButton } from "./lock-button";
 import { RaidTabs } from "./raid-tabs";
@@ -37,9 +37,15 @@ export default async function RaidLayout({
   return (
     <div className="space-y-6">
       <section className="space-y-1">
-        <Breadcrumbs items={[{ label: "Raids", href: "/raids" }, { label: raid.title }]} />
+        {/* The heading says where, the crumb which raid: its own title, or its date when the title is just the instance. */}
+        <Breadcrumbs
+          items={[
+            { label: "Raids", href: "/raids" },
+            { label: raid.title === raid.instance ? formatRaidDate(raid.starts_at) : raid.title },
+          ]}
+        />
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold">{raid.title}</h1>
+          <h1 className="text-2xl font-semibold">{raid.instance}</h1>
           {locked && (
             <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-medium text-danger">🔒 Locked</span>
           )}
@@ -48,7 +54,7 @@ export default async function RaidLayout({
           )}
         </div>
         <p className="opacity-80">
-          {raid.instance} · {raid.size}-man · {formatRaidTime(raid.starts_at)} server time
+          {raid.size}-man · {formatRaidTime(raid.starts_at)} server time
         </p>
         {!locked && raid.locked_at && (
           <p className="text-sm opacity-70">Sign-ups lock {formatRaidTime(raid.locked_at)}.</p>
