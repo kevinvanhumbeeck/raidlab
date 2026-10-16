@@ -35,12 +35,27 @@ export type HistoryLine = {
 // Columns that change along with the ones that matter, and only add noise.
 const SKIPPED = new Set(["updated_at", "created_at", "slug"]);
 
-// The newest changes, overall or for one raid, described in words.
-export async function loadHistory(supabase: SupabaseClient, raidId: string | null, limit: number) {
-  let query = supabase.from("history").select("*").order("at", { ascending: false }).order("id", { ascending: false });
+// A page of changes, newest first, with the ids to page from: newer and older are null when there's nothing more
+// that way.
+export type HistoryPage = { lines: HistoryLine[]; newer: number | null; older: number | null };
+
+// Changes overall or for one raid, described in words. Paged by id rather than page number, so a page doesn't shift
+// while new changes come in: before gives the changes older than that id, after the ones newer than it.
+export async function loadHistory(
+  supabase: SupabaseClient,
+  { raidId = null, before, after, limit }: { raidId?: string | null; before?: number; after?: number; limit: number },
+): Promise<HistoryPage> {
+  let query = supabase.from("history").select("*");
   if (raidId) query = query.eq("raid_id", raidId);
-  const { data } = await query.limit(limit).overrideTypes<HistoryEntry[], { merge: false }>();
-  const entries = data ?? [];
+  if (after) query = query.gt("id", after).order("id", { ascending: true });
+  else query = (before ? query.lt("id", before) : query).order("id", { ascending: false });
+  // One extra row tells whether there's another page.
+  const { data } = await query.limit(limit + 1).overrideTypes<HistoryEntry[], { merge: false }>();
+  const more = (data?.length ?? 0) > limit;
+  const entries = (data ?? []).slice(0, limit);
+  if (after) entries.reverse();
+  const hasNewer = after ? more : !!before;
+  const hasOlder = after ? entries.length > 0 : more;
 
   const ids = (key: string) => [
     ...new Set(entries.flatMap((e) => [e.old?.[key], e.new?.[key]]).filter((v): v is string => typeof v === "string")),
@@ -74,13 +89,24 @@ export async function loadHistory(supabase: SupabaseClient, raidId: string | nul
     player: (id) => profileName.get(String(id)) ?? "a player",
   };
 
-  return entries.map((e): HistoryLine => ({
+  const lines = entries.map((e): HistoryLine => ({
     id: e.id,
     at: e.at,
     actor: e.actor ? (profileName.get(e.actor) ?? "a deleted player") : null,
     raid: e.raid_id ? (raidById.get(e.raid_id) ?? { slug: "", title: "a deleted raid" }) : null,
     text: describe(e, names),
   }));
+  return {
+    lines,
+    newer: hasNewer && entries.length ? entries[0].id : null,
+    older: hasOlder && entries.length ? entries[entries.length - 1].id : null,
+  };
+}
+
+// The before/after cursor from search params, ignoring anything that isn't a positive id.
+export function historyCursor(params: { before?: string; after?: string }) {
+  const id = (v: string | undefined) => (v && /^\d+$/.test(v) ? Number(v) : undefined);
+  return { before: id(params.before), after: id(params.after) };
 }
 
 type Names = {

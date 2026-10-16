@@ -1,10 +1,16 @@
 import Link from "next/link";
+import { Pager, pageParam } from "@/components/pager";
 import { requireViewer } from "@/lib/viewer";
 import { formatRaidTime, isLocked, upcomingCutoff } from "@/lib/wow";
 import { NewRaidForm } from "./new-raid-form";
 
-export default async function RaidsPage() {
+const PAST_PAGE_SIZE = 15;
+
+export default async function RaidsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const { supabase, user, isOfficer } = await requireViewer();
+  // Pages of past raids, newest first; upcoming raids always show in full.
+  const page = pageParam((await searchParams).page);
+  const from = (page - 1) * PAST_PAGE_SIZE;
 
   const [{ data: raids }, { data: mySignups }, { data: pastRaids }, { data: instances }] = await Promise.all([
     supabase
@@ -18,11 +24,15 @@ export default async function RaidsPage() {
       .select("id, slug, title, instance, starts_at, attendance(count)")
       .lt("starts_at", upcomingCutoff())
       .order("starts_at", { ascending: false })
-      .limit(15),
+      .order("id")
+      // One extra row tells whether there's an older page.
+      .range(from, from + PAST_PAGE_SIZE),
     supabase.from("instances").select("name, size, tanks, healers, dps").order("sort"),
   ]);
 
   const myStatus = new Map(mySignups?.map((s) => [s.raid_id, s.status]));
+  const hasOlder = (pastRaids?.length ?? 0) > PAST_PAGE_SIZE;
+  const pageHref = (n: number) => (n > 1 ? `?page=${n}#past` : "/raids#past");
 
   return (
     <div className="space-y-8">
@@ -61,11 +71,11 @@ export default async function RaidsPage() {
         )}
       </section>
 
-      {pastRaids && pastRaids.length > 0 && (
-        <section className="space-y-3">
+      {pastRaids && (pastRaids.length > 0 || page > 1) && (
+        <section id="past" className="scroll-mt-4 space-y-3">
           <h2 className="text-lg font-semibold">Past raids</h2>
           <ul className="divide-y divide-border rounded-xl border border-border bg-panel/90">
-            {pastRaids.map((raid) => {
+            {pastRaids.slice(0, PAST_PAGE_SIZE).map((raid) => {
               const recorded = (raid.attendance[0]?.count ?? 0) > 0;
               return (
                 <li key={raid.id}>
@@ -83,6 +93,7 @@ export default async function RaidsPage() {
               );
             })}
           </ul>
+          <Pager newer={page > 1 ? pageHref(page - 1) : null} older={hasOlder ? pageHref(page + 1) : null} />
         </section>
       )}
 
