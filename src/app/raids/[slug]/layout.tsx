@@ -27,14 +27,15 @@ export default async function RaidLayout({
   const started = hasStarted(raid.starts_at);
   const locked = isLocked(raid);
 
-  const [{ count: accepted }, { count: placed }, { count: recorded }, { count: reserved }, warning] =
-    await Promise.all([
+  const [{ count: accepted }, { count: placed }, { count: recorded }, { count: reserved }, warning] = await Promise.all(
+    [
       count("signups").eq("status", "accepted"),
       count("comp_slots"),
       count("attendance"),
       count("reserves"),
       isOfficer && !locked ? lockWarning(supabase, raid) : null,
-    ]);
+    ],
+  );
 
   return (
     <div className="space-y-6">
@@ -51,9 +52,7 @@ export default async function RaidLayout({
           {locked && (
             <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-medium text-danger">🔒 Locked</span>
           )}
-          {isOfficer && (
-            <LockButton action={setRaidLock.bind(null, id, !locked)} locked={locked} warning={warning} />
-          )}
+          {isOfficer && <LockButton action={setRaidLock.bind(null, id, !locked)} locked={locked} warning={warning} />}
         </div>
         <p className="opacity-80">
           {raid.size}-man{raid.splits > 1 && ` · ${raid.splits} splits`} · {formatRaidTime(raid.starts_at)} server time

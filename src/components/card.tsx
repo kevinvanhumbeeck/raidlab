@@ -1,6 +1,8 @@
 // Panel with an optional raised header strip, styled after guildmanager.app's dashboard cards.
 export function Card({ className = "", children }: { className?: string; children: React.ReactNode }) {
-  return <section className={`overflow-hidden rounded-xl border border-border bg-panel/90 ${className}`}>{children}</section>;
+  return (
+    <section className={`overflow-hidden rounded-xl border border-border bg-panel/90 ${className}`}>{children}</section>
+  );
 }
 
 export function CardHeader({

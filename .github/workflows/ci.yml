@@ -19,10 +19,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version-file: .nvmrc
           cache: "npm"
 
       - run: npm ci
+      - run: npm run format:check
       - run: npm run lint
       - run: npx tsc --noEmit
       - run: npm run build

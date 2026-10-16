@@ -40,25 +40,24 @@ export default async function RaidAttendancePage({
   const { saved } = await searchParams;
   const { supabase, isOfficer } = await requireViewer();
 
-  const [{ data: signups }, { data: slots }, { data: attendance }, { data: classes }] =
-    await Promise.all([
-      supabase
-        .from("signups")
-        .select("status, characters(id, name, class_id, owner_id, profiles(slug, display_name))")
-        .eq("raid_id", id)
-        .overrideTypes<{ status: SignupStatus; characters: CharacterJoin | null }[], { merge: false }>(),
-      supabase
-        .from("comp_slots")
-        .select("characters(id, name, class_id, owner_id, profiles(slug, display_name))")
-        .eq("raid_id", id)
-        .overrideTypes<{ characters: CharacterJoin | null }[], { merge: false }>(),
-      supabase
-        .from("attendance")
-        .select("status, characters(id, name, class_id, owner_id, profiles(slug, display_name))")
-        .eq("raid_id", id)
-        .overrideTypes<{ status: AttendanceStatus; characters: CharacterJoin | null }[], { merge: false }>(),
-      supabase.from("classes").select("id, color"),
-    ]);
+  const [{ data: signups }, { data: slots }, { data: attendance }, { data: classes }] = await Promise.all([
+    supabase
+      .from("signups")
+      .select("status, characters(id, name, class_id, owner_id, profiles(slug, display_name))")
+      .eq("raid_id", id)
+      .overrideTypes<{ status: SignupStatus; characters: CharacterJoin | null }[], { merge: false }>(),
+    supabase
+      .from("comp_slots")
+      .select("characters(id, name, class_id, owner_id, profiles(slug, display_name))")
+      .eq("raid_id", id)
+      .overrideTypes<{ characters: CharacterJoin | null }[], { merge: false }>(),
+    supabase
+      .from("attendance")
+      .select("status, characters(id, name, class_id, owner_id, profiles(slug, display_name))")
+      .eq("raid_id", id)
+      .overrideTypes<{ status: AttendanceStatus; characters: CharacterJoin | null }[], { merge: false }>(),
+    supabase.from("classes").select("id, color"),
+  ]);
 
   const color = new Map(classes?.map((c) => [c.id, c.color]));
   const recorded = (attendance?.length ?? 0) > 0;
@@ -86,7 +85,8 @@ export default async function RaidAttendancePage({
       <section className="space-y-1">
         {!recorded && isOfficer && sorted.length > 0 && (
           <p className="text-sm text-warn">
-            Not saved yet. Suggested from the comp: placed is present, bench is benched, declined is absent. Adjust and save.
+            Not saved yet. Suggested from the comp: placed is present, bench is benched, declined is absent. Adjust and
+            save.
           </p>
         )}
         {saved && <p className="text-sm text-success">Attendance saved.</p>}

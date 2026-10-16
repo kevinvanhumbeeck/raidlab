@@ -74,7 +74,7 @@ function findPath(
       via.set(from, { id: p.id, from: to });
       if (hasSpare(from)) {
         const path: { id: string; to: Role }[] = [];
-        for (let r: Role = from; r !== target; ) {
+        for (let r: Role = from; r !== target;) {
           const step = via.get(r)!;
           path.push({ id: step.id, to: step.from });
           r = step.from;

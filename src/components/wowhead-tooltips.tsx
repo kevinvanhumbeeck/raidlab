@@ -11,7 +11,5 @@ if (typeof window !== "undefined") {
 }
 
 export function WowheadTooltips() {
-  return (
-    <Script src="https://wow.zamimg.com/js/tooltips.js" strategy="lazyOnload" />
-  );
+  return <Script src="https://wow.zamimg.com/js/tooltips.js" strategy="lazyOnload" />;
 }

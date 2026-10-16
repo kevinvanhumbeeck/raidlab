@@ -36,10 +36,5 @@ export function parseItemIds(text: string) {
 
 // Items grouped by boss, in loot table order.
 export function groupByBoss<T extends { boss: string | null }>(items: T[]) {
-  const groups = new Map<string, T[]>();
-  for (const item of items) {
-    const boss = item.boss ?? "Other";
-    groups.set(boss, [...(groups.get(boss) ?? []), item]);
-  }
-  return [...groups];
+  return [...Map.groupBy(items, (item) => item.boss ?? "Other")];
 }

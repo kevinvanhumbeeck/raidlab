@@ -21,7 +21,14 @@ export function CharacterForm({
   // The player's main, if they have one (and it isn't this character).
   currentMain?: string;
   // Present when editing an existing character.
-  character?: { id: string; name: string; class_id: string; main_spec_id: string; off_spec_ids: string[]; is_main: boolean };
+  character?: {
+    id: string;
+    name: string;
+    class_id: string;
+    main_spec_id: string;
+    off_spec_ids: string[];
+    is_main: boolean;
+  };
 }) {
   const [state, action, pending] = useActionState<CharacterFormState, FormData>(saveCharacter, {
     error: null,

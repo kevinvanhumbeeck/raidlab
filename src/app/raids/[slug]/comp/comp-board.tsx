@@ -332,7 +332,9 @@ export function CompBoard({
         />
       )}
 
-      {!split && <Summary placed={placedIn(1)} size={size} requirements={requirements} duties={serverDuties[1] ?? {}} />}
+      {!split && (
+        <Summary placed={placedIn(1)} size={size} requirements={requirements} duties={serverDuties[1] ?? {}} />
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
         {split ? (
@@ -673,7 +675,9 @@ function Duties({
 
   return (
     <section
-      className={stacked ? "grid grid-cols-2 gap-3" : "grid gap-3 rounded-xl border border-border bg-panel/90 p-3 sm:grid-cols-4"}
+      className={
+        stacked ? "grid grid-cols-2 gap-3" : "grid gap-3 rounded-xl border border-border bg-panel/90 p-3 sm:grid-cols-4"
+      }
     >
       {RAID_DUTIES.map((duty) => (
         <label key={duty} className="space-y-1 text-sm">

@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
-import { deleteRaidMessage, syncRaidMessage } from "@/lib/discord-bot";
+import { deleteRaidMessage, mentionInChannel, syncRaidMessage } from "@/lib/discord-bot";
+import { PING_COOLDOWN_MINUTES, noResponse } from "@/lib/no-response";
 import { requireViewer } from "@/lib/viewer";
 import { assertOpen } from "@/lib/raid";
-import { MAX_SPLITS, SIGNUP_STATUSES, type SignupStatus } from "@/lib/wow";
+import { MAX_SPLITS, SIGNUP_STATUSES, isLocked, type SignupStatus } from "@/lib/wow";
 
 type Supabase = Awaited<ReturnType<typeof requireViewer>>["supabase"];
 
@@ -105,11 +106,7 @@ export async function signUp(raidId: string, formData: FormData) {
   const { data: myCharacters } = await supabase.from("characters").select("id").eq("owner_id", user.id);
   const otherIds = (myCharacters ?? []).map((c) => c.id).filter((id) => id !== characterId);
   if (otherIds.length) {
-    const { error } = await supabase
-      .from("signups")
-      .delete()
-      .eq("raid_id", raidId)
-      .in("character_id", otherIds);
+    const { error } = await supabase.from("signups").delete().eq("raid_id", raidId).in("character_id", otherIds);
     if (error) throw error;
   }
 
@@ -138,11 +135,7 @@ async function dropFromComp(supabase: Supabase, raidId: string, characterId: str
 export async function withdraw(raidId: string, characterId: string) {
   const { supabase, isOfficer } = await requireViewer();
   if (!isOfficer) await assertOpen(supabase, raidId);
-  const { error } = await supabase
-    .from("signups")
-    .delete()
-    .eq("raid_id", raidId)
-    .eq("character_id", characterId);
+  const { error } = await supabase.from("signups").delete().eq("raid_id", raidId).eq("character_id", characterId);
   if (error) throw error;
   if (isOfficer) await dropFromComp(supabase, raidId, characterId);
   after(() => syncRaidMessage(raidId));
@@ -204,6 +197,40 @@ export async function officerSignUp(raidId: string, formData: FormData) {
 
   revalidatePath("/raids/[slug]", "layout");
   revalidatePath("/raids");
+}
+
+// Officers mention the members who haven't responded in the Discord raid channel (#58).
+export async function pingNoResponse(raidId: string) {
+  const { supabase, isOfficer } = await requireViewer();
+  if (!isOfficer) throw new Error("Only officers can ping players");
+
+  const { data: raid } = await supabase
+    .from("raids")
+    .select("slug, title, starts_at, locked_at, discord_message_id, pinged_at")
+    .eq("id", raidId)
+    .single();
+  if (!raid) throw new Error("Unknown raid");
+  if (isLocked(raid)) throw new Error("Sign-ups are locked");
+  if (raid.pinged_at && Date.now() - new Date(raid.pinged_at).getTime() < PING_COOLDOWN_MINUTES * 60_000) {
+    throw new Error(`This raid was pinged less than ${PING_COOLDOWN_MINUTES} minutes ago`);
+  }
+
+  const ids = (await noResponse(supabase, raidId)).flatMap((m) => (m.discordId ? [m.discordId] : []));
+  if (!ids.length) return;
+  // Claim the ping first, so two officers clicking at once don't both send it.
+  const claim = supabase.from("raids").update({ pinged_at: new Date().toISOString() }).eq("id", raidId);
+  const { data: claimed, error } = await (
+    raid.pinged_at ? claim.eq("pinged_at", raid.pinged_at) : claim.is("pinged_at", null)
+  ).select("id");
+  if (error) throw error;
+  if (!claimed?.length) return;
+  if (!(await mentionInChannel(raid, ids))) {
+    await supabase.from("raids").update({ pinged_at: raid.pinged_at }).eq("id", raidId);
+    throw new Error("Discord didn't accept the ping, try again later");
+  }
+
+  revalidatePath("/raids/[slug]", "layout");
+  revalidatePath("/officers");
 }
 
 // Officers post a raid to Discord by hand, e.g. one created before the bot was set up, or update its post.
