@@ -18,7 +18,7 @@ export default async function RaidLayout({
   const raid = await getRaid(slug);
   const { id } = raid;
   const viewer = await requireViewer();
-  const { supabase, isOfficer } = viewer;
+  const { supabase, isOfficer, isAdmin } = viewer;
 
   const count = (table: "signups" | "comp_slots" | "attendance" | "reserves") =>
     supabase.from(table).select("raid_id", { count: "exact", head: true }).eq("raid_id", id);
@@ -79,6 +79,8 @@ export default async function RaidLayout({
             meta: recorded ? "✓" : started ? "to do" : "–",
             warn: started && !recorded,
           },
+          // The audit log (#90), for admins.
+          ...(isAdmin ? [{ segment: "history", label: "History", meta: "" }] : []),
         ]}
       />
       {children}

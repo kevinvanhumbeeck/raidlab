@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { useSelectedLayoutSegment } from "next/navigation";
-import { CalendarCheck, ClipboardList, Gem, Users, type LucideIcon } from "lucide-react";
+import { CalendarCheck, ClipboardList, Gem, History, Users, type LucideIcon } from "lucide-react";
 
 export type RaidTab = { segment: string; label: string; meta: string; warn?: boolean };
 
 // Keyed by segment: icon components can't be passed as props from the server layout.
-const ICONS: Record<string, LucideIcon> = { "": ClipboardList, comp: Users, loot: Gem, attendance: CalendarCheck };
+const ICONS: Record<string, LucideIcon> = {
+  "": ClipboardList,
+  comp: Users,
+  loot: Gem,
+  attendance: CalendarCheck,
+  history: History,
+};
 
 export function RaidTabs({ raidSlug, tabs }: { raidSlug: string; tabs: RaidTab[] }) {
   const active = useSelectedLayoutSegment() ?? "";

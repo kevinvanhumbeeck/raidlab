@@ -53,6 +53,8 @@ export async function POST(request: Request) {
   if (!profile?.is_member) {
     return reply(`Log in once at ${SITE_URL} with Discord to link your account, then try again.`);
   }
+  // Writes on the player's behalf, so the audit log (#90) shows them.
+  const asPlayer = createAdminClient(profile.id)!;
 
   const { data: raid } = await admin
     .from("raids")
@@ -90,7 +92,7 @@ export async function POST(request: Request) {
     const character = characters.find((c) => c.id === current?.character_id) ?? characters[0];
     const specId = current?.spec_id ?? character.main_spec_id;
     const status = action === "in" ? "accepted" : "declined";
-    const error = await save(admin, raid.id, character.id, specId, status, ids);
+    const error = await save(asPlayer, raid.id, character.id, specId, status, ids);
     if (error) return reply(`Couldn't save: ${error}`);
     changed();
     const specName = await specNameOf(admin, specId);
@@ -129,7 +131,7 @@ export async function POST(request: Request) {
     if (!character || (specId !== character.main_spec_id && !character.off_spec_ids.includes(specId))) {
       return replace("That character or spec isn't yours anymore.");
     }
-    const error = await save(admin, raid.id, character.id, specId, "accepted", ids);
+    const error = await save(asPlayer, raid.id, character.id, specId, "accepted", ids);
     if (error) return replace(`Couldn't save: ${error}`);
     changed();
     return replace(`You're in on **${character.name}** (${await specNameOf(admin, specId)}).`);
