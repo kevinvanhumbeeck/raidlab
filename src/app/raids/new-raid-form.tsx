@@ -11,7 +11,7 @@ export function NewRaidForm({ instances }: { instances: Instance[] }) {
   const [picked, setPicked] = useState(false);
 
   return (
-    <form action={createRaid} className="grid gap-4 rounded-xl border border-border bg-panel p-4 sm:grid-cols-2">
+    <form action={createRaid} className="grid gap-4 rounded-xl border border-border bg-panel/90 p-4 sm:grid-cols-2">
       <label className="space-y-1">
         <span className="text-sm">Instance</span>
         <select name="instance" required className={input}>

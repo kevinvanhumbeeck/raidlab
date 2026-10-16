@@ -25,7 +25,7 @@ export default async function CharactersPage() {
       <section className="space-y-3">
         <h1 className="text-2xl font-semibold">My characters</h1>
         {characters?.length ? (
-          <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-panel/90">
             {characters.map((ch) => (
               <li key={ch.id} className="px-4 py-3">
                 <details className="group">

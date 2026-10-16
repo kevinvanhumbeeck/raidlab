@@ -32,7 +32,7 @@ export function CharacterForm({
   const classSpecs = specs.filter((s) => s.class_id === classId);
 
   return (
-    <form action={action} className="space-y-4 rounded-xl border border-border bg-panel p-4">
+    <form action={action} className="space-y-4 rounded-xl border border-border bg-panel/90 p-4">
       {character && <input type="hidden" name="id" value={character.id} />}
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="space-y-1">

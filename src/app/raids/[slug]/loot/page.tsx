@@ -103,7 +103,7 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
 
   return (
     <div className="space-y-6">
-      <section className="space-y-2 rounded-xl border border-border bg-panel p-4 text-sm">
+      <section className="space-y-2 rounded-xl border border-border bg-panel/90 p-4 text-sm">
         {!mine ? (
           <p>
             <Link href={`/raids/${raid.slug}`} className="text-accent hover:underline">
@@ -130,7 +130,7 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
       </section>
 
       {hardReservedItems.length > 0 && (
-        <section className="space-y-2 rounded-xl border border-border bg-panel p-4 text-sm">
+        <section className="space-y-2 rounded-xl border border-border bg-panel/90 p-4 text-sm">
           <h2 className="font-sans font-semibold">Hard reserved</h2>
           <p className="opacity-60">The officers keep these items out of rolls, so they can&apos;t be soft-reserved.</p>
           <ul className="flex flex-wrap gap-x-4 gap-y-1">
@@ -144,7 +144,7 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
       )}
 
       {isOfficer && (
-        <section className="space-y-2 rounded-xl border border-border bg-panel p-4 text-sm">
+        <section className="space-y-2 rounded-xl border border-border bg-panel/90 p-4 text-sm">
           <h2 className="font-sans font-semibold">Export for the loot master</h2>
           <p className="opacity-70">
             {exportRows.length} reserves, {hardReservedItems.length} hard reserves. In game, type{" "}
@@ -200,7 +200,7 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
           {groupByBoss(lootItems).map(([boss, bossItems]) => (
             <section key={boss} data-boss={boss.toLowerCase()} className="space-y-2">
               <h2 className="font-semibold">{boss}</h2>
-              <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
+              <ul className="divide-y divide-border rounded-xl border border-border bg-panel/90">
                 {bossItems.map((item) => {
                   const itemReserves = reservesByItem.get(item.id) ?? [];
                   const reserved = myReserves.has(item.id);

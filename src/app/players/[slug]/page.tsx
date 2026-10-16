@@ -183,7 +183,7 @@ export default async function PlayerPage({
       </section>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <section className="space-y-3 rounded-xl border border-border bg-panel p-4">
+        <section className="space-y-3 rounded-xl border border-border bg-panel/90 p-4">
           <h2 className="font-sans font-semibold">Characters</h2>
           {characters?.length ? (
             <ul className="space-y-1.5 text-sm">
@@ -213,7 +213,7 @@ export default async function PlayerPage({
           )}
         </section>
 
-        <section className="space-y-3 rounded-xl border border-border bg-panel p-4">
+        <section className="space-y-3 rounded-xl border border-border bg-panel/90 p-4">
           <h2 className="font-sans font-semibold">Attendance</h2>
           {summary.total ? (
             <>
@@ -260,7 +260,7 @@ export default async function PlayerPage({
       {upcoming.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Upcoming</h2>
-          <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-panel/90">
             {upcoming.map((h) => (
               <li key={h.raid.id}>
                 <Link
@@ -303,7 +303,7 @@ export default async function PlayerPage({
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Raid history</h2>
         {past.length ? (
-          <div className="overflow-x-auto rounded-xl border border-border bg-panel">
+          <div className="overflow-x-auto rounded-xl border border-border bg-panel/90">
             <table className="w-full text-sm">
               <thead className="text-left text-xs opacity-70">
                 <tr className="border-b border-border">

@@ -43,7 +43,7 @@ export default async function LootTablePage({
 
       <form
         action={addLootItems.bind(null, instance.name)}
-        className="space-y-3 rounded-xl border border-border bg-panel p-4"
+        className="space-y-3 rounded-xl border border-border bg-panel/90 p-4"
       >
         <h2 className="font-sans font-semibold">Add items</h2>
         <label className="block space-y-1 text-sm">
@@ -85,7 +85,7 @@ export default async function LootTablePage({
           {bosses.map(([boss, bossItems]) => (
             <section key={boss} className="space-y-2">
               <h2 className="font-semibold">{boss}</h2>
-              <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
+              <ul className="divide-y divide-border rounded-xl border border-border bg-panel/90">
                 {bossItems.map((item) => (
                   <li key={item.id} className="flex items-center gap-3 px-4 py-2">
                     <ItemLink item={item} />

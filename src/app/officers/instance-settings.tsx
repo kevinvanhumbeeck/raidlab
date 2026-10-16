@@ -55,7 +55,7 @@ export function InstanceSettings({ instances }: { instances: InstanceRow[] }) {
         fewer, and locking sign-ups asks first when they&apos;re short. Reserves is how many items each player can
         soft-reserve per raid.
       </p>
-      <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
+      <ul className="divide-y divide-border rounded-xl border border-border bg-panel/90">
         {instances.map((instance) => (
           <li key={instance.name} className="px-4 py-3">
             <form action={saveInstance} className="flex flex-wrap items-end gap-3">

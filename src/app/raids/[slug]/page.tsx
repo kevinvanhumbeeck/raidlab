@@ -107,7 +107,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
         {formCharacters.length ? (
           <>
             {isLocked(raid) && !isOfficer ? (
-              <p className="rounded-xl border border-border bg-panel p-4 text-sm">
+              <p className="rounded-xl border border-border bg-panel/90 p-4 text-sm">
                 Sign-ups are locked.{" "}
                 {mine ? (
                   <>
@@ -176,7 +176,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
           <h3 className="text-sm font-medium opacity-80">Sign up a player</h3>
           <form
             action={officerSignUp.bind(null, raid.id)}
-            className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-panel p-4"
+            className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-panel/90 p-4"
           >
             <label className="space-y-1">
               <span className="block text-sm">Character</span>

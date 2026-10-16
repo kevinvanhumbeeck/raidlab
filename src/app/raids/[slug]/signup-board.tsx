@@ -90,8 +90,8 @@ export function SignupBoard({
         <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>
       )}
 
-      <section className="rounded-xl border border-border bg-panel">
-        <header className="flex flex-wrap items-baseline gap-x-5 gap-y-1 rounded-t-xl border-b border-border bg-panel-raised px-4 py-3">
+      <section className="rounded-xl border border-border bg-panel/90">
+        <header className="flex flex-wrap items-baseline gap-x-5 gap-y-1 rounded-t-xl border-b border-border bg-panel-raised/90 px-4 py-3">
           <h2 className="flex items-center gap-2 font-sans text-lg font-semibold">
             <span className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT.accepted}`} />
             Accepted
@@ -131,8 +131,8 @@ export function SignupBoard({
       </section>
 
       {declined.length > 0 && (
-        <section className="rounded-xl border border-border bg-panel">
-          <h2 className="flex items-center gap-2 rounded-t-xl border-b border-border bg-panel-raised px-4 py-2.5 font-sans font-semibold">
+        <section className="rounded-xl border border-border bg-panel/90">
+          <h2 className="flex items-center gap-2 rounded-t-xl border-b border-border bg-panel-raised/90 px-4 py-2.5 font-sans font-semibold">
             <span className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT.declined}`} />
             {STATUS_LABELS.declined}
             <span className="tabular-nums opacity-70">{declined.length}</span>

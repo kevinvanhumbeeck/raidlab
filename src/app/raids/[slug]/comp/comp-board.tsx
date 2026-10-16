@@ -190,7 +190,7 @@ export function CompBoard({
       <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
         <div className="grid gap-4 sm:grid-cols-2">
           {Array.from({ length: groups }, (_, g) => (
-            <div key={g} className="rounded-xl border border-border bg-panel p-3">
+            <div key={g} className="rounded-xl border border-border bg-panel/90 p-3">
               <h3 className="mb-2 font-sans text-sm font-semibold opacity-80">Group {g + 1}</h3>
               <div className="space-y-1.5">
                 {Array.from({ length: 5 }, (_, p) => {
@@ -277,7 +277,7 @@ function Summary({
   }
 
   return (
-    <section className="space-y-2 rounded-xl border border-border bg-panel p-3">
+    <section className="space-y-2 rounded-xl border border-border bg-panel/90 p-3">
       <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm">
         <span className="text-base font-semibold">
           {placed.length}/{size} placed
@@ -333,7 +333,7 @@ function Pool({ disabled, children }: { disabled: boolean; children: React.React
   return (
     <aside
       ref={setNodeRef}
-      className={`space-y-4 rounded border bg-panel p-3 ${isOver ? "border-accent" : "border-border"}`}
+      className={`space-y-4 rounded border bg-panel/90 p-3 ${isOver ? "border-accent" : "border-border"}`}
     >
       {children}
     </aside>
@@ -418,7 +418,7 @@ function Duties({
   const sorted = [...placed].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <section className="grid gap-3 rounded-xl border border-border bg-panel p-3 sm:grid-cols-4">
+    <section className="grid gap-3 rounded-xl border border-border bg-panel/90 p-3 sm:grid-cols-4">
       {RAID_DUTIES.map((duty) => (
         <label key={duty} className="space-y-1 text-sm">
           <span className="opacity-80">{DUTY_LABELS[duty]}</span>
