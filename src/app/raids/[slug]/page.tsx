@@ -208,21 +208,23 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
               Add
             </button>
           </form>
-          {botEnabled() && (
-            <form action={postToDiscord.bind(null, raid.id)}>
-              <button className="rounded border border-border px-3 py-1.5 text-sm hover:bg-white/5">
-                Post or refresh in Discord
-              </button>
+          <div className="flex flex-wrap gap-2">
+            {botEnabled() && (
+              <form action={postToDiscord.bind(null, raid.id)}>
+                <button className="rounded bg-discord px-3 py-1.5 text-sm font-medium text-white hover:brightness-110">
+                  Post or refresh in Discord
+                </button>
+              </form>
+            )}
+            <form action={deleteRaid.bind(null, raid.id)}>
+              <ConfirmButton
+                message="Delete this raid? This also removes its sign-ups, composition and attendance."
+                className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300"
+              >
+                Delete raid
+              </ConfirmButton>
             </form>
-          )}
-          <form action={deleteRaid.bind(null, raid.id)}>
-            <ConfirmButton
-              message="Delete this raid? This also removes its sign-ups, composition and attendance."
-              className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300"
-            >
-              Delete raid
-            </ConfirmButton>
-          </form>
+          </div>
         </section>
       )}
     </div>
