@@ -1,6 +1,6 @@
 // Panel with an optional raised header strip, styled after guildmanager.app's dashboard cards.
 export function Card({ className = "", children }: { className?: string; children: React.ReactNode }) {
-  return <section className={`overflow-hidden rounded-xl border border-border bg-panel ${className}`}>{children}</section>;
+  return <section className={`overflow-hidden rounded-xl border border-border bg-panel/90 ${className}`}>{children}</section>;
 }
 
 export function CardHeader({
@@ -15,7 +15,7 @@ export function CardHeader({
   style?: React.CSSProperties;
 }) {
   return (
-    <header className="flex items-center justify-between gap-3 border-b border-border bg-panel-raised px-4 py-3">
+    <header className="flex items-center justify-between gap-3 border-b border-border bg-panel-raised/90 px-4 py-3">
       <div className="min-w-0 space-y-0.5">
         <h2 className="flex items-center gap-2 font-sans text-sm font-semibold tracking-tight" style={style}>
           {title}
