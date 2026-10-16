@@ -43,22 +43,21 @@ export default async function PlayerPage({
   const { character: highlighted } = await searchParams;
   const { supabase, user } = await requireViewer();
 
-  const [{ data: characters }, { data: classes }, { data: specs }, { data: recorded }] =
-    await Promise.all([
-      supabase
-        .from("characters")
-        .select("id, name, class_id, main_spec_id, off_spec_ids, is_main")
-        .eq("owner_id", id)
-        .order("is_main", { ascending: false })
-        .order("name"),
-      supabase.from("classes").select("id, name, color"),
-      supabase.from("specs").select("id, name, roles"),
-      // Every raid with recorded attendance, for the attendance percentage.
-      supabase
-        .from("attendance")
-        .select("raid_id, raids(title, starts_at)")
-        .overrideTypes<{ raid_id: string; raids: { title: string; starts_at: string } | null }[], { merge: false }>(),
-    ]);
+  const [{ data: characters }, { data: classes }, { data: specs }, { data: recorded }] = await Promise.all([
+    supabase
+      .from("characters")
+      .select("id, name, class_id, main_spec_id, off_spec_ids, is_main")
+      .eq("owner_id", id)
+      .order("is_main", { ascending: false })
+      .order("name"),
+    supabase.from("classes").select("id, name, color"),
+    supabase.from("specs").select("id, name, roles"),
+    // Every raid with recorded attendance, for the attendance percentage.
+    supabase
+      .from("attendance")
+      .select("raid_id, raids(title, starts_at)")
+      .overrideTypes<{ raid_id: string; raids: { title: string; starts_at: string } | null }[], { merge: false }>(),
+  ]);
 
   const characterIds = (characters ?? []).map((c) => c.id);
   const [{ data: signups }, { data: slots }, { data: attendance }, { data: duties }, { data: reserves }] =
@@ -274,7 +273,9 @@ export default async function PlayerPage({
                   <span className="font-medium">{h.raid.title}</span>
                   <span className="opacity-70">{formatRaidTime(h.raid.starts_at)}</span>
                   {h.character && (
-                    <span style={{ color: readable(classById.get(h.character.class_id)?.color) }}>{h.character.name}</span>
+                    <span style={{ color: readable(classById.get(h.character.class_id)?.color) }}>
+                      {h.character.name}
+                    </span>
                   )}
                   <span className="ml-auto flex items-center gap-1.5 text-xs">
                     <span className={`h-2 w-2 rounded-full ${STATUS_DOT[h.signup!]}`} />
@@ -332,7 +333,9 @@ export default async function PlayerPage({
                       {h.character && (
                         <span className="flex items-center gap-1.5 whitespace-nowrap">
                           {h.specId && <SpecIcon specId={h.specId} name={specName(h.specId)} size={16} />}
-                          <span style={{ color: readable(classById.get(h.character.class_id)?.color) }}>{h.character.name}</span>
+                          <span style={{ color: readable(classById.get(h.character.class_id)?.color) }}>
+                            {h.character.name}
+                          </span>
                         </span>
                       )}
                     </td>

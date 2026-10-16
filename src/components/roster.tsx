@@ -38,7 +38,12 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
       all.filter(
         (c) => c.is_main === isMain && (onMainSpec ? c.main_spec_id === specId : c.off_spec_ids.includes(specId)),
       ).length;
-    return { main: count(true, true), mainOff: count(true, false), alt: count(false, true), altOff: count(false, false) };
+    return {
+      main: count(true, true),
+      mainOff: count(true, false),
+      alt: count(false, true),
+      altOff: count(false, false),
+    };
   };
   const mainCount = (specId: string) => coverage(specId).main;
 
@@ -102,7 +107,9 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Spec coverage</h2>
-        <p className="text-xs text-muted">Mains on their main spec · everyone else who can play it (hover for details)</p>
+        <p className="text-xs text-muted">
+          Mains on their main spec · everyone else who can play it (hover for details)
+        </p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {classes?.map((cls) => (
             <Card key={cls.id}>

@@ -12,10 +12,7 @@ export default async function RaidsPage() {
       .select("id, slug, title, instance, size, splits, starts_at, locked_at, signups(status)")
       .gte("starts_at", upcomingCutoff())
       .order("starts_at"),
-    supabase
-      .from("signups")
-      .select("raid_id, status, characters!inner(owner_id)")
-      .eq("characters.owner_id", user.id),
+    supabase.from("signups").select("raid_id, status, characters!inner(owner_id)").eq("characters.owner_id", user.id),
     supabase
       .from("raids")
       .select("id, slug, title, instance, starts_at, attendance(count)")
@@ -38,7 +35,10 @@ export default async function RaidsPage() {
               const mine = myStatus.get(raid.id);
               return (
                 <li key={raid.id}>
-                  <Link href={`/raids/${raid.slug}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-foreground/5">
+                  <Link
+                    href={`/raids/${raid.slug}`}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-foreground/5"
+                  >
                     <span className="font-medium">{raid.title}</span>
                     <span className="text-sm opacity-70">
                       {raid.instance} · {raid.size}-man{raid.splits > 1 && ` × ${raid.splits}`}

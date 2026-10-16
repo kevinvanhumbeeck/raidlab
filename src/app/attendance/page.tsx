@@ -1,13 +1,7 @@
 import Link from "next/link";
 import { attendanceByPlayer, attendanceSummary, type AttendanceRow } from "@/lib/attendance";
 import { requireViewer } from "@/lib/viewer";
-import {
-  ATTENDANCE_COLORS,
-  ATTENDANCE_LABELS,
-  ATTENDANCE_STATUSES,
-  formatRaidTime,
-  playerHref,
-} from "@/lib/wow";
+import { ATTENDANCE_COLORS, ATTENDANCE_LABELS, ATTENDANCE_STATUSES, formatRaidTime, playerHref } from "@/lib/wow";
 import { readable } from "@/lib/theme";
 
 const RECENT = 10;

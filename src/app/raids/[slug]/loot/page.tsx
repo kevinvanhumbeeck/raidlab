@@ -41,37 +41,37 @@ export default async function LootPage({
     { data: slots },
     lootLeading,
   ] = await Promise.all([
-      supabase.from("instances").select("reserves").eq("name", raid.instance).maybeSingle(),
-      supabase
-        .from("loot_items")
-        .select("id, instance, boss, name, quality, icon")
-        .eq("instance", raid.instance)
-        .order("sort"),
-      supabase
-        .from("reserves")
-        // Through the sign-up: reserves have no foreign key to characters of their own (see the
-        // 20261022000000 migration).
-        .select("character_id, item_id, created_at, signups(characters(name, class_id, profiles(slug)))")
-        .eq("raid_id", id)
-        .order("created_at")
-        .overrideTypes<
-          (Omit<ReserveRow, "characters"> & { signups: { characters: ReserveCharacter | null } | null })[],
-          { merge: false }
-        >(),
-      supabase.from("hard_reserves").select("item_id").eq("raid_id", id),
-      supabase
-        .from("signups")
-        .select("character_id, status, characters!inner(name, owner_id)")
-        .eq("raid_id", id)
-        .eq("characters.owner_id", user.id)
-        .overrideTypes<
-          { character_id: string; status: SignupStatus; characters: { name: string } }[],
-          { merge: false }
-        >(),
-      supabase.from("classes").select("id, name, color"),
-      supabase.from("comp_slots").select("character_id, split_no").eq("raid_id", id),
-      myDutySplits(supabase, id, user.id, "loot_lead"),
-    ]);
+    supabase.from("instances").select("reserves").eq("name", raid.instance).maybeSingle(),
+    supabase
+      .from("loot_items")
+      .select("id, instance, boss, name, quality, icon")
+      .eq("instance", raid.instance)
+      .order("sort"),
+    supabase
+      .from("reserves")
+      // Through the sign-up: reserves have no foreign key to characters of their own (see the
+      // 20261022000000 migration).
+      .select("character_id, item_id, created_at, signups(characters(name, class_id, profiles(slug)))")
+      .eq("raid_id", id)
+      .order("created_at")
+      .overrideTypes<
+        (Omit<ReserveRow, "characters"> & { signups: { characters: ReserveCharacter | null } | null })[],
+        { merge: false }
+      >(),
+    supabase.from("hard_reserves").select("item_id").eq("raid_id", id),
+    supabase
+      .from("signups")
+      .select("character_id, status, characters!inner(name, owner_id)")
+      .eq("raid_id", id)
+      .eq("characters.owner_id", user.id)
+      .overrideTypes<
+        { character_id: string; status: SignupStatus; characters: { name: string } }[],
+        { merge: false }
+      >(),
+    supabase.from("classes").select("id, name, color"),
+    supabase.from("comp_slots").select("character_id, split_no").eq("raid_id", id),
+    myDutySplits(supabase, id, user.id, "loot_lead"),
+  ]);
 
   // Each player signs up with one character per raid.
   const mine = mySignups?.[0];
@@ -201,9 +201,8 @@ export default async function LootPage({
             Export for the loot master{selectedSplit > 0 && ` of split ${selectedSplit}`}
           </h2>
           <p className="opacity-70">
-            {exportRows.length} reserves, {hardReservedItems.length} hard reserves. In game, type{" "}
-            <code>/gl sr</code> (Gargul), paste the copied string and import. The CSV is a softres.it-style
-            fallback for other loot addons.
+            {exportRows.length} reserves, {hardReservedItems.length} hard reserves. In game, type <code>/gl sr</code>{" "}
+            (Gargul), paste the copied string and import. The CSV is a softres.it-style fallback for other loot addons.
           </p>
           <div className="flex flex-wrap gap-2">
             <CopyButton

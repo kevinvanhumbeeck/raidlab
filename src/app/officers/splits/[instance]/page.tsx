@@ -61,8 +61,8 @@ export default async function SplitRosterPage({ params }: { params: Promise<{ in
         <Breadcrumbs items={[{ label: "Manage", href: "/officers" }, { label: `${instance.name} splits` }]} />
         <h1 className="text-2xl font-semibold">{instance.name} splits</h1>
         <p className="text-sm opacity-70">
-          On a split night, each split has {instance.size} players. Put every character in the split they usually
-          raid in; the comp board shows it on the bench, and changes for one night are made there.
+          On a split night, each split has {instance.size} players. Put every character in the split they usually raid
+          in; the comp board shows it on the bench, and changes for one night are made there.
         </p>
       </section>
 

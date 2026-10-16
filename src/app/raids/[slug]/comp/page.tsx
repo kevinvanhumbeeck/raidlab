@@ -226,21 +226,21 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
         <section className="space-y-2 rounded-xl border border-border bg-panel/90 p-4 text-sm">
           <h2 className="font-sans font-semibold">Invites and groups</h2>
           <p className="opacity-70">
-            {visibleExports.reduce((n, e) => n + e.count, 0)} players. In game, type <code>/gl groups</code> (Gargul) and paste
-            the copied roster. From there you can invite everyone, see who&apos;s missing, sort the groups and
+            {visibleExports.reduce((n, e) => n + e.count, 0)} players. In game, type <code>/gl groups</code> (Gargul)
+            and paste the copied roster. From there you can invite everyone, see who&apos;s missing, sort the groups and
             assign the tanks.
             {raid.splits > 1 && isOfficer && " Each split's raid lead can copy their own split here too."}
           </p>
           <div className="flex flex-wrap gap-2">
             {visibleExports.map((e) => (
-                <CopyButton
-                  key={e.splitNo}
-                  text={e.text}
-                  className="rounded bg-accent px-3 py-1 font-medium text-accent-foreground hover:bg-accent-hover"
-                >
-                  {raid.splits > 1 ? `Copy split ${e.splitNo} for Gargul` : "Copy for Gargul"}
-                </CopyButton>
-              ))}
+              <CopyButton
+                key={e.splitNo}
+                text={e.text}
+                className="rounded bg-accent px-3 py-1 font-medium text-accent-foreground hover:bg-accent-hover"
+              >
+                {raid.splits > 1 ? `Copy split ${e.splitNo} for Gargul` : "Copy for Gargul"}
+              </CopyButton>
+            ))}
           </div>
         </section>
       )}

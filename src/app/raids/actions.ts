@@ -105,11 +105,7 @@ export async function signUp(raidId: string, formData: FormData) {
   const { data: myCharacters } = await supabase.from("characters").select("id").eq("owner_id", user.id);
   const otherIds = (myCharacters ?? []).map((c) => c.id).filter((id) => id !== characterId);
   if (otherIds.length) {
-    const { error } = await supabase
-      .from("signups")
-      .delete()
-      .eq("raid_id", raidId)
-      .in("character_id", otherIds);
+    const { error } = await supabase.from("signups").delete().eq("raid_id", raidId).in("character_id", otherIds);
     if (error) throw error;
   }
 
@@ -138,11 +134,7 @@ async function dropFromComp(supabase: Supabase, raidId: string, characterId: str
 export async function withdraw(raidId: string, characterId: string) {
   const { supabase, isOfficer } = await requireViewer();
   if (!isOfficer) await assertOpen(supabase, raidId);
-  const { error } = await supabase
-    .from("signups")
-    .delete()
-    .eq("raid_id", raidId)
-    .eq("character_id", characterId);
+  const { error } = await supabase.from("signups").delete().eq("raid_id", raidId).eq("character_id", characterId);
   if (error) throw error;
   if (isOfficer) await dropFromComp(supabase, raidId, characterId);
   after(() => syncRaidMessage(raidId));

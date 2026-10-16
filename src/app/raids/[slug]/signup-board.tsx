@@ -87,9 +87,7 @@ export function SignupBoard({
 
   return (
     <div className="space-y-4">
-      {error && (
-        <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-danger">{error}</p>
-      )}
+      {error && <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-danger">{error}</p>}
 
       <section className="rounded-xl border border-border bg-panel/90">
         <header className="flex flex-wrap items-baseline gap-x-5 gap-y-1 rounded-t-xl border-b border-border bg-panel-raised/90 px-4 py-3">
