@@ -67,12 +67,16 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
     supabase.from("specs").select("id, name, roles"),
     supabase
       .from("characters")
-      .select("id, name, main_spec_id, off_spec_ids")
+      .select("id, name, main_spec_id, off_spec_ids, archived_at")
       .eq("owner_id", user.id)
       .order("is_main", { ascending: false }),
     supabase.from("comp_slots").select("split_no, group_no, character_id").eq("raid_id", id),
     canEdit
-      ? supabase.from("characters").select("id, name, owner_id, class_id, main_spec_id").order("name")
+      ? supabase
+          .from("characters")
+          .select("id, name, owner_id, class_id, main_spec_id")
+          .is("archived_at", null)
+          .order("name")
       : Promise.resolve({
           data: [] as {
             id: string;
@@ -121,14 +125,17 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
   const mySlot = slots?.find((s) => myIds.has(s.character_id));
   const mySignup = signups?.find((s) => s.character_id === mine?.characterId);
 
-  const formCharacters = (myCharacters ?? []).map((c) => ({
-    id: c.id,
-    name: c.name,
-    specs: [c.main_spec_id, ...c.off_spec_ids].map((sid: string) => ({
-      id: sid,
-      name: specById.get(sid)?.name ?? sid,
-    })),
-  }));
+  // Archived characters keep their place in past raids, but don't sign up (#89).
+  const formCharacters = (myCharacters ?? [])
+    .filter((c) => !c.archived_at)
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      specs: [c.main_spec_id, ...c.off_spec_ids].map((sid: string) => ({
+        id: sid,
+        name: specById.get(sid)?.name ?? sid,
+      })),
+    }));
 
   return (
     <div className="space-y-8">

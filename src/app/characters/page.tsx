@@ -1,25 +1,27 @@
 import { CharacterSpecs } from "@/components/spec-icon";
 import { botEnabled } from "@/lib/discord-bot";
 import { requireViewer } from "@/lib/viewer";
-import { setDiscordDms } from "./actions";
+import { restoreCharacter, setDiscordDms } from "./actions";
 import { CharacterForm } from "./character-form";
 import { readable } from "@/lib/theme";
 
 export default async function CharactersPage() {
   const { supabase, user } = await requireViewer();
 
-  const [{ data: classes }, { data: specs }, { data: characters }, { data: profile }] = await Promise.all([
+  const [{ data: classes }, { data: specs }, { data: allCharacters }, { data: profile }] = await Promise.all([
     supabase.from("classes").select("id, name, color").order("name"),
     supabase.from("specs").select("id, class_id, name").order("name"),
     supabase
       .from("characters")
-      .select("id, name, class_id, main_spec_id, off_spec_ids, is_main")
+      .select("id, name, class_id, main_spec_id, off_spec_ids, is_main, archived_at")
       .eq("owner_id", user.id)
       .order("is_main", { ascending: false })
       .order("name"),
     supabase.from("profiles").select("discord_dms").eq("id", user.id).single(),
   ]);
 
+  const characters = allCharacters?.filter((c) => !c.archived_at);
+  const archived = allCharacters?.filter((c) => c.archived_at) ?? [];
   const classById = new Map(classes?.map((c) => [c.id, c]));
   const specById = new Map(specs?.map((s) => [s.id, s]));
   const main = characters?.find((c) => c.is_main);
@@ -62,6 +64,32 @@ export default async function CharactersPage() {
           <p className="opacity-70">No characters yet.</p>
         )}
       </section>
+
+      {archived.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Archived</h2>
+          <p className="text-sm opacity-70">
+            Archived characters keep their raid history, but can&apos;t sign up. Restore one to use it again.
+          </p>
+          <ul className="divide-y divide-border rounded-xl border border-border bg-panel/90">
+            {archived.map((ch) => (
+              <li key={ch.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3">
+                <span className="font-medium opacity-70" style={{ color: readable(classById.get(ch.class_id)?.color) }}>
+                  {ch.name}
+                </span>
+                <span className="text-xs opacity-60">
+                  {specById.get(ch.main_spec_id)?.name} {classById.get(ch.class_id)?.name}
+                </span>
+                <form action={restoreCharacter.bind(null, ch.id)} className="ml-auto">
+                  <button className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5">
+                    Restore
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Add a character</h2>

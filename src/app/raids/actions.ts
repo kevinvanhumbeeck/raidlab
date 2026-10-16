@@ -111,6 +111,7 @@ export async function signUp(raidId: string, formData: FormData) {
     .select("id, main_spec_id, off_spec_ids")
     .eq("id", characterId)
     .eq("owner_id", user.id)
+    .is("archived_at", null)
     .single();
   if (!character) throw new Error("Not your character");
 
@@ -190,6 +191,7 @@ export async function officerSignUp(raidId: string, formData: FormData) {
     .from("characters")
     .select("id, owner_id, main_spec_id")
     .eq("id", String(formData.get("character_id")))
+    .is("archived_at", null)
     .single();
   if (!character) throw new Error("Unknown character");
 
