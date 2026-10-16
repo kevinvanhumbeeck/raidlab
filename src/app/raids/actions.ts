@@ -179,10 +179,18 @@ export async function officerSignUp(raidId: string, formData: FormData) {
 
   const { data: character } = await supabase
     .from("characters")
-    .select("id, main_spec_id")
+    .select("id, owner_id, main_spec_id")
     .eq("id", String(formData.get("character_id")))
     .single();
   if (!character) throw new Error("Unknown character");
+
+  // Same rule as players signing up themselves: one character per player, so this replaces their other sign-up.
+  const { data: playerCharacters } = await supabase.from("characters").select("id").eq("owner_id", character.owner_id);
+  const otherIds = (playerCharacters ?? []).map((c) => c.id).filter((id) => id !== character.id);
+  if (otherIds.length) {
+    const { error } = await supabase.from("signups").delete().eq("raid_id", raidId).in("character_id", otherIds);
+    if (error) throw error;
+  }
 
   const { error } = await supabase.from("signups").upsert({
     raid_id: raidId,

@@ -64,8 +64,10 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
       .order("is_main", { ascending: false }),
     supabase.from("comp_slots").select("split_no, group_no, character_id").eq("raid_id", id),
     isOfficer
-      ? supabase.from("characters").select("id, name, class_id, main_spec_id").order("name")
-      : Promise.resolve({ data: [] as { id: string; name: string; class_id: string; main_spec_id: string }[] }),
+      ? supabase.from("characters").select("id, name, owner_id, class_id, main_spec_id").order("name")
+      : Promise.resolve({
+          data: [] as { id: string; name: string; owner_id: string; class_id: string; main_spec_id: string }[],
+        }),
     supabase.from("instances").select("name, size, tanks, healers, dps").eq("name", raid.instance).maybeSingle(),
   ]);
 
@@ -95,6 +97,10 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
   });
 
   const mine = rows.find((r) => r.isMine);
+  // Officers signing up an alt of someone who's already in replace that sign-up.
+  const signedUpAs = new Map(
+    (signups ?? []).flatMap((s) => (s.characters ? [[s.characters.owner_id, s.characters.name] as const] : [])),
+  );
   const myIds = new Set(myCharacters?.map((c) => c.id));
   const mySlot = slots?.find((s) => myIds.has(s.character_id));
   const mySignup = signups?.find((s) => s.character_id === mine?.characterId);
@@ -194,6 +200,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
                   .map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name} — {specById.get(c.main_spec_id)?.name}
+                      {signedUpAs.has(c.owner_id) && ` (replaces ${signedUpAs.get(c.owner_id)})`}
                     </option>
                   ))}
               </select>
