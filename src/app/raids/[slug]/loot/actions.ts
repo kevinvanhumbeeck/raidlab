@@ -1,14 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { assertOpen } from "@/lib/raid";
+import { assertOpen, editsAsOfficer, requireRaidEditor } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 
-// Players reserve for their own signed-up character until the raid locks; officers for anyone, any time.
+// Players reserve for their own signed-up character until the raid locks; officers for anyone until a few days after
+// the start, admins any time.
 // The database checks the item, the sign-up and the reserve limit, and its messages are shown as-is.
 async function requireReserver(raidId: string, characterId: string) {
-  const { supabase, user, isOfficer } = await requireViewer();
-  if (isOfficer) return supabase;
+  const viewer = await requireViewer();
+  const { supabase, user } = viewer;
+  if (await editsAsOfficer(viewer, raidId)) return supabase;
 
   await assertOpen(supabase, raidId, "Reserves are locked");
   const { data: character } = await supabase
@@ -45,14 +47,13 @@ export async function unreserveItem(raidId: string, characterId: string, itemId:
 }
 
 // Officers keep items out of rolls; the database drops the soft reserves on them.
-async function requireOfficer() {
-  const { supabase, isOfficer } = await requireViewer();
-  if (!isOfficer) throw new Error("Only officers can hard-reserve items");
+async function requireOfficer(raidId: string) {
+  const { supabase } = await requireRaidEditor(raidId, "Only officers can hard-reserve items");
   return supabase;
 }
 
 export async function hardReserveItem(raidId: string, itemId: number) {
-  const supabase = await requireOfficer();
+  const supabase = await requireOfficer(raidId);
   const { error } = await supabase.from("hard_reserves").insert({ raid_id: raidId, item_id: itemId });
   if (error?.code === "23505") return;
   if (error) throw new Error(error.message);
@@ -60,7 +61,7 @@ export async function hardReserveItem(raidId: string, itemId: number) {
 }
 
 export async function unhardReserveItem(raidId: string, itemId: number) {
-  const supabase = await requireOfficer();
+  const supabase = await requireOfficer(raidId);
   const { error } = await supabase.from("hard_reserves").delete().eq("raid_id", raidId).eq("item_id", itemId);
   if (error) throw error;
   revalidatePath("/raids/[slug]", "layout");

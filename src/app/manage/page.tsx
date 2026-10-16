@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ConfirmButton } from "@/components/confirm-button";
 import { redirect } from "next/navigation";
 import { NoResponse } from "@/components/no-response";
 import { officersFromDiscord } from "@/lib/discord";
@@ -6,17 +7,19 @@ import { botEnabled } from "@/lib/discord-bot";
 import { noResponse } from "@/lib/no-response";
 import { requireViewer } from "@/lib/viewer";
 import { formatRaidTime, playerHref } from "@/lib/wow";
-import { setMember, setOfficer } from "./actions";
+import { setAdmin, setMember, setOfficer } from "./actions";
 import { InstanceSettings } from "./instance-settings";
 import { readable } from "@/lib/theme";
 
 export default async function OfficersPage() {
-  const { supabase, user, isOfficer } = await requireViewer();
+  const { supabase, user, isOfficer, isAdmin } = await requireViewer();
   if (!isOfficer) redirect("/");
 
   const [{ data: profiles }, { data: characters }, { data: classes }, { data: instances }, { data: nextRaid }] =
     await Promise.all([
-      supabase.from("profiles").select("id, slug, display_name, avatar_url, is_officer, is_member, created_at"),
+      supabase
+        .from("profiles")
+        .select("id, slug, display_name, avatar_url, is_officer, is_member, is_admin, created_at"),
       supabase
         .from("characters")
         .select("id, owner_id, name, class_id, is_main")
@@ -39,11 +42,13 @@ export default async function OfficersPage() {
 
   const sorted = [...(profiles ?? [])].sort(
     (a, b) =>
+      Number(b.is_admin) - Number(a.is_admin) ||
       Number(b.is_officer) - Number(a.is_officer) ||
       Number(b.is_member) - Number(a.is_member) ||
       a.display_name.localeCompare(b.display_name),
   );
   const officerCount = sorted.filter((p) => p.is_officer).length;
+  const adminCount = sorted.filter((p) => p.is_admin).length;
   const discordOfficers = officersFromDiscord();
 
   return (
@@ -54,6 +59,11 @@ export default async function OfficersPage() {
         the @raider, @pug and @officer roles let players in
         {discordOfficers ? ", and the @officer role makes them an officer here" : ""}. Revoking access here locks
         someone out until their next login.
+      </p>
+      <p className="text-sm opacity-70">
+        Officers change a raid until 3 days after it starts. Admins can change raids at any time, delete raids that have
+        started, and manage officers, admins, instances and loot tables. Admins are only managed here, never from
+        Discord.
       </p>
 
       {nextRaid && missing && (
@@ -73,6 +83,7 @@ export default async function OfficersPage() {
         {sorted.map((p) => {
           const chars = charactersOf.get(p.id) ?? [];
           const lastOfficer = p.is_officer && officerCount === 1;
+          const lastAdmin = p.is_admin && adminCount === 1;
           return (
             <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
               {p.avatar_url ? (
@@ -109,21 +120,26 @@ export default async function OfficersPage() {
               </div>
 
               <div className="ml-auto flex flex-wrap gap-2 text-sm">
+                {p.is_admin && <span className="rounded bg-amber-500/20 px-2 py-1 text-xs">Admin</span>}
                 {p.is_officer ? (
                   <span className="rounded bg-accent/20 px-2 py-1 text-xs">Officer</span>
                 ) : (
-                  <span className={`rounded px-2 py-1 text-xs ${p.is_member ? "bg-emerald-500/20" : "bg-red-500/20"}`}>
-                    {p.is_member ? "Member" : "No access"}
-                  </span>
+                  !p.is_admin && (
+                    <span
+                      className={`rounded px-2 py-1 text-xs ${p.is_member ? "bg-emerald-500/20" : "bg-red-500/20"}`}
+                    >
+                      {p.is_member ? "Member" : "No access"}
+                    </span>
+                  )
                 )}
-                {!p.is_officer && (
+                {!p.is_officer && !p.is_admin && (
                   <form action={setMember.bind(null, p.id, !p.is_member)}>
                     <button className="rounded border border-border px-2 py-1 text-xs hover:bg-foreground/5">
                       {p.is_member ? "Revoke access" : "Grant access"}
                     </button>
                   </form>
                 )}
-                {!discordOfficers && (
+                {isAdmin && !discordOfficers && (
                   <form action={setOfficer.bind(null, p.id, !p.is_officer)}>
                     <button
                       disabled={lastOfficer}
@@ -134,13 +150,29 @@ export default async function OfficersPage() {
                     </button>
                   </form>
                 )}
+                {isAdmin && (
+                  <form action={setAdmin.bind(null, p.id, !p.is_admin)}>
+                    <ConfirmButton
+                      message={
+                        p.is_admin
+                          ? `Remove ${p.display_name} as admin?`
+                          : `Make ${p.display_name} an admin? Admins can change past raids and manage officers.`
+                      }
+                      disabled={lastAdmin}
+                      title={lastAdmin ? "There must be at least one admin" : undefined}
+                      className="rounded border border-border px-2 py-1 text-xs hover:bg-foreground/5 disabled:opacity-40"
+                    >
+                      {p.is_admin ? "Remove admin" : "Make admin"}
+                    </ConfirmButton>
+                  </form>
+                )}
               </div>
             </li>
           );
         })}
       </ul>
 
-      <InstanceSettings instances={instances ?? []} />
+      <InstanceSettings instances={instances ?? []} editable={isAdmin} />
     </div>
   );
 }

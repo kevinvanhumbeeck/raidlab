@@ -6,7 +6,7 @@ import { gargulExport, softresCsv, type ReserveExportRow } from "@/lib/gargul";
 import { groupByBoss, type LootItem } from "@/lib/loot";
 import { getRaid, myDutySplits } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
-import { STATUS_LABELS, isLocked, playerHref, type SignupStatus } from "@/lib/wow";
+import { STATUS_LABELS, canEditRaid, isLocked, playerHref, type SignupStatus } from "@/lib/wow";
 import { hardReserveItem, reserveItem, unhardReserveItem, unreserveItem } from "./actions";
 import { LootFilter } from "./loot-filter";
 import { readable } from "@/lib/theme";
@@ -29,7 +29,9 @@ export default async function LootPage({
   const { split: splitParam } = await searchParams;
   const raid = await getRaid(slug);
   const { id } = raid;
-  const { supabase, user, isOfficer } = await requireViewer();
+  const viewer = await requireViewer();
+  const { supabase, user, isOfficer, isAdmin } = viewer;
+  const canEdit = canEditRaid(raid, viewer);
 
   const [
     { data: instance },
@@ -108,7 +110,7 @@ export default async function LootPage({
   const reservesByItem = new Map<number, ReserveRow[]>();
   for (const r of reserves) reservesByItem.set(r.item_id, [...(reservesByItem.get(r.item_id) ?? []), r]);
 
-  const canReserve = !!mine && mine.status !== "declined" && (!locked || isOfficer);
+  const canReserve = !!mine && mine.status !== "declined" && (!locked || canEdit);
   const myReserves = new Set(allReserves.filter((r) => r.character_id === mine?.character_id).map((r) => r.item_id));
   const full = !isOfficer && myReserves.size >= limit;
 
@@ -171,7 +173,7 @@ export default async function LootPage({
               {myReserves.size}/{limit}
             </span>{" "}
             items.
-            {locked && !isOfficer && <span className="opacity-70"> Reserves are locked.</span>}
+            {locked && !canEdit && <span className="opacity-70"> Reserves are locked.</span>}
           </p>
         )}
         <p className="opacity-60">
@@ -223,9 +225,9 @@ export default async function LootPage({
             >
               Download CSV
             </DownloadButton>
-            {isOfficer && (
+            {isAdmin && (
               <Link
-                href={`/officers/loot/${encodeURIComponent(raid.instance)}`}
+                href={`/manage/loot/${encodeURIComponent(raid.instance)}`}
                 className="ml-auto rounded border border-border px-3 py-1 hover:bg-foreground/5"
               >
                 Edit loot table
@@ -238,13 +240,10 @@ export default async function LootPage({
       {lootItems.length === 0 ? (
         <p className="opacity-70">
           {raid.instance} has no loot table yet.
-          {isOfficer && (
+          {isAdmin && (
             <>
               {" "}
-              <Link
-                href={`/officers/loot/${encodeURIComponent(raid.instance)}`}
-                className="text-accent hover:underline"
-              >
+              <Link href={`/manage/loot/${encodeURIComponent(raid.instance)}`} className="text-accent hover:underline">
                 Add items
               </Link>
             </>
@@ -289,7 +288,7 @@ export default async function LootPage({
                             >
                               {r.characters?.name}
                             </Link>
-                            {isOfficer && r.character_id !== mine?.character_id && (
+                            {canEdit && r.character_id !== mine?.character_id && (
                               <form action={unreserveItem.bind(null, id, r.character_id, item.id)}>
                                 <button title="Remove reserve" className="text-xs opacity-50 hover:opacity-100">
                                   ×
@@ -312,7 +311,7 @@ export default async function LootPage({
                           </button>
                         </form>
                       )}
-                      {isOfficer && (
+                      {canEdit && (
                         <form className={showReserve ? "" : "ml-auto"}>
                           {hard ? (
                             <button

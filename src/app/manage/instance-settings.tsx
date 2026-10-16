@@ -45,8 +45,9 @@ function Fields({ instance }: { instance?: InstanceRow }) {
   );
 }
 
-// Officer settings: tanks and healers (DPS is the rest) and soft reserves for each raid instance.
-export function InstanceSettings({ instances }: { instances: InstanceRow[] }) {
+// Tanks and healers (DPS is the rest) and soft reserves for each raid instance. Admins change them (#87); officers
+// see them and manage the split rosters.
+export function InstanceSettings({ instances, editable }: { instances: InstanceRow[]; editable: boolean }) {
   return (
     <section className="space-y-3">
       <h2 className="text-lg font-semibold">Raid instances</h2>
@@ -64,16 +65,22 @@ export function InstanceSettings({ instances }: { instances: InstanceRow[] }) {
                 <div className="font-medium">{instance.name}</div>
                 <div className="text-xs opacity-60">{instance.dps} DPS</div>
               </div>
-              <Fields instance={instance} />
-              <button className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5">Save</button>
+              <fieldset disabled={!editable} className="contents">
+                <Fields instance={instance} />
+              </fieldset>
+              {editable && (
+                <>
+                  <button className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5">Save</button>
+                  <Link
+                    href={`/manage/loot/${encodeURIComponent(instance.name)}`}
+                    className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5"
+                  >
+                    Loot table
+                  </Link>
+                </>
+              )}
               <Link
-                href={`/officers/loot/${encodeURIComponent(instance.name)}`}
-                className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5"
-              >
-                Loot table
-              </Link>
-              <Link
-                href={`/officers/splits/${encodeURIComponent(instance.name)}`}
+                href={`/manage/splits/${encodeURIComponent(instance.name)}`}
                 className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5"
               >
                 Splits
@@ -81,23 +88,25 @@ export function InstanceSettings({ instances }: { instances: InstanceRow[] }) {
             </form>
           </li>
         ))}
-        <li className="px-4 py-3">
-          <form action={addInstance} className="flex flex-wrap items-end gap-3">
-            <label className="min-w-40 space-y-1 text-xs">
-              <span className="block opacity-70">New instance</span>
-              <input
-                name="name"
-                required
-                placeholder="Name"
-                className="w-40 rounded border border-border bg-background px-2 py-1 text-sm"
-              />
-            </label>
-            <Fields />
-            <button className="rounded bg-accent px-3 py-1 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
-              Add
-            </button>
-          </form>
-        </li>
+        {editable && (
+          <li className="px-4 py-3">
+            <form action={addInstance} className="flex flex-wrap items-end gap-3">
+              <label className="min-w-40 space-y-1 text-xs">
+                <span className="block opacity-70">New instance</span>
+                <input
+                  name="name"
+                  required
+                  placeholder="Name"
+                  className="w-40 rounded border border-border bg-background px-2 py-1 text-sm"
+                />
+              </label>
+              <Fields />
+              <button className="rounded bg-accent px-3 py-1 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
+                Add
+              </button>
+            </form>
+          </li>
+        )}
       </ul>
     </section>
   );

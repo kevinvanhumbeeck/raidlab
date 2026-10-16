@@ -1,6 +1,6 @@
 import { getRaid, lockWarning } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
-import { formatRaidDate, formatRaidTime, hasStarted, isLocked } from "@/lib/wow";
+import { RAID_CLOSED_MESSAGE, canEditRaid, formatRaidDate, formatRaidTime, hasStarted, isLocked } from "@/lib/wow";
 import { setRaidLock } from "../actions";
 import { LockButton } from "./lock-button";
 import { RaidTabs } from "./raid-tabs";
@@ -17,7 +17,8 @@ export default async function RaidLayout({
   const { slug } = await params;
   const raid = await getRaid(slug);
   const { id } = raid;
-  const { supabase, isOfficer } = await requireViewer();
+  const viewer = await requireViewer();
+  const { supabase, isOfficer } = viewer;
 
   const count = (table: "signups" | "comp_slots" | "attendance" | "reserves") =>
     supabase.from(table).select("raid_id", { count: "exact", head: true }).eq("raid_id", id);
@@ -26,6 +27,7 @@ export default async function RaidLayout({
   const capacity = raid.size * raid.splits;
   const started = hasStarted(raid.starts_at);
   const locked = isLocked(raid);
+  const canEdit = canEditRaid(raid, viewer);
 
   const [{ count: accepted }, { count: placed }, { count: recorded }, { count: reserved }, warning] = await Promise.all(
     [
@@ -33,7 +35,7 @@ export default async function RaidLayout({
       count("comp_slots"),
       count("attendance"),
       count("reserves"),
-      isOfficer && !locked ? lockWarning(supabase, raid) : null,
+      canEdit && !locked ? lockWarning(supabase, raid) : null,
     ],
   );
 
@@ -52,7 +54,9 @@ export default async function RaidLayout({
           {locked && (
             <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-medium text-danger">🔒 Locked</span>
           )}
-          {isOfficer && <LockButton action={setRaidLock.bind(null, id, !locked)} locked={locked} warning={warning} />}
+          {canEdit && !started && (
+            <LockButton action={setRaidLock.bind(null, id, !locked)} locked={locked} warning={warning} />
+          )}
         </div>
         <p className="opacity-80">
           {raid.size}-man{raid.splits > 1 && ` · ${raid.splits} splits`} · {formatRaidTime(raid.starts_at)} server time
@@ -61,6 +65,7 @@ export default async function RaidLayout({
           <p className="text-sm opacity-70">Sign-ups lock {formatRaidTime(raid.locked_at)}.</p>
         )}
         {raid.notes && <p className="text-sm opacity-70">{raid.notes}</p>}
+        {isOfficer && !canEdit && <p className="text-sm text-warn">{RAID_CLOSED_MESSAGE}</p>}
       </section>
       <RaidTabs
         raidSlug={raid.slug}

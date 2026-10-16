@@ -6,14 +6,23 @@ import { after } from "next/server";
 import { deleteRaidMessage, mentionInChannel, syncRaidMessage } from "@/lib/discord-bot";
 import { PING_COOLDOWN_MINUTES, noResponse } from "@/lib/no-response";
 import { requireViewer } from "@/lib/viewer";
-import { assertOpen } from "@/lib/raid";
-import { MAX_SPLITS, SIGNUP_STATUSES, isLocked, type SignupStatus } from "@/lib/wow";
+import { assertOpen, editsAsOfficer, requireRaidEditor } from "@/lib/raid";
+import {
+  MAX_SPLITS,
+  RAID_CLOSED_MESSAGE,
+  SIGNUP_STATUSES,
+  canEditRaid,
+  hasStarted,
+  isLocked,
+  type SignupStatus,
+} from "@/lib/wow";
 
 type Supabase = Awaited<ReturnType<typeof requireViewer>>["supabase"];
 
 export async function createRaid(formData: FormData) {
-  const { supabase, user, isOfficer } = await requireViewer();
-  if (!isOfficer) throw new Error("Only officers can create raids");
+  const viewer = await requireViewer();
+  const { supabase, user } = viewer;
+  if (!viewer.isOfficer) throw new Error("Only officers can create raids");
 
   const { data: instance } = await supabase
     .from("instances")
@@ -24,6 +33,7 @@ export async function createRaid(formData: FormData) {
 
   const startsAt = new Date(String(formData.get("starts_at")));
   if (Number.isNaN(startsAt.getTime())) throw new Error("Invalid start time");
+  if (!canEditRaid({ starts_at: startsAt.toISOString() }, viewer)) throw new Error(RAID_CLOSED_MESSAGE);
 
   const title = String(formData.get("title") ?? "").trim() || instance.name;
   const notes = String(formData.get("notes") ?? "").trim() || null;
@@ -51,23 +61,28 @@ export async function createRaid(formData: FormData) {
   redirect(`/raids/${data.slug}`);
 }
 
+// Officers delete raids until they start; after that they're history, and only admins can (#87).
 export async function deleteRaid(raidId: string) {
-  const { supabase, isOfficer } = await requireViewer();
+  const { supabase, isOfficer, isAdmin } = await requireViewer();
   if (!isOfficer) throw new Error("Only officers can delete raids");
 
-  const { data: raid } = await supabase.from("raids").select("discord_message_id").eq("id", raidId).single();
+  const { data: raid } = await supabase.from("raids").select("starts_at, discord_message_id").eq("id", raidId).single();
+  if (!raid) throw new Error("Unknown raid");
+  if (!isAdmin && hasStarted(raid.starts_at)) throw new Error("Only admins can delete a raid that has started");
   const { error } = await supabase.from("raids").delete().eq("id", raidId);
   if (error) throw error;
-  after(() => deleteRaidMessage(raid?.discord_message_id ?? null));
+  after(() => deleteRaidMessage(raid.discord_message_id));
 
   revalidatePath("/raids");
   redirect("/raids");
 }
 
 // Officers lock a raid now, or reopen it. Reopening clears locked_at, so it doesn't lock again before the start.
+// Once the raid has started it stays locked for players either way.
 export async function setRaidLock(raidId: string, locked: boolean) {
-  const { supabase, isOfficer } = await requireViewer();
-  if (!isOfficer) throw new Error("Only officers can lock raids");
+  const { supabase } = await requireRaidEditor(raidId, "Only officers can lock raids");
+  const { data: raid } = await supabase.from("raids").select("starts_at").eq("id", raidId).single();
+  if (!raid || hasStarted(raid.starts_at)) throw new Error("This raid has started");
 
   const { error } = await supabase
     .from("raids")
@@ -83,8 +98,9 @@ export async function setRaidLock(raidId: string, locked: boolean) {
 // A player signs up with one of their characters. Signing up with another
 // character replaces the previous sign-up, so each player appears once per raid.
 export async function signUp(raidId: string, formData: FormData) {
-  const { supabase, user, isOfficer } = await requireViewer();
-  if (!isOfficer) await assertOpen(supabase, raidId);
+  const viewer = await requireViewer();
+  const { supabase, user } = viewer;
+  if (!(await editsAsOfficer(viewer, raidId))) await assertOpen(supabase, raidId);
 
   const characterId = String(formData.get("character_id"));
   const status = String(formData.get("status")) as SignupStatus;
@@ -133,11 +149,13 @@ async function dropFromComp(supabase: Supabase, raidId: string, characterId: str
 }
 
 export async function withdraw(raidId: string, characterId: string) {
-  const { supabase, isOfficer } = await requireViewer();
-  if (!isOfficer) await assertOpen(supabase, raidId);
+  const viewer = await requireViewer();
+  const { supabase } = viewer;
+  const asOfficer = await editsAsOfficer(viewer, raidId);
+  if (!asOfficer) await assertOpen(supabase, raidId);
   const { error } = await supabase.from("signups").delete().eq("raid_id", raidId).eq("character_id", characterId);
   if (error) throw error;
-  if (isOfficer) await dropFromComp(supabase, raidId, characterId);
+  if (asOfficer) await dropFromComp(supabase, raidId, characterId);
   after(() => syncRaidMessage(raidId));
 
   revalidatePath("/raids/[slug]", "layout");
@@ -146,8 +164,7 @@ export async function withdraw(raidId: string, characterId: string) {
 
 // Officers can mark anyone accepted or declined, e.g. for players who replied in Discord.
 export async function setSignupStatus(raidId: string, characterId: string, status: SignupStatus) {
-  const { supabase, isOfficer } = await requireViewer();
-  if (!isOfficer) throw new Error("Only officers can change other sign-ups");
+  const { supabase } = await requireRaidEditor(raidId, "Only officers can change other sign-ups");
   if (!SIGNUP_STATUSES.includes(status)) throw new Error("Invalid status");
 
   const { error } = await supabase
@@ -164,8 +181,7 @@ export async function setSignupStatus(raidId: string, characterId: string, statu
 
 // Officers can sign up any character, e.g. for players who replied in Discord.
 export async function officerSignUp(raidId: string, formData: FormData) {
-  const { supabase, isOfficer } = await requireViewer();
-  if (!isOfficer) throw new Error("Only officers can sign up other players");
+  const { supabase } = await requireRaidEditor(raidId, "Only officers can sign up other players");
 
   const status = String(formData.get("status")) as SignupStatus;
   if (!SIGNUP_STATUSES.includes(status)) throw new Error("Invalid status");
@@ -230,7 +246,7 @@ export async function pingNoResponse(raidId: string) {
   }
 
   revalidatePath("/raids/[slug]", "layout");
-  revalidatePath("/officers");
+  revalidatePath("/manage");
 }
 
 // Officers post a raid to Discord by hand, e.g. one created before the bot was set up, or update its post.

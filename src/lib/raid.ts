@@ -2,9 +2,19 @@ import { cache } from "react";
 import { notFound, permanentRedirect } from "next/navigation";
 import { roleCoverage, roleOptions } from "@/lib/coverage";
 import { requireViewer } from "@/lib/viewer";
-import { FIXED_ROLES, isLocked, primaryRole, requirementsOf, rolesText, type RaidDuty } from "@/lib/wow";
+import {
+  FIXED_ROLES,
+  RAID_CLOSED_MESSAGE,
+  canEditRaid,
+  isLocked,
+  primaryRole,
+  requirementsOf,
+  rolesText,
+  type RaidDuty,
+} from "@/lib/wow";
 
-type Supabase = Awaited<ReturnType<typeof requireViewer>>["supabase"];
+type Viewer = Awaited<ReturnType<typeof requireViewer>>;
+type Supabase = Viewer["supabase"];
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -36,8 +46,25 @@ export const getPlayer = cache(async (slug: string) => {
 
 // RLS enforces the lock too; this gives players a readable error instead.
 export async function assertOpen(supabase: Supabase, raidId: string, message = "Sign-ups are locked") {
-  const { data: raid } = await supabase.from("raids").select("locked_at").eq("id", raidId).single();
+  const { data: raid } = await supabase.from("raids").select("starts_at, locked_at").eq("id", raidId).single();
   if (!raid || isLocked(raid)) throw new Error(message);
+}
+
+// Whether the viewer changes this raid as an officer: officers until a few days after the start, admins always (#88).
+export async function editsAsOfficer(viewer: Viewer, raidId: string) {
+  if (viewer.isAdmin) return true;
+  if (!viewer.isOfficer) return false;
+  const { data: raid } = await viewer.supabase.from("raids").select("starts_at").eq("id", raidId).single();
+  return !!raid && canEditRaid(raid, viewer);
+}
+
+// For officer actions on a raid. The database enforces the same, but an update or delete it refuses changes nothing
+// without an error, so check first.
+export async function requireRaidEditor(raidId: string, message: string) {
+  const viewer = await requireViewer();
+  if (!viewer.isOfficer) throw new Error(message);
+  if (!(await editsAsOfficer(viewer, raidId))) throw new Error(RAID_CLOSED_MESSAGE);
+  return viewer;
 }
 
 // Officers locking sign-ups get asked first when the accepted sign-ups can't fill the tanks and healers, even

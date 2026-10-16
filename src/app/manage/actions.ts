@@ -10,14 +10,22 @@ export async function setOfficer(profileId: string, value: boolean) {
   const { supabase } = await requireViewer();
   const { error } = await supabase.rpc("set_officer", { target: profileId, value });
   if (error) throw new Error(error.message);
-  revalidatePath("/officers");
+  revalidatePath("/manage");
+}
+
+// Admins (#87) are managed here only, never from Discord.
+export async function setAdmin(profileId: string, value: boolean) {
+  const { supabase } = await requireViewer();
+  const { error } = await supabase.rpc("set_admin", { target: profileId, value });
+  if (error) throw new Error(error.message);
+  revalidatePath("/", "layout");
 }
 
 export async function setMember(profileId: string, value: boolean) {
   const { supabase } = await requireViewer();
   const { error } = await supabase.rpc("set_member", { target: profileId, value });
   if (error) throw new Error(error.message);
-  revalidatePath("/officers");
+  revalidatePath("/manage");
 }
 
 // Instance settings: size, tanks, healers and reserves per player. DPS is generated: the rest of the raid.
@@ -39,20 +47,20 @@ function readInstance(formData: FormData) {
 }
 
 export async function saveInstance(formData: FormData) {
-  const { supabase, isOfficer } = await requireViewer();
-  if (!isOfficer) throw new Error("Only officers can change instances");
+  const { supabase, isAdmin } = await requireViewer();
+  if (!isAdmin) throw new Error("Only admins can change instances");
 
   const { error } = await supabase
     .from("instances")
     .update(readInstance(formData))
     .eq("name", String(formData.get("name")));
   if (error) throw new Error(error.message);
-  revalidatePath("/officers");
+  revalidatePath("/manage");
 }
 
 export async function addInstance(formData: FormData) {
-  const { supabase, isOfficer } = await requireViewer();
-  if (!isOfficer) throw new Error("Only officers can add instances");
+  const { supabase, isAdmin } = await requireViewer();
+  if (!isAdmin) throw new Error("Only admins can add instances");
 
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Enter an instance name");
@@ -63,7 +71,7 @@ export async function addInstance(formData: FormData) {
     .insert({ name, ...readInstance(formData), sort: (last?.[0]?.sort ?? 0) + 1 });
   if (error?.code === "23505") throw new Error(`${name} already exists`);
   if (error) throw new Error(error.message);
-  revalidatePath("/officers");
+  revalidatePath("/manage");
 }
 
 // Put a character in an instance's standing split roster (#60), or take them out (null).
@@ -78,6 +86,6 @@ export async function setRosterSplit(instance: string, characterId: string, spli
     ? await supabase.from("split_rosters").upsert({ instance, character_id: characterId, split_no: splitNo })
     : await supabase.from("split_rosters").delete().eq("instance", instance).eq("character_id", characterId);
   if (error) throw new Error(error.message);
-  revalidatePath("/officers/splits/[instance]", "page");
+  revalidatePath("/manage/splits/[instance]", "page");
   revalidatePath("/raids/[slug]", "layout");
 }
