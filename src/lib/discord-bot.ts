@@ -150,6 +150,35 @@ export async function syncRaidMessage(raidId: string) {
   await admin.from("raids").update({ discord_message_id: id }).eq("id", raidId);
 }
 
+// Discord allows at most 100 users in allowed_mentions; 50 per message also stays well under 2000 characters.
+const MENTIONS_PER_MESSAGE = 50;
+
+// Officers ping the members who haven't responded (#58): one message in the raid channel mentioning them, as a
+// reply to the raid's announcement so the buttons are one click away. Returns whether every message went out.
+export async function mentionInChannel(
+  raid: { slug: string; title: string; starts_at: string; discord_message_id: string | null },
+  discordIds: string[],
+) {
+  if (!botEnabled()) return false;
+  const channel = process.env.DISCORD_RAID_CHANNEL_ID;
+  const text = `haven't signed up for **${raid.title}** <t:${unix(raid.starts_at)}:R> yet. Sign up with the buttons above or at ${SITE_URL}/raids/${raid.slug}`;
+  for (let i = 0; i < discordIds.length; i += MENTIONS_PER_MESSAGE) {
+    const ids = discordIds.slice(i, i + MENTIONS_PER_MESSAGE);
+    const res = await discord("POST", `/channels/${channel}/messages`, {
+      content: `${ids.map((id) => `<@${id}>`).join(" ")} ${text}`,
+      allowed_mentions: { users: ids },
+      message_reference: raid.discord_message_id
+        ? { message_id: raid.discord_message_id, fail_if_not_exists: false }
+        : undefined,
+    });
+    if (!res.ok) {
+      console.error("Discord: pinging the raid channel failed", res.status, await res.text());
+      return false;
+    }
+  }
+  return true;
+}
+
 export async function deleteRaidMessage(messageId: string | null) {
   if (!botEnabled() || !messageId) return;
   await discord("DELETE", `/channels/${process.env.DISCORD_RAID_CHANNEL_ID}/messages/${messageId}`);

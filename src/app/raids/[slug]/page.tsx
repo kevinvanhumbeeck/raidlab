@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { ConfirmButton } from "@/components/confirm-button";
+import { NoResponse } from "@/components/no-response";
 import { roleOptions } from "@/lib/coverage";
 import { botEnabled } from "@/lib/discord-bot";
+import { noResponse } from "@/lib/no-response";
 import { getRaid } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import {
   SIGNUP_STATUSES,
   STATUS_LABELS,
+  hasStarted,
   isLocked,
   primaryRole,
   requirementsOf,
@@ -47,6 +50,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
     { data: slots },
     { data: allCharacters },
     { data: instance },
+    missing,
   ] = await Promise.all([
     supabase
       .from("signups")
@@ -75,6 +79,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
           }[],
         }),
     supabase.from("instances").select("name, size, tanks, healers, dps").eq("name", raid.instance).maybeSingle(),
+    isOfficer && !hasStarted(raid.starts_at) ? noResponse(supabase, id) : Promise.resolve(null),
   ]);
 
   const classById = new Map(classes?.map((c) => [c.id, c]));
@@ -194,6 +199,12 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
       {isOfficer && (
         <section className="space-y-3 border-t border-border pt-6">
           <h2 className="text-lg font-semibold">Officer tools</h2>
+          {missing && (
+            <>
+              <h3 className="text-sm font-medium opacity-80">No response</h3>
+              <NoResponse raid={raid} missing={missing} canPing={botEnabled()} />
+            </>
+          )}
           <h3 className="text-sm font-medium opacity-80">Sign up a player</h3>
           {unsigned.length === 0 ? (
             <p className="rounded-xl border border-border bg-panel/90 p-4 text-sm opacity-70">
