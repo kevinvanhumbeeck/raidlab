@@ -115,6 +115,7 @@ export async function signUp(raidId: string, formData: FormData) {
     status,
     spec_id: specId,
     note: String(formData.get("note") ?? "").trim() || null,
+    absence_id: null,
     updated_at: new Date().toISOString(),
   });
   if (error) throw error;
@@ -155,7 +156,7 @@ export async function setSignupStatus(raidId: string, characterId: string, statu
 
   const { error } = await supabase
     .from("signups")
-    .update({ status, updated_at: new Date().toISOString() })
+    .update({ status, absence_id: null, updated_at: new Date().toISOString() })
     .eq("raid_id", raidId)
     .eq("character_id", characterId);
   if (error) throw error;
@@ -185,6 +186,7 @@ export async function officerSignUp(raidId: string, formData: FormData) {
     character_id: character.id,
     status,
     spec_id: character.main_spec_id,
+    absence_id: null,
     updated_at: new Date().toISOString(),
   });
   if (error) throw error;
