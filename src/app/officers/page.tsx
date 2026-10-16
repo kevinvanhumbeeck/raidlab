@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { NoResponse } from "@/components/no-response";
 import { officersFromDiscord } from "@/lib/discord";
+import { botEnabled } from "@/lib/discord-bot";
+import { noResponse } from "@/lib/no-response";
 import { requireViewer } from "@/lib/viewer";
-import { playerHref } from "@/lib/wow";
+import { formatRaidTime, playerHref } from "@/lib/wow";
 import { setMember, setOfficer } from "./actions";
 import { InstanceSettings } from "./instance-settings";
 import { readable } from "@/lib/theme";
@@ -11,12 +14,24 @@ export default async function OfficersPage() {
   const { supabase, user, isOfficer } = await requireViewer();
   if (!isOfficer) redirect("/");
 
-  const [{ data: profiles }, { data: characters }, { data: classes }, { data: instances }] = await Promise.all([
-    supabase.from("profiles").select("id, slug, display_name, avatar_url, is_officer, is_member, created_at"),
-    supabase.from("characters").select("id, owner_id, name, class_id, is_main").order("is_main", { ascending: false }),
-    supabase.from("classes").select("id, color"),
-    supabase.from("instances").select("name, size, tanks, healers, dps, reserves").order("sort"),
-  ]);
+  const [{ data: profiles }, { data: characters }, { data: classes }, { data: instances }, { data: nextRaid }] =
+    await Promise.all([
+      supabase.from("profiles").select("id, slug, display_name, avatar_url, is_officer, is_member, created_at"),
+      supabase
+        .from("characters")
+        .select("id, owner_id, name, class_id, is_main")
+        .order("is_main", { ascending: false }),
+      supabase.from("classes").select("id, color"),
+      supabase.from("instances").select("name, size, tanks, healers, dps, reserves").order("sort"),
+      supabase
+        .from("raids")
+        .select("id, slug, title, starts_at, locked_at, pinged_at")
+        .gt("starts_at", new Date().toISOString())
+        .order("starts_at")
+        .limit(1)
+        .maybeSingle(),
+    ]);
+  const missing = nextRaid ? await noResponse(supabase, nextRaid.id) : null;
 
   const color = new Map(classes?.map((c) => [c.id, c.color]));
   const charactersOf = new Map<string, { id: string; name: string; class_id: string }[]>();
@@ -40,6 +55,19 @@ export default async function OfficersPage() {
         {discordOfficers ? ", and the @officer role makes them an officer here" : ""}. Revoking access here locks
         someone out until their next login.
       </p>
+
+      {nextRaid && missing && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">
+            Next raid:{" "}
+            <Link href={`/raids/${nextRaid.slug}`} className="hover:underline">
+              {nextRaid.title}
+            </Link>{" "}
+            <span className="text-sm font-normal opacity-70">{formatRaidTime(nextRaid.starts_at)}</span>
+          </h2>
+          <NoResponse raid={nextRaid} missing={missing} canPing={botEnabled()} />
+        </section>
+      )}
 
       <ul className="divide-y divide-border rounded-xl border border-border bg-panel/90">
         {sorted.map((p) => {
