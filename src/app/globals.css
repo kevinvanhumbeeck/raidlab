@@ -60,6 +60,19 @@
   --accent-foreground: #121319;
 }
 
+/* Alliance: royal navy and lion gold, over the Alliance banner (see body below). */
+[data-theme="alliance"] {
+  --background: #060c20;
+  --foreground: #e8edf8;
+  --panel: #0b1430;
+  --panel-raised: #101c40;
+  --border: #24397a;
+  --muted: #95a4cc;
+  --accent: #f0c23a;
+  --accent-hover: #f7d466;
+  --accent-foreground: #1a1405;
+}
+
 /* Horde: black iron edged in blood red, over a smouldering ember glow (see body below). */
 [data-theme="horde"] {
   --background: #080404;
@@ -118,6 +131,14 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* The banner is bright and saturated; a navy veil keeps text readable over it. */
+[data-theme="alliance"] body {
+  background:
+    linear-gradient(rgb(6 12 32 / 0.55), rgb(6 12 32 / 0.55)),
+    var(--background) url("/themes/alliance.jpg") center / cover;
+  background-attachment: fixed;
 }
 
 [data-theme="horde"] body {

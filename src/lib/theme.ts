@@ -3,6 +3,7 @@ export const THEMES = [
   { id: "slate", label: "Slate" },
   { id: "frost", label: "Frost" },
   { id: "modern", label: "Modern" },
+  { id: "alliance", label: "Alliance" },
   { id: "horde", label: "Horde" },
   { id: "light", label: "Light" },
 ] as const;
