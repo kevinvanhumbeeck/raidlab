@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { Card, CardHeader, StatTile } from "@/components/card";
 import { SpecIcon } from "@/components/spec-icon";
 import { ROLES, ROLE_LABELS, playerHref, primaryRole, type Role } from "@/lib/wow";
+import { readable } from "@/lib/theme";
 
 type CharacterRow = {
   id: string;
@@ -46,7 +47,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
 
   return (
     <div className="space-y-6">
-      <section className="space-y-3">
+      <section>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <StatTile label="Mains" value={mains.length} />
           <StatTile label="Alts" value={all.length - mains.length} />
@@ -54,18 +55,6 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
             <StatTile key={role} label={ROLE_LABELS[role]} value={roleCount(role)} hint="mains" />
           ))}
         </div>
-        {missing.length > 0 && (
-          <p className="flex flex-wrap items-center gap-1.5 text-sm text-amber-400">
-            No main for:
-            {missing.map((s) => (
-              <SpecIcon
-                key={s.id}
-                specId={s.id}
-                name={`${s.name} ${classes?.find((c) => c.id === s.class_id)?.name}`}
-              />
-            ))}
-          </p>
-        )}
       </section>
 
       <section className="space-y-3">
@@ -83,7 +72,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
                 <Card key={cls.id}>
                   <CardHeader
                     title={cls.name}
-                    style={{ color: cls.color }}
+                    style={{ color: readable(cls.color) }}
                     action={<span className="text-xs tabular-nums text-muted">{inClass.length}</span>}
                   />
                   <ul className="divide-y divide-border text-sm">
@@ -93,7 +82,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
                         <Link
                           href={playerHref(c.profiles?.slug ?? "", c.name)}
                           className="font-medium hover:underline"
-                          style={{ color: cls.color }}
+                          style={{ color: readable(cls.color) }}
                         >
                           {c.name}
                         </Link>
@@ -117,7 +106,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {classes?.map((cls) => (
             <Card key={cls.id}>
-              <CardHeader title={cls.name} style={{ color: cls.color }} />
+              <CardHeader title={cls.name} style={{ color: readable(cls.color) }} />
               <ul className="divide-y divide-border text-sm">
                 {specs
                   ?.filter((s) => s.class_id === cls.id)
@@ -127,12 +116,12 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
                     return (
                       <li key={s.id} className="flex items-center gap-2 px-4 py-2">
                         <SpecIcon specId={s.id} name={s.name} />
-                        <span className={m === 0 ? "text-amber-400" : ""}>{s.name}</span>
+                        <span className={m === 0 ? "text-warn" : ""}>{s.name}</span>
                         <span
                           className="ml-auto cursor-help tabular-nums"
                           title={`Main characters: ${c.main} main spec, ${c.mainOff} off-spec\nAlts: ${c.alt} main spec, ${c.altOff} off-spec`}
                         >
-                          <strong className={m === 0 ? "text-amber-400" : ""}>{m}</strong>
+                          <strong className={m === 0 ? "text-warn" : ""}>{m}</strong>
                           <span className="text-muted"> · {c.mainOff + c.alt + c.altOff}</span>
                         </span>
                       </li>
@@ -142,6 +131,18 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
             </Card>
           ))}
         </div>
+        {missing.length > 0 && (
+          <p className="flex flex-wrap items-center gap-1.5 text-sm text-warn">
+            No main for:
+            {missing.map((s) => (
+              <SpecIcon
+                key={s.id}
+                specId={s.id}
+                name={`${s.name} ${classes?.find((c) => c.id === s.class_id)?.name}`}
+              />
+            ))}
+          </p>
+        )}
       </section>
     </div>
   );

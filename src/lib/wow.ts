@@ -79,6 +79,16 @@ export function formatRaidTime(iso: string) {
   }).format(new Date(iso));
 }
 
+// Day only, e.g. "Fri 17 Oct", in server time.
+export function formatRaidDate(iso: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: REALM_TIMEZONE,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(iso));
+}
+
 // Raids stay listed as "upcoming" until 12 hours after they start.
 export function upcomingCutoff() {
   return new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();

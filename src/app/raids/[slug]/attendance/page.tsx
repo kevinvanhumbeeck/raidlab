@@ -9,6 +9,7 @@ import {
   type SignupStatus,
 } from "@/lib/wow";
 import { saveAttendance } from "./actions";
+import { readable } from "@/lib/theme";
 
 // Written out in full so Tailwind picks up the classes.
 const CHECKED: Record<AttendanceStatus, string> = {
@@ -84,24 +85,24 @@ export default async function RaidAttendancePage({
     <div className="space-y-6">
       <section className="space-y-1">
         {!recorded && isOfficer && sorted.length > 0 && (
-          <p className="text-sm text-amber-400">
+          <p className="text-sm text-warn">
             Not saved yet. Suggested from the comp: placed is present, bench is benched, declined is absent. Adjust and save.
           </p>
         )}
-        {saved && <p className="text-sm text-emerald-400">Attendance saved.</p>}
+        {saved && <p className="text-sm text-success">Attendance saved.</p>}
       </section>
 
       {sorted.length === 0 ? (
         <p className="opacity-70">Nobody signed up or was placed in this raid.</p>
       ) : (
         <form action={saveAttendance.bind(null, raid.id, raid.slug)} className="space-y-4">
-          <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-panel/90">
             {sorted.map(({ character, status }) => (
               <li key={character.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2">
                 <Link
                   href={playerHref(character.profiles?.slug ?? "", character.name)}
                   className="w-40 font-medium hover:underline"
-                  style={{ color: color.get(character.class_id) }}
+                  style={{ color: readable(color.get(character.class_id)) }}
                 >
                   {character.name}
                 </Link>

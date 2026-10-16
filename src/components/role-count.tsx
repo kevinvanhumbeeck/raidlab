@@ -3,10 +3,10 @@ import type { CoverageState } from "@/lib/coverage";
 export type RoleCountState = CoverageState | "over";
 
 const COLOR: Record<RoleCountState, string> = {
-  met: "text-emerald-400",
-  offspec: "text-amber-400",
-  over: "text-amber-400",
-  short: "text-red-400",
+  met: "text-success",
+  offspec: "text-warn",
+  over: "text-warn",
+  short: "text-danger",
 };
 
 // "2 / 3": green when the instance's tank or healer count is met, amber when it's only met if players switch

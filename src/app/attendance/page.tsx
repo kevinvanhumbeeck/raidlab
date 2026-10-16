@@ -9,6 +9,7 @@ import {
   playerHref,
   type AttendanceStatus,
 } from "@/lib/wow";
+import { readable } from "@/lib/theme";
 
 type Row = {
   status: AttendanceStatus;
@@ -85,7 +86,7 @@ export default async function AttendancePage() {
       {players.length === 0 ? (
         <p className="opacity-70">No players yet.</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-panel">
+        <div className="overflow-x-auto rounded-xl border border-border bg-panel/90">
           <table className="w-full text-sm">
             <thead className="text-left text-xs opacity-70">
               <tr className="border-b border-border">
@@ -101,12 +102,12 @@ export default async function AttendancePage() {
             </thead>
             <tbody className="divide-y divide-border">
               {players.map((p) => (
-                <tr key={p.id} className={p.id === user.id ? "bg-white/5" : undefined}>
+                <tr key={p.id} className={p.id === user.id ? "bg-foreground/5" : undefined}>
                   <td className="px-3 py-2">
                     <Link
                       href={playerHref(p.slug, p.main.name)}
                       className="font-medium hover:underline"
-                      style={{ color: color.get(p.main.class_id) }}
+                      style={{ color: readable(color.get(p.main.class_id)) }}
                     >
                       {p.main.name}
                     </Link>

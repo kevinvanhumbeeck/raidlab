@@ -1,6 +1,6 @@
 "use client";
 
-import { THEMES, THEME_COOKIE, type Theme } from "@/lib/theme";
+import { THEMES, THEME_COOKIE, THEME_GROUPS, type Theme } from "@/lib/theme";
 
 // Applies a theme right away and remembers it in a cookie so the server renders it next time.
 export function applyTheme(theme: Theme) {
@@ -17,10 +17,14 @@ export function ThemePicker({ value, onChange }: { value: Theme; onChange: (them
       aria-label="Theme"
       className="rounded border border-border bg-background px-2 py-1 text-sm"
     >
-      {THEMES.map((t) => (
-        <option key={t.id} value={t.id}>
-          {t.label}
-        </option>
+      {THEME_GROUPS.map((group) => (
+        <optgroup key={group} label={group}>
+          {THEMES.filter((t) => t.group === group).map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+            </option>
+          ))}
+        </optgroup>
       ))}
     </select>
   );

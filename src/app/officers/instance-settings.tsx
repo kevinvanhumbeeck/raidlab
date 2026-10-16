@@ -55,7 +55,7 @@ export function InstanceSettings({ instances }: { instances: InstanceRow[] }) {
         fewer, and locking sign-ups asks first when they&apos;re short. Reserves is how many items each player can
         soft-reserve per raid.
       </p>
-      <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
+      <ul className="divide-y divide-border rounded-xl border border-border bg-panel/90">
         {instances.map((instance) => (
           <li key={instance.name} className="px-4 py-3">
             <form action={saveInstance} className="flex flex-wrap items-end gap-3">
@@ -65,10 +65,10 @@ export function InstanceSettings({ instances }: { instances: InstanceRow[] }) {
                 <div className="text-xs opacity-60">{instance.dps} DPS</div>
               </div>
               <Fields instance={instance} />
-              <button className="rounded border border-border px-3 py-1 text-sm hover:bg-white/5">Save</button>
+              <button className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5">Save</button>
               <Link
                 href={`/officers/loot/${encodeURIComponent(instance.name)}`}
-                className="rounded border border-border px-3 py-1 text-sm hover:bg-white/5"
+                className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5"
               >
                 Loot table
               </Link>
