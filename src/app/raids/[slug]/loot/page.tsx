@@ -6,7 +6,7 @@ import { gargulExport, softresCsv, type ReserveExportRow } from "@/lib/gargul";
 import { groupByBoss, type LootItem } from "@/lib/loot";
 import { getRaid, myDutySplits } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
-import { STATUS_LABELS, canEditRaid, isLocked, playerHref, type SignupStatus } from "@/lib/wow";
+import { STATUS_LABELS, canEditRaid, isLocked, lootTableHref, playerHref, type SignupStatus } from "@/lib/wow";
 import { hardReserveItem, reserveItem, unhardReserveItem, unreserveItem } from "./actions";
 import { LootFilter } from "./loot-filter";
 import { readable } from "@/lib/theme";
@@ -227,7 +227,7 @@ export default async function LootPage({
             </DownloadButton>
             {isAdmin && (
               <Link
-                href={`/manage/loot/${encodeURIComponent(raid.instance)}`}
+                href={lootTableHref(raid.instance)}
                 className="ml-auto rounded border border-border px-3 py-1 hover:bg-foreground/5"
               >
                 Edit loot table
@@ -243,7 +243,7 @@ export default async function LootPage({
           {isAdmin && (
             <>
               {" "}
-              <Link href={`/manage/loot/${encodeURIComponent(raid.instance)}`} className="text-accent hover:underline">
+              <Link href={lootTableHref(raid.instance)} className="text-accent hover:underline">
                 Add items
               </Link>
             </>
