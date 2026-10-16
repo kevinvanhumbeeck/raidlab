@@ -51,7 +51,7 @@ export function SignupForm({
       </label>
       <label className="space-y-1">
         <span className="text-sm">Note</span>
-        <input name="note" defaultValue={current?.note ?? ""} placeholder="Late 15 min" className={input} />
+        <input name="note" defaultValue={current?.note ?? ""} placeholder="I'm not summoning" className={input} />
       </label>
       <fieldset className="space-y-1.5 sm:col-span-3">
         <legend className="text-sm">Spec</legend>
