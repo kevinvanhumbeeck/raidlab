@@ -46,7 +46,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
 
   return (
     <div className="space-y-6">
-      <section className="space-y-3">
+      <section>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <StatTile label="Mains" value={mains.length} />
           <StatTile label="Alts" value={all.length - mains.length} />
@@ -54,18 +54,6 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
             <StatTile key={role} label={ROLE_LABELS[role]} value={roleCount(role)} hint="mains" />
           ))}
         </div>
-        {missing.length > 0 && (
-          <p className="flex flex-wrap items-center gap-1.5 text-sm text-amber-400">
-            No main for:
-            {missing.map((s) => (
-              <SpecIcon
-                key={s.id}
-                specId={s.id}
-                name={`${s.name} ${classes?.find((c) => c.id === s.class_id)?.name}`}
-              />
-            ))}
-          </p>
-        )}
       </section>
 
       <section className="space-y-3">
@@ -142,6 +130,18 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
             </Card>
           ))}
         </div>
+        {missing.length > 0 && (
+          <p className="flex flex-wrap items-center gap-1.5 text-sm text-amber-400">
+            No main for:
+            {missing.map((s) => (
+              <SpecIcon
+                key={s.id}
+                specId={s.id}
+                name={`${s.name} ${classes?.find((c) => c.id === s.class_id)?.name}`}
+              />
+            ))}
+          </p>
+        )}
       </section>
     </div>
   );
