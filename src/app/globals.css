@@ -73,21 +73,8 @@
   --accent-foreground: #1a1405;
 }
 
-/* Horde: black iron edged in blood red, over a smouldering ember glow (see body below). */
+/* Horde: charcoal stone and blood red, over the cracked Horde crest (see body below). */
 [data-theme="horde"] {
-  --background: #080404;
-  --foreground: #f3e6e3;
-  --panel: #130707;
-  --panel-raised: #220908;
-  --border: #5c1612;
-  --muted: #b48b86;
-  --accent: #e0261b;
-  --accent-hover: #f2473c;
-  --accent-foreground: #fff4f1;
-}
-
-/* Horde Banner: charcoal stone and blood red, over the cracked Horde crest (see body below). */
-[data-theme="horde-banner"] {
   --background: #0d0c0c;
   --foreground: #ede5e3;
   --panel: #161414;
@@ -168,10 +155,10 @@ body {
 }
 
 /* Already dark stone; a light veil is enough. */
-[data-theme="horde-banner"] body {
+[data-theme="horde"] body {
   background:
     linear-gradient(rgb(13 12 12 / 0.45), rgb(13 12 12 / 0.45)),
-    var(--background) url("/themes/horde-banner.jpg") center / cover;
+    var(--background) url("/themes/horde.jpg") center / cover;
   background-attachment: fixed;
 }
 
@@ -180,13 +167,6 @@ body {
   background:
     linear-gradient(rgb(6 10 5 / 0.6), rgb(6 10 5 / 0.6)),
     var(--background) url("/themes/illidan.jpg") center / cover;
-  background-attachment: fixed;
-}
-
-[data-theme="horde"] body {
-  background:
-    radial-gradient(ellipse 80% 50% at 50% 115%, rgb(170 20 10 / 0.35), transparent 70%),
-    radial-gradient(ellipse 60% 40% at 50% -10%, rgb(120 10 5 / 0.25), transparent 70%) var(--background);
   background-attachment: fixed;
 }
 
