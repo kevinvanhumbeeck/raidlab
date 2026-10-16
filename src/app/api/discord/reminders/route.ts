@@ -3,10 +3,11 @@ import { noResponse } from "@/lib/no-response";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isLocked } from "@/lib/wow";
 
-// Sign-up reminders (#59): called every few minutes by the reminders workflow. Raids starting within
-// REMINDER_HOURS that are still open get one DM to every member who hasn't responded and hasn't turned the DMs
-// off. Raids lock 1 hour before the start, so this leaves an hour to answer.
-const REMINDER_HOURS = 2;
+// Sign-up reminders (#59): Vercel calls this once a day (vercel.json, 16:00 UTC: between 17:00 and 18:00 realm time
+// in winter, as Hobby cron jobs start somewhere in their hour). Open raids starting within REMINDER_WINDOW_HOURS
+// get one DM to every member who hasn't responded and hasn't turned the DMs off. For the usual 20:00 start, that's
+// 2 to 3 hours before the raid and at least an hour before sign-ups lock.
+const REMINDER_WINDOW_HOURS = 6;
 
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
     .select("id, slug, title, starts_at, locked_at")
     .is("reminded_at", null)
     .gt("starts_at", new Date(now).toISOString())
-    .lte("starts_at", new Date(now + REMINDER_HOURS * 3_600_000).toISOString());
+    .lte("starts_at", new Date(now + REMINDER_WINDOW_HOURS * 3_600_000).toISOString());
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   const results = [];

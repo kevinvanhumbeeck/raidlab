@@ -50,10 +50,11 @@ update profiles set is_officer = true where display_name = 'YourName';
   `https://www.raidlab.net/api/discord/interactions`. Invite it with the `bot` and `applications.commands`
   scopes and the View Channel, Send Messages, Embed Links and Read Message History permissions. Officers
   can post or refresh a raid by hand from the raid page, and ping the members who haven't responded (#58).
-- **Sign-up reminders** (optional, #59): 2 hours before a raid, the bot DMs every member who hasn't responded.
-  The `reminders` GitHub workflow calls `/api/discord/reminders` every 15 minutes; set the `CRON_SECRET`
-  secret and the `SITE_URL` variable (`https://www.raidlab.net`) in GitHub, and the same `CRON_SECRET` in
-  Vercel. Players turn the DMs off on `/characters`.
+- **Sign-up reminders** (optional, #59): once a day the bot DMs every member who hasn't responded to a raid
+  starting in the next few hours. A Vercel cron job (`vercel.json`, 16:00 UTC, so 17:00–18:00 realm time in
+  winter) calls `/api/discord/reminders`; set `CRON_SECRET` in Vercel, which Vercel sends with the call. In
+  summer time, move it to 15:00 UTC so it still lands before the 19:00 lock. Players turn the DMs off on
+  `/characters`.
 - **Domain**: `www.raidlab.net` is primary; `raidlab.net` redirects to it. DNS at Cloudflare,
   records DNS-only (grey cloud) pointing to Vercel.
 - **Supabase auth URLs**: Site URL `https://www.raidlab.net`; redirect URLs
