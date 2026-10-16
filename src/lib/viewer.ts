@@ -5,9 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 // The logged-in player and their profile, or nulls when logged out.
 export const getViewer = cache(async () => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims verifies the JWT locally (no round trip to Supabase Auth, unlike getUser).
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims.sub ? { id: data.claims.sub } : null;
   if (!user) return { supabase, user: null, profile: null, isOfficer: false, isMember: false };
 
   const { data: profile } = await supabase

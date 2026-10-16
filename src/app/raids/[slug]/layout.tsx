@@ -22,16 +22,17 @@ export default async function RaidLayout({
   const count = (table: "signups" | "comp_slots" | "attendance" | "reserves") =>
     supabase.from(table).select("raid_id", { count: "exact", head: true }).eq("raid_id", id);
 
-  const [{ count: accepted }, { count: placed }, { count: recorded }, { count: reserved }] = await Promise.all([
-    count("signups").eq("status", "accepted"),
-    count("comp_slots"),
-    count("attendance"),
-    count("reserves"),
-  ]);
-
   const started = hasStarted(raid.starts_at);
   const locked = isLocked(raid);
-  const warning = isOfficer && !locked ? await lockWarning(supabase, raid) : null;
+
+  const [{ count: accepted }, { count: placed }, { count: recorded }, { count: reserved }, warning] =
+    await Promise.all([
+      count("signups").eq("status", "accepted"),
+      count("comp_slots"),
+      count("attendance"),
+      count("reserves"),
+      isOfficer && !locked ? lockWarning(supabase, raid) : null,
+    ]);
 
   return (
     <div className="space-y-6">

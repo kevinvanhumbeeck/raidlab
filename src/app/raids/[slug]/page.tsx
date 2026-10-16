@@ -37,6 +37,8 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
     { data: specs },
     { data: myCharacters },
     { data: slots },
+    { data: allCharacters },
+    { data: instance },
   ] = await Promise.all([
     supabase
       .from("signups")
@@ -53,9 +55,6 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
       .eq("owner_id", user.id)
       .order("is_main", { ascending: false }),
     supabase.from("comp_slots").select("group_no, character_id").eq("raid_id", id),
-  ]);
-
-  const [{ data: allCharacters }, { data: instance }] = await Promise.all([
     isOfficer
       ? supabase.from("characters").select("id, name, class_id, main_spec_id").order("name")
       : Promise.resolve({ data: [] as { id: string; name: string; class_id: string; main_spec_id: string }[] }),
