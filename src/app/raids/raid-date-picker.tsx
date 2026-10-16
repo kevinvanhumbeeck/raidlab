@@ -59,7 +59,7 @@ export function RaidDatePicker({ onPick }: { onPick?: () => void }) {
             onClick={() => shift(-1)}
             disabled={isCurrentMonth}
             aria-label="Previous month"
-            className="rounded px-2 py-0.5 hover:bg-white/5 disabled:opacity-30"
+            className="rounded px-2 py-0.5 hover:bg-foreground/5 disabled:opacity-30"
           >
             ‹
           </button>
@@ -68,7 +68,7 @@ export function RaidDatePicker({ onPick }: { onPick?: () => void }) {
             type="button"
             onClick={() => shift(1)}
             aria-label="Next month"
-            className="rounded px-2 py-0.5 hover:bg-white/5"
+            className="rounded px-2 py-0.5 hover:bg-foreground/5"
           >
             ›
           </button>
@@ -99,8 +99,8 @@ export function RaidDatePicker({ onPick }: { onPick?: () => void }) {
                   selected
                     ? "bg-accent font-medium text-accent-foreground"
                     : day === today
-                      ? "ring-1 ring-accent/60 hover:bg-white/5"
-                      : "hover:bg-white/5"
+                      ? "ring-1 ring-accent/60 hover:bg-foreground/5"
+                      : "hover:bg-foreground/5"
                 } disabled:opacity-25 disabled:hover:bg-transparent`}
               >
                 {i + 1}
@@ -122,7 +122,7 @@ export function RaidDatePicker({ onPick }: { onPick?: () => void }) {
         </select>
         <span className="text-sm opacity-70">server time</span>
       </div>
-      <p className={`text-xs ${startsAt ? "opacity-70" : "text-amber-400"}`}>
+      <p className={`text-xs ${startsAt ? "opacity-70" : "text-warn"}`}>
         {startsAt
           ? `${realmLabel} server time${localTime && !localTime.endsWith(time) ? ` · ${localTime} your time` : ""}`
           : "Pick a day"}

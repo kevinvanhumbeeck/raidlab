@@ -1,5 +1,6 @@
 import { iconUrl, qualityColor, wowheadItemUrl } from "@/lib/loot";
 import { WowheadTooltips } from "./wowhead-tooltips";
+import { readable } from "@/lib/theme";
 
 // An item's icon and quality-coloured name, linking to Wowhead's Forever database (with its tooltip on hover).
 export function ItemLink({
@@ -16,7 +17,7 @@ export function ItemLink({
         target="_blank"
         rel="noreferrer"
         className="inline-flex min-w-0 items-center gap-2 hover:underline"
-        style={{ color: qualityColor(item.quality) }}
+        style={{ color: readable(qualityColor(item.quality)) }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

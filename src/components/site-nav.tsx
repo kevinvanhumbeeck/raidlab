@@ -19,7 +19,7 @@ export type Account = {
 
 // text-base so the links sit level with the text-lg wordmark next to the logo.
 const linkClass = "nav-link w-fit font-heading text-base tracking-wide opacity-80 hover:opacity-100";
-const menuItem = "flex w-full items-center px-3 py-2 text-left text-sm hover:bg-white/5";
+const menuItem = "flex w-full items-center px-3 py-2 text-left text-sm hover:bg-foreground/5";
 
 // Main links inline with an account menu on the right; one hamburger panel on mobile.
 export function SiteNav({
@@ -80,7 +80,7 @@ export function SiteNav({
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((o) => !o)}
-              className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-white/5"
+              className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-foreground/5"
             >
               <Avatar account={account} />
               <span className="font-heading text-sm">{account.name}</span>
@@ -120,7 +120,7 @@ export function SiteNav({
         aria-label="Menu"
         aria-expanded={mobileOpen}
         onClick={() => setMobileOpen((o) => !o)}
-        className="ml-auto rounded-lg p-2 hover:bg-white/5 sm:hidden"
+        className="ml-auto rounded-lg p-2 hover:bg-foreground/5 sm:hidden"
       >
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           {mobileOpen ? <path d="M6 6l12 12M18 6 6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}

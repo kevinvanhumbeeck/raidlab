@@ -14,6 +14,11 @@
   --accent-hover: #e6b65a;
   --accent-foreground: #1a1208;
   --discord: #5865f2;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --success: #34d399;
+  --readable-shade: 0%;
+  color-scheme: dark;
 }
 
 /* Slate: cool greys and soft purple, after guildmanager.app. */
@@ -29,30 +34,87 @@
   --accent-foreground: #16131f;
 }
 
-/* Frost: icy blues. */
+/* Frost: icy blues, with sea-green-blue borders that echo the accent. */
 [data-theme="frost"] {
   --background: #0b1318;
   --foreground: #e3eef2;
   --panel: #111c22;
   --panel-raised: #16242b;
-  --border: #213540;
+  --border: #2c6474;
   --muted: #8aa4b0;
   --accent: #7cc8e8;
   --accent-hover: #9ad6ef;
   --accent-foreground: #0a1a22;
 }
 
-/* Fel: dark greens. */
+/* Modern: graphite over the layered paper-cut backdrop, steel greys with a silver-blue accent. */
+[data-theme="modern"] {
+  --background: #121319;
+  --foreground: #e6e8ee;
+  --panel: #1a1c23;
+  --panel-raised: #20232b;
+  --border: #30333d;
+  --muted: #8e93a1;
+  --accent: #b4c2e0;
+  --accent-hover: #cdd7ee;
+  --accent-foreground: #121319;
+}
+
+/* Alliance: royal navy and lion gold, over the Alliance banner (see body below). */
+[data-theme="alliance"] {
+  --background: #060c20;
+  --foreground: #e8edf8;
+  --panel: #0b1430;
+  --panel-raised: #101c40;
+  --border: #24397a;
+  --muted: #95a4cc;
+  --accent: #f0c23a;
+  --accent-hover: #f7d466;
+  --accent-foreground: #1a1405;
+}
+
+/* Horde: charcoal stone and blood red, over the cracked Horde crest (see body below). */
+[data-theme="horde"] {
+  --background: #0d0c0c;
+  --foreground: #ede5e3;
+  --panel: #161414;
+  --panel-raised: #1f1a1a;
+  --border: #4a1b18;
+  --muted: #a99894;
+  --accent: #cc231c;
+  --accent-hover: #df3d35;
+  --accent-foreground: #fff3f1;
+}
+
+/* Fel: fel green and scorched black, over Illidan in the Legion art (see body below). */
 [data-theme="fel"] {
-  --background: #0d120c;
-  --foreground: #e4ecdc;
-  --panel: #131a11;
-  --panel-raised: #182116;
-  --border: #27341f;
-  --muted: #93a487;
-  --accent: #8fd14f;
-  --accent-hover: #a3dd6a;
-  --accent-foreground: #10180a;
+  --background: #060a05;
+  --foreground: #e6f0dc;
+  --panel: #0c140a;
+  --panel-raised: #121d0e;
+  --border: #2b4a1d;
+  --muted: #9cb08b;
+  --accent: #7ee03a;
+  --accent-hover: #98ec5c;
+  --accent-foreground: #0b1405;
+}
+
+/* Light: warm paper and ink, with the logo's gold deepened to read on white. */
+[data-theme="light"] {
+  --background: #f3f1ec;
+  --foreground: #1d1b18;
+  --panel: #ffffff;
+  --panel-raised: #f8f6f2;
+  --border: #ddd8cf;
+  --muted: #6b645a;
+  --accent: #9a6a10;
+  --accent-hover: #7f570c;
+  --accent-foreground: #ffffff;
+  --warn: #b45309;
+  --danger: #dc2626;
+  --success: #047857;
+  --readable-shade: 45%;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -66,18 +128,50 @@
   --color-accent-hover: var(--accent-hover);
   --color-accent-foreground: var(--accent-foreground);
   --color-discord: var(--discord);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
   --font-sans: var(--font-exo-2);
   --font-heading: var(--font-zen-dots);
 }
 
-/* Always reserve the scrollbar's width, so the centred nav doesn't shift between short and long pages. */
+/* Always show the scrollbar, so the centred nav doesn't shift between short and long pages. Unlike
+   scrollbar-gutter: stable, short pages get a native empty track instead of a bare strip beside the sticky header. */
 html {
-  scrollbar-gutter: stable;
+  overflow-y: scroll;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* The banner is bright and saturated; a navy veil keeps text readable over it. */
+[data-theme="alliance"] body {
+  background:
+    linear-gradient(rgb(6 12 32 / 0.55), rgb(6 12 32 / 0.55)),
+    var(--background) url("/themes/alliance.jpg") center / cover;
+  background-attachment: fixed;
+}
+
+/* Already dark stone; a light veil is enough. */
+[data-theme="horde"] body {
+  background:
+    linear-gradient(rgb(13 12 12 / 0.45), rgb(13 12 12 / 0.45)),
+    var(--background) url("/themes/horde.jpg") center / cover;
+  background-attachment: fixed;
+}
+
+/* Busy, bright art; a darker veil than Alliance keeps text readable. */
+[data-theme="fel"] body {
+  background:
+    linear-gradient(rgb(6 10 5 / 0.6), rgb(6 10 5 / 0.6)),
+    var(--background) url("/themes/fel.jpg") center / cover;
+  background-attachment: fixed;
+}
+
+[data-theme="modern"] body {
+  background: var(--background) url("/themes/modern.jpg") center / cover fixed;
 }
 
 /* In the base layer so a font-* utility (e.g. the RaidLab wordmark) still wins. Zen Dots has one weight: no faux bold. */

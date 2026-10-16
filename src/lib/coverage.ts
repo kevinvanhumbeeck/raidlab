@@ -1,7 +1,8 @@
-import { ROLES, type Role, type RoleRequirements } from "@/lib/wow";
+import { FIXED_ROLES, ROLES, type Role, type RoleRequirements } from "@/lib/wow";
 
-// Whether a raid meets its role minimums (#45): as signed up, only if some players switch to another role
-// they can play (an offspec, or another role of their spec), or not at all.
+// Whether a raid has its tanks and healers (#45): as signed up, only if some players switch to another role
+// they can play (an offspec, or another role of their spec), or not at all. DPS has no minimum (#27), so any
+// dps can switch.
 
 export type CoverageState = "met" | "offspec" | "short";
 
@@ -22,23 +23,22 @@ export type Coverage = { states: Record<Role, CoverageState>; switches: Switch[]
 export function roleCoverage(players: CoveragePlayer[], requirements: RoleRequirements | null): Coverage {
   const roleOf = new Map(players.map((p) => [p.id, p.role]));
   const count = (role: Role) => players.filter((p) => roleOf.get(p.id) === role).length;
-  const shortBefore = new Set(ROLES.filter((r) => requirements && count(r) < requirements[r]));
+  const minimum = (role: Role) => (requirements && FIXED_ROLES.includes(role) ? requirements[role] : 0);
+  const shortBefore = new Set(ROLES.filter((r) => count(r) < minimum(r)));
 
-  if (requirements) {
-    // Fill each missing spot with a shortest chain of switches that ends in a role with players to spare,
-    // e.g. a healer goes tank and a dps with a healing offspec takes their place. Augmenting paths like
-    // these find the most spots that can be covered.
-    for (const role of ROLES) {
-      while (count(role) < requirements[role]) {
-        const path = findPath(role, players, roleOf, (r) => count(r) > requirements[r]);
-        if (!path) break;
-        for (const { id, to } of path) roleOf.set(id, to);
-      }
+  // Fill each missing spot with a shortest chain of switches that ends in a role with players to spare,
+  // e.g. a healer goes tank and a dps with a healing offspec takes their place. Augmenting paths like
+  // these find the most spots that can be covered.
+  for (const role of ROLES) {
+    while (count(role) < minimum(role)) {
+      const path = findPath(role, players, roleOf, (r) => count(r) > minimum(r));
+      if (!path) break;
+      for (const { id, to } of path) roleOf.set(id, to);
     }
   }
 
   const states = Object.fromEntries(
-    ROLES.map((r) => [r, !shortBefore.has(r) ? "met" : requirements && count(r) >= requirements[r] ? "offspec" : "short"]),
+    ROLES.map((r) => [r, !shortBefore.has(r) ? "met" : count(r) >= minimum(r) ? "offspec" : "short"]),
   ) as Record<Role, CoverageState>;
 
   const switches = players.flatMap((p) => {
@@ -100,7 +100,7 @@ export function coverageSummary({ states, switches }: Coverage) {
   const list = switches.map(describeSwitch).join(", ");
   return Object.values(states).includes("short")
     ? `Still short, even if ${list}`
-    : `Minimums met if ${list}`;
+    : `Tanks and healers covered if ${list}`;
 }
 
 // Roles a character can fill: those of its signed-up spec first, then its main and offspecs. Each role

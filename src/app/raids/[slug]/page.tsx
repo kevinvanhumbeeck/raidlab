@@ -37,6 +37,8 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
     { data: specs },
     { data: myCharacters },
     { data: slots },
+    { data: allCharacters },
+    { data: instance },
   ] = await Promise.all([
     supabase
       .from("signups")
@@ -53,9 +55,6 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
       .eq("owner_id", user.id)
       .order("is_main", { ascending: false }),
     supabase.from("comp_slots").select("group_no, character_id").eq("raid_id", id),
-  ]);
-
-  const [{ data: allCharacters }, { data: instance }] = await Promise.all([
     isOfficer
       ? supabase.from("characters").select("id, name, class_id, main_spec_id").order("name")
       : Promise.resolve({ data: [] as { id: string; name: string; class_id: string; main_spec_id: string }[] }),
@@ -108,7 +107,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
         {formCharacters.length ? (
           <>
             {isLocked(raid) && !isOfficer ? (
-              <p className="rounded-xl border border-border bg-panel p-4 text-sm">
+              <p className="rounded-xl border border-border bg-panel/90 p-4 text-sm">
                 Sign-ups are locked.{" "}
                 {mine ? (
                   <>
@@ -137,7 +136,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
               />
             )}
             {mySlot ? (
-              <p className="text-sm text-emerald-400">
+              <p className="text-sm text-success">
                 You&apos;re in group {mySlot.group_no}
                 {mySlot.character_id !== mine?.characterId &&
                   ` on ${myCharacters?.find((c) => c.id === mySlot.character_id)?.name}`}
@@ -177,7 +176,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
           <h3 className="text-sm font-medium opacity-80">Sign up a player</h3>
           <form
             action={officerSignUp.bind(null, raid.id)}
-            className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-panel p-4"
+            className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-panel/90 p-4"
           >
             <label className="space-y-1">
               <span className="block text-sm">Character</span>
@@ -205,25 +204,28 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
                 ))}
               </select>
             </label>
-            <button className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
+            {/* Same height as the selects: their 16px text and border vs. this button's 14px text. */}
+            <button className="rounded border border-transparent bg-accent px-3 py-2 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
               Add
             </button>
           </form>
-          {botEnabled() && (
-            <form action={postToDiscord.bind(null, raid.id)}>
-              <button className="rounded border border-border px-3 py-1.5 text-sm hover:bg-white/5">
-                Post or refresh in Discord
-              </button>
+          <div className="flex flex-wrap gap-2">
+            {botEnabled() && (
+              <form action={postToDiscord.bind(null, raid.id)}>
+                <button className="rounded bg-discord px-3 py-1.5 text-sm font-medium text-white hover:brightness-110">
+                  Post or refresh in Discord
+                </button>
+              </form>
+            )}
+            <form action={deleteRaid.bind(null, raid.id)}>
+              <ConfirmButton
+                message="Delete this raid? This also removes its sign-ups, composition and attendance."
+                className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300"
+              >
+                Delete raid
+              </ConfirmButton>
             </form>
-          )}
-          <form action={deleteRaid.bind(null, raid.id)}>
-            <ConfirmButton
-              message="Delete this raid? This also removes its sign-ups, composition and attendance."
-              className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300"
-            >
-              Delete raid
-            </ConfirmButton>
-          </form>
+          </div>
         </section>
       )}
     </div>

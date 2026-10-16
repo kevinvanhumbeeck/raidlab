@@ -12,12 +12,13 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { RoleCount } from "@/components/role-count";
+import { RoleCount, type RoleCountState } from "@/components/role-count";
 import { SpecIcon } from "@/components/spec-icon";
 import { coverageSummary, roleCoverage, type RoleOption } from "@/lib/coverage";
 import { createClient } from "@/lib/supabase/client";
 import {
   DUTY_LABELS,
+  FIXED_ROLES,
   RAID_DUTIES,
   ROLES,
   ROLE_LABELS,
@@ -26,8 +27,10 @@ import {
   type Role,
   type RoleRequirements,
   type SignupStatus,
+  rolesText,
 } from "@/lib/wow";
 import { moveToSlot, removeFromComp, setDuty, setSlotRole } from "./actions";
+import { readable } from "@/lib/theme";
 
 export type BoardCharacter = {
   id: string;
@@ -181,14 +184,14 @@ export function CompBoard({
 
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-      {error && <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+      {error && <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-danger">{error}</p>}
 
       <Summary placed={placed} size={size} requirements={requirements} duties={duties} />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
         <div className="grid gap-4 sm:grid-cols-2">
           {Array.from({ length: groups }, (_, g) => (
-            <div key={g} className="rounded-xl border border-border bg-panel p-3">
+            <div key={g} className="rounded-xl border border-border bg-panel/90 p-3">
               <h3 className="mb-2 font-sans text-sm font-semibold opacity-80">Group {g + 1}</h3>
               <div className="space-y-1.5">
                 {Array.from({ length: 5 }, (_, p) => {
@@ -252,10 +255,13 @@ function Summary({
   const count = (role: Role) => placed.filter((c) => c.role === role).length;
   const coverage = roleCoverage(placed, requirements);
   const summary = coverageSummary(coverage);
+  // Tanks and healers should match the instance exactly (#27); officers can still go over or under.
+  const off = (role: Role) => (requirements && FIXED_ROLES.includes(role) ? count(role) - requirements[role] : 0);
+  const stateOf = (role: Role): RoleCountState | undefined =>
+    !FIXED_ROLES.includes(role) ? undefined : off(role) > 0 ? "over" : coverage.states[role];
   const warnings = [
-    ...ROLES.filter((role) => requirements && count(role) < requirements[role]).map(
-      (role) => `${requirements![role] - count(role)} more ${ROLE_LABELS[role].toLowerCase()} needed`,
-    ),
+    ...FIXED_ROLES.filter((role) => off(role) < 0).map((role) => `${rolesText(-off(role), role)} short`),
+    ...FIXED_ROLES.filter((role) => off(role) > 0).map((role) => `${rolesText(off(role), role)} too many`),
     summary,
     ...placed
       .filter((c) => c.status !== "accepted")
@@ -272,7 +278,7 @@ function Summary({
   }
 
   return (
-    <section className="space-y-2 rounded-xl border border-border bg-panel p-3">
+    <section className="space-y-2 rounded-xl border border-border bg-panel/90 p-3">
       <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm">
         <span className="text-base font-semibold">
           {placed.length}/{size} placed
@@ -284,7 +290,7 @@ function Summary({
               <RoleCount
                 count={count(role)}
                 needed={requirements?.[role]}
-                state={coverage.states[role]}
+                state={stateOf(role)}
                 hint={coverage.states[role] === "offspec" ? summary : undefined}
               />
             </strong>
@@ -294,14 +300,14 @@ function Summary({
       {classCounts.size > 0 && (
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
           {[...classCounts.values()].map((c) => (
-            <span key={c.name} style={{ color: c.color }}>
+            <span key={c.name} style={{ color: readable(c.color) }}>
               {c.name} {c.n}
             </span>
           ))}
         </div>
       )}
       {warnings.length > 0 && (
-        <ul className="space-y-0.5 text-xs text-amber-400">
+        <ul className="space-y-0.5 text-xs text-warn">
           {warnings.map((w) => (
             <li key={w}>⚠ {w}</li>
           ))}
@@ -314,9 +320,10 @@ function Summary({
 function Slot({ id, disabled, children }: { id: string; disabled: boolean; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id, disabled });
   return (
+    // Exactly one card tall (32px) plus the dashed border, so a filled slot has no gap and an empty one the same height.
     <div
       ref={setNodeRef}
-      className={`min-h-11 rounded border border-dashed ${isOver ? "border-accent bg-accent/10" : "border-border"}`}
+      className={`min-h-[34px] rounded border border-dashed ${isOver ? "border-accent bg-accent/10" : "border-border"}`}
     >
       {children}
     </div>
@@ -328,7 +335,7 @@ function Pool({ disabled, children }: { disabled: boolean; children: React.React
   return (
     <aside
       ref={setNodeRef}
-      className={`space-y-4 rounded border bg-panel p-3 ${isOver ? "border-accent" : "border-border"}`}
+      className={`space-y-4 rounded border bg-panel/90 p-3 ${isOver ? "border-accent" : "border-border"}`}
     >
       {children}
     </aside>
@@ -364,17 +371,17 @@ function Card({
       title={c.note ?? undefined}
     >
       <SpecIcon specId={c.specId} name={c.specName} />
-      <span className="truncate font-medium" style={{ color: c.color }}>
+      <span className="truncate font-medium" style={{ color: readable(c.color) }}>
         {c.name}
       </span>
       <span className="ml-auto flex items-center gap-1.5">
         {role && c.status !== "accepted" && (
-          <span className="text-xs text-amber-400">
+          <span className="text-xs text-warn">
             {c.status ? STATUS_LABELS[c.status].toLowerCase() : "not signed up"}
           </span>
         )}
         {c.elsewhere && (
-          <span className="text-xs text-amber-400" title={`Also in ${c.elsewhere}`}>
+          <span className="text-xs text-warn" title={`Also in ${c.elsewhere}`}>
             ⚠
           </span>
         )}
@@ -413,7 +420,7 @@ function Duties({
   const sorted = [...placed].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <section className="grid gap-3 rounded-xl border border-border bg-panel p-3 sm:grid-cols-4">
+    <section className="grid gap-3 rounded-xl border border-border bg-panel/90 p-3 sm:grid-cols-4">
       {RAID_DUTIES.map((duty) => (
         <label key={duty} className="space-y-1 text-sm">
           <span className="opacity-80">{DUTY_LABELS[duty]}</span>

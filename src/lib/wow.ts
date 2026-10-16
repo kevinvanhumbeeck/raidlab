@@ -20,7 +20,7 @@ export const ROLE_SHORT: Record<Role, string> = { tank: "T", healer: "H", dps: "
 // Raid sizes; 5 is for dungeons standing in for raids while testing (Ragefire Chasm).
 export const INSTANCE_SIZES = [5, 10, 20, 40];
 
-// A raid instance and the minimum number of players per role it needs (table "instances").
+// A raid instance and how many players per role it takes (table "instances"). DPS is generated: the rest of the raid.
 export type Instance = { name: string; size: number; tanks: number; healers: number; dps: number };
 
 // Column in "instances" holding the requirement for each role.
@@ -31,6 +31,15 @@ export const ROLE_REQUIREMENT_KEYS: Record<Role, "tanks" | "healers" | "dps"> = 
 };
 
 export type RoleRequirements = Record<Role, number>;
+
+// Tank and healer counts are fixed per instance (#27): the comp should have exactly that many. DPS fills the
+// rest of the raid, so it has no minimum of its own.
+export const FIXED_ROLES: Role[] = ["tank", "healer"];
+
+// "1 tank", "3 healers", "2 dps"
+export function rolesText(n: number, role: Role) {
+  return `${n} ${(n === 1 ? ROLE_NAMES[role] : ROLE_LABELS[role]).toLowerCase()}`;
+}
 
 export function requirementsOf(instance: Instance | null | undefined): RoleRequirements | null {
   if (!instance) return null;
@@ -67,6 +76,16 @@ export function formatRaidTime(iso: string) {
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
+  }).format(new Date(iso));
+}
+
+// Day only, e.g. "Fri 17 Oct", in server time.
+export function formatRaidDate(iso: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: REALM_TIMEZONE,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
   }).format(new Date(iso));
 }
 

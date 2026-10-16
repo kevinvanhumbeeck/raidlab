@@ -1,9 +1,10 @@
-import Link from "next/link";
-import { getRaid } from "@/lib/raid";
+import { getRaid, lockWarning } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
-import { formatRaidTime, hasStarted, isLocked } from "@/lib/wow";
+import { formatRaidDate, formatRaidTime, hasStarted, isLocked } from "@/lib/wow";
 import { setRaidLock } from "../actions";
+import { LockButton } from "./lock-button";
 import { RaidTabs } from "./raid-tabs";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 // Shared header and tabs for a raid's sign-ups, composition, loot and attendance pages.
 export default async function RaidLayout({
@@ -21,37 +22,39 @@ export default async function RaidLayout({
   const count = (table: "signups" | "comp_slots" | "attendance" | "reserves") =>
     supabase.from(table).select("raid_id", { count: "exact", head: true }).eq("raid_id", id);
 
-  const [{ count: accepted }, { count: placed }, { count: recorded }, { count: reserved }] = await Promise.all([
-    count("signups").eq("status", "accepted"),
-    count("comp_slots"),
-    count("attendance"),
-    count("reserves"),
-  ]);
-
   const started = hasStarted(raid.starts_at);
   const locked = isLocked(raid);
+
+  const [{ count: accepted }, { count: placed }, { count: recorded }, { count: reserved }, warning] =
+    await Promise.all([
+      count("signups").eq("status", "accepted"),
+      count("comp_slots"),
+      count("attendance"),
+      count("reserves"),
+      isOfficer && !locked ? lockWarning(supabase, raid) : null,
+    ]);
 
   return (
     <div className="space-y-6">
       <section className="space-y-1">
-        <Link href="/raids" className="text-sm opacity-70 hover:opacity-100">
-          ← All raids
-        </Link>
+        {/* The heading says where, the crumb which raid: its own title, or its date when the title is just the instance. */}
+        <Breadcrumbs
+          items={[
+            { label: "Raids", href: "/raids" },
+            { label: raid.title === raid.instance ? formatRaidDate(raid.starts_at) : raid.title },
+          ]}
+        />
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold">{raid.title}</h1>
+          <h1 className="text-2xl font-semibold">{raid.instance}</h1>
           {locked && (
-            <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-medium text-red-400">🔒 Locked</span>
+            <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-medium text-danger">🔒 Locked</span>
           )}
           {isOfficer && (
-            <form action={setRaidLock.bind(null, id, !locked)} className="ml-auto">
-              <button className="rounded border border-border px-3 py-1 text-sm hover:bg-white/5">
-                {locked ? "Unlock sign-ups" : "Lock sign-ups"}
-              </button>
-            </form>
+            <LockButton action={setRaidLock.bind(null, id, !locked)} locked={locked} warning={warning} />
           )}
         </div>
         <p className="opacity-80">
-          {raid.instance} · {raid.size}-man · {formatRaidTime(raid.starts_at)} server time
+          {raid.size}-man · {formatRaidTime(raid.starts_at)} server time
         </p>
         {!locked && raid.locked_at && (
           <p className="text-sm opacity-70">Sign-ups lock {formatRaidTime(raid.locked_at)}.</p>

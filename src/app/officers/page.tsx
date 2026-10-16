@@ -5,6 +5,7 @@ import { requireViewer } from "@/lib/viewer";
 import { playerHref } from "@/lib/wow";
 import { setMember, setOfficer } from "./actions";
 import { InstanceSettings } from "./instance-settings";
+import { readable } from "@/lib/theme";
 
 export default async function OfficersPage() {
   const { supabase, user, isOfficer } = await requireViewer();
@@ -40,7 +41,7 @@ export default async function OfficersPage() {
         someone out until their next login.
       </p>
 
-      <ul className="divide-y divide-border rounded-xl border border-border bg-panel">
+      <ul className="divide-y divide-border rounded-xl border border-border bg-panel/90">
         {sorted.map((p) => {
           const chars = charactersOf.get(p.id) ?? [];
           const lastOfficer = p.is_officer && officerCount === 1;
@@ -67,7 +68,7 @@ export default async function OfficersPage() {
                         <Link
                           href={playerHref(p.slug, c.name)}
                           className="hover:underline"
-                          style={{ color: color.get(c.class_id) }}
+                          style={{ color: readable(color.get(c.class_id)) }}
                         >
                           {c.name}
                         </Link>
@@ -89,7 +90,7 @@ export default async function OfficersPage() {
                 )}
                 {!p.is_officer && (
                   <form action={setMember.bind(null, p.id, !p.is_member)}>
-                    <button className="rounded border border-border px-2 py-1 text-xs hover:bg-white/5">
+                    <button className="rounded border border-border px-2 py-1 text-xs hover:bg-foreground/5">
                       {p.is_member ? "Revoke access" : "Grant access"}
                     </button>
                   </form>
@@ -99,7 +100,7 @@ export default async function OfficersPage() {
                     <button
                       disabled={lastOfficer}
                       title={lastOfficer ? "There must be at least one officer" : undefined}
-                      className="rounded border border-border px-2 py-1 text-xs hover:bg-white/5 disabled:opacity-40"
+                      className="rounded border border-border px-2 py-1 text-xs hover:bg-foreground/5 disabled:opacity-40"
                     >
                       {p.is_officer ? "Remove officer" : "Make officer"}
                     </button>
