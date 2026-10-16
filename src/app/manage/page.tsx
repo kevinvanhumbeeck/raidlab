@@ -65,6 +65,15 @@ export default async function OfficersPage() {
         Officers change a raid until 3 days after it starts. Admins can change raids at any time, delete raids that have
         started, and manage officers, admins, instances and loot tables. Admins are only managed here, never from
         Discord.
+        {isAdmin && (
+          <>
+            {" "}
+            <Link href="/manage/history" className="text-accent hover:underline">
+              See the history of changes
+            </Link>
+            .
+          </>
+        )}
       </p>
 
       {nextRaid && missing && (
