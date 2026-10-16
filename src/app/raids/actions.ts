@@ -6,7 +6,7 @@ import { after } from "next/server";
 import { deleteRaidMessage, syncRaidMessage } from "@/lib/discord-bot";
 import { requireViewer } from "@/lib/viewer";
 import { assertOpen } from "@/lib/raid";
-import { SIGNUP_STATUSES, type SignupStatus } from "@/lib/wow";
+import { MAX_SPLITS, SIGNUP_STATUSES, type SignupStatus } from "@/lib/wow";
 
 type Supabase = Awaited<ReturnType<typeof requireViewer>>["supabase"];
 
@@ -26,6 +26,9 @@ export async function createRaid(formData: FormData) {
 
   const title = String(formData.get("title") ?? "").trim() || instance.name;
   const notes = String(formData.get("notes") ?? "").trim() || null;
+  // Several groups of the instance at the same time (#60).
+  const splits = Number(formData.get("splits") ?? 1);
+  if (!Number.isInteger(splits) || splits < 1 || splits > MAX_SPLITS) throw new Error("Invalid number of splits");
 
   const { data, error } = await supabase
     .from("raids")
@@ -33,6 +36,7 @@ export async function createRaid(formData: FormData) {
       title,
       instance: instance.name,
       size: instance.size,
+      splits,
       starts_at: startsAt.toISOString(),
       notes,
       created_by: user.id,

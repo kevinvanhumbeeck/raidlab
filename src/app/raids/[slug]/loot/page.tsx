@@ -18,8 +18,15 @@ const button = "rounded border border-border px-2 py-0.5 text-xs hover:bg-foregr
 
 // Soft reserves: players pick items from the instance's loot table, officers export them to Gargul. Officers can
 // hard-reserve items, which keeps them out of rolls.
-export default async function LootPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function LootPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ split?: string }>;
+}) {
   const { slug } = await params;
+  const { split: splitParam } = await searchParams;
   const raid = await getRaid(slug);
   const { id } = raid;
   const { supabase, user, isOfficer } = await requireViewer();
@@ -31,6 +38,7 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
     { data: hardReserveRows },
     { data: mySignups },
     { data: classes },
+    { data: slots },
   ] = await Promise.all([
       supabase.from("instances").select("reserves").eq("name", raid.instance).maybeSingle(),
       supabase
@@ -60,12 +68,32 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
           { merge: false }
         >(),
       supabase.from("classes").select("id, name, color"),
+      supabase.from("comp_slots").select("character_id, split_no").eq("raid_id", id),
     ]);
 
-  const reserves: ReserveRow[] = (reserveRows ?? []).map(({ signups, ...r }) => ({
+  // Each player signs up with one character per raid.
+  const mine = mySignups?.[0];
+
+  // Split nights (#60) share the night's reserves, but each split rolls on its own loot: show the reserves of the
+  // characters placed in one split. 0 is the whole night. Players start on their own split.
+  const splitOf = new Map(slots?.map((s) => [s.character_id, s.split_no]));
+  const requested = Number(splitParam);
+  const selectedSplit =
+    raid.splits < 2
+      ? 0
+      : splitParam === "all"
+        ? 0
+        : Number.isInteger(requested) && requested >= 1 && requested <= raid.splits
+          ? requested
+          : (splitOf.get(mine?.character_id ?? "") ?? 0);
+
+  const allReserves: ReserveRow[] = (reserveRows ?? []).map(({ signups, ...r }) => ({
     ...r,
     characters: signups?.characters ?? null,
   }));
+  const reserves = selectedSplit
+    ? allReserves.filter((r) => splitOf.get(r.character_id) === selectedSplit)
+    : allReserves;
   const limit = instance?.reserves ?? 0;
   const locked = isLocked(raid);
   const classById = new Map(classes?.map((c) => [c.id, c]));
@@ -78,10 +106,8 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
   const reservesByItem = new Map<number, ReserveRow[]>();
   for (const r of reserves) reservesByItem.set(r.item_id, [...(reservesByItem.get(r.item_id) ?? []), r]);
 
-  // Each player signs up with one character per raid.
-  const mine = mySignups?.[0];
   const canReserve = !!mine && mine.status !== "declined" && (!locked || isOfficer);
-  const myReserves = new Set(reserves.filter((r) => r.character_id === mine?.character_id).map((r) => r.item_id));
+  const myReserves = new Set(allReserves.filter((r) => r.character_id === mine?.character_id).map((r) => r.item_id));
   const full = !isOfficer && myReserves.size >= limit;
 
   let exportRows: ReserveExportRow[] = [];
@@ -102,8 +128,27 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
     });
   }
 
+  const splitTab = (n: number) =>
+    `rounded-full border px-3 py-0.5 ${
+      n === selectedSplit ? "border-accent text-accent" : "border-border opacity-70 hover:opacity-100"
+    }`;
+
   return (
     <div className="space-y-6">
+      {raid.splits > 1 && (
+        <nav className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="opacity-70">Reserves in</span>
+          {Array.from({ length: raid.splits }, (_, i) => (
+            <Link key={i} href={`?split=${i + 1}`} className={splitTab(i + 1)}>
+              Split {i + 1}
+            </Link>
+          ))}
+          <Link href="?split=all" className={splitTab(0)}>
+            Whole night
+          </Link>
+        </nav>
+      )}
+
       <section className="space-y-2 rounded-xl border border-border bg-panel/90 p-4 text-sm">
         {!mine ? (
           <p>
@@ -127,6 +172,8 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
         )}
         <p className="opacity-60">
           Soft reserves are visible to everyone. If several players reserve the same item, they roll for it.
+          {raid.splits > 1 &&
+            " Each split rolls on its own loot, so only players in the same split compete. Hard reserves count for every split."}
         </p>
       </section>
 
@@ -146,7 +193,9 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
 
       {isOfficer && (
         <section className="space-y-2 rounded-xl border border-border bg-panel/90 p-4 text-sm">
-          <h2 className="font-sans font-semibold">Export for the loot master</h2>
+          <h2 className="font-sans font-semibold">
+            Export for the loot master{selectedSplit > 0 && ` of split ${selectedSplit}`}
+          </h2>
           <p className="opacity-70">
             {exportRows.length} reserves, {hardReservedItems.length} hard reserves. In game, type{" "}
             <code>/gl sr</code> (Gargul), paste the copied string and import. The CSV is a softres.it-style
@@ -155,7 +204,7 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
           <div className="flex flex-wrap gap-2">
             <CopyButton
               text={gargulExport(
-                raid,
+                selectedSplit ? { ...raid, slug: `${raid.slug}-split-${selectedSplit}` } : raid,
                 exportRows,
                 hardReservedItems.map((item) => item.id),
                 `https://www.raidlab.net/raids/${raid.slug}/loot`,
@@ -166,7 +215,7 @@ export default async function LootPage({ params }: { params: Promise<{ slug: str
             </CopyButton>
             <DownloadButton
               text={softresCsv(exportRows)}
-              filename={`${raid.slug}-reserves.csv`}
+              filename={`${raid.slug}${selectedSplit ? `-split-${selectedSplit}` : ""}-reserves.csv`}
               className="rounded border border-border px-3 py-1 hover:bg-foreground/5"
             >
               Download CSV

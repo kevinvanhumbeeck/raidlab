@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireViewer } from "@/lib/viewer";
-import { RAID_DUTIES, ROLES, type RaidDuty, type Role } from "@/lib/wow";
+import { MAX_SPLITS, RAID_DUTIES, ROLES, type RaidDuty, type Role } from "@/lib/wow";
 
 async function requireOfficer() {
   const viewer = await requireViewer();
@@ -11,8 +11,14 @@ async function requireOfficer() {
 }
 
 // Place a character in a slot. If the slot is taken, the two swap places
-// (or the occupant goes back to the pool when the dragged character came from it).
-export async function moveToSlot(raidId: string, characterId: string, groupNo: number, position: number) {
+// (or the occupant goes back to the pool when the dragged character came from it). Works across splits.
+export async function moveToSlot(
+  raidId: string,
+  characterId: string,
+  splitNo: number,
+  groupNo: number,
+  position: number,
+) {
   const supabase = await requireOfficer();
 
   const [{ data: occupant }, { data: source }, { data: signup }] = await Promise.all([
@@ -20,12 +26,13 @@ export async function moveToSlot(raidId: string, characterId: string, groupNo: n
       .from("comp_slots")
       .select("character_id, spec_id, role")
       .eq("raid_id", raidId)
+      .eq("split_no", splitNo)
       .eq("group_no", groupNo)
       .eq("position", position)
       .maybeSingle(),
     supabase
       .from("comp_slots")
-      .select("group_no, position, role")
+      .select("split_no, group_no, position, role")
       .eq("raid_id", raidId)
       .eq("character_id", characterId)
       .maybeSingle(),
@@ -50,6 +57,7 @@ export async function moveToSlot(raidId: string, characterId: string, groupNo: n
   const inserts = [
     {
       raid_id: raidId,
+      split_no: splitNo,
       group_no: groupNo,
       position,
       character_id: characterId,
@@ -60,6 +68,7 @@ export async function moveToSlot(raidId: string, characterId: string, groupNo: n
   if (occupant && source) {
     inserts.push({
       raid_id: raidId,
+      split_no: source.split_no,
       group_no: source.group_no,
       position: source.position,
       character_id: occupant.character_id,
@@ -69,6 +78,17 @@ export async function moveToSlot(raidId: string, characterId: string, groupNo: n
   }
   const { error } = await supabase.from("comp_slots").insert(inserts);
   if (error) throw error;
+
+  // Duties belong to a split, so they don't follow someone into another one.
+  for (const slot of inserts) {
+    const { error: dutyError } = await supabase
+      .from("raid_duties")
+      .delete()
+      .eq("raid_id", raidId)
+      .eq("character_id", slot.character_id)
+      .neq("split_no", slot.split_no);
+    if (dutyError) throw dutyError;
+  }
 
   revalidatePath("/raids/[slug]", "layout");
 }
@@ -113,14 +133,33 @@ export async function removeFromComp(raidId: string, characterId: string) {
   revalidatePath("/raids/[slug]", "layout");
 }
 
-export async function setDuty(raidId: string, duty: RaidDuty, characterId: string | null) {
+// Each split has its own raid lead, assists and loot lead.
+export async function setDuty(raidId: string, splitNo: number, duty: RaidDuty, characterId: string | null) {
   const supabase = await requireOfficer();
   if (!RAID_DUTIES.includes(duty)) throw new Error("Unknown duty");
 
   const { error } = characterId
-    ? await supabase.from("raid_duties").upsert({ raid_id: raidId, duty, character_id: characterId })
-    : await supabase.from("raid_duties").delete().eq("raid_id", raidId).eq("duty", duty);
+    ? await supabase
+        .from("raid_duties")
+        .upsert({ raid_id: raidId, split_no: splitNo, duty, character_id: characterId })
+    : await supabase.from("raid_duties").delete().eq("raid_id", raidId).eq("split_no", splitNo).eq("duty", duty);
   if (error) throw error;
 
   revalidatePath("/raids/[slug]", "layout");
+}
+
+// Add a split to the night, or remove the last one (#60). Its players go back to the bench and its duties are cleared.
+export async function setSplits(raidId: string, splits: number) {
+  const supabase = await requireOfficer();
+  if (!Number.isInteger(splits) || splits < 1 || splits > MAX_SPLITS) throw new Error("Invalid number of splits");
+
+  for (const table of ["comp_slots", "raid_duties"] as const) {
+    const { error } = await supabase.from(table).delete().eq("raid_id", raidId).gt("split_no", splits);
+    if (error) throw error;
+  }
+  const { error } = await supabase.from("raids").update({ splits }).eq("id", raidId);
+  if (error) throw error;
+
+  revalidatePath("/raids/[slug]", "layout");
+  revalidatePath("/raids");
 }

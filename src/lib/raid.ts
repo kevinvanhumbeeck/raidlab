@@ -13,7 +13,7 @@ export const getRaid = cache(async (slug: string) => {
   const { supabase } = await requireViewer();
   const { data: raid } = await supabase
     .from("raids")
-    .select("id, slug, title, instance, size, starts_at, locked_at, notes")
+    .select("id, slug, title, instance, size, splits, starts_at, locked_at, notes")
     .eq(UUID.test(slug) ? "id" : "slug", slug)
     .maybeSingle();
   if (!raid) notFound();
@@ -42,7 +42,7 @@ export async function assertOpen(supabase: Supabase, raidId: string, message = "
 
 // Officers locking sign-ups get asked first when the accepted sign-ups can't fill the tanks and healers, even
 // with offspecs (#27). Null when they can.
-export async function lockWarning(supabase: Supabase, raid: { id: string; instance: string }) {
+export async function lockWarning(supabase: Supabase, raid: { id: string; instance: string; splits: number }) {
   const [{ data: signups }, { data: specs }, { data: instance }] = await Promise.all([
     supabase
       .from("signups")
@@ -60,7 +60,7 @@ export async function lockWarning(supabase: Supabase, raid: { id: string; instan
     supabase.from("specs").select("id, name, roles"),
     supabase.from("instances").select("name, size, tanks, healers, dps").eq("name", raid.instance).maybeSingle(),
   ]);
-  const requirements = requirementsOf(instance);
+  const requirements = requirementsOf(instance, raid.splits);
   if (!requirements) return null;
 
   const specById = new Map(specs?.map((s) => [s.id, s]));

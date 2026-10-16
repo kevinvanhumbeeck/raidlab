@@ -4,7 +4,15 @@ import { roleOptions } from "@/lib/coverage";
 import { botEnabled } from "@/lib/discord-bot";
 import { getRaid } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
-import { SIGNUP_STATUSES, STATUS_LABELS, isLocked, primaryRole, requirementsOf, type SignupStatus } from "@/lib/wow";
+import {
+  SIGNUP_STATUSES,
+  STATUS_LABELS,
+  isLocked,
+  primaryRole,
+  requirementsOf,
+  slotText,
+  type SignupStatus,
+} from "@/lib/wow";
 import { deleteRaid, officerSignUp, postToDiscord, signUp, withdraw } from "../actions";
 import { SignupBoard, type SignupRow as SignupRowView } from "./signup-board";
 import { SignupForm } from "./signup-form";
@@ -54,7 +62,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
       .select("id, name, main_spec_id, off_spec_ids")
       .eq("owner_id", user.id)
       .order("is_main", { ascending: false }),
-    supabase.from("comp_slots").select("group_no, character_id").eq("raid_id", id),
+    supabase.from("comp_slots").select("split_no, group_no, character_id").eq("raid_id", id),
     isOfficer
       ? supabase.from("characters").select("id, name, class_id, main_spec_id").order("name")
       : Promise.resolve({ data: [] as { id: string; name: string; class_id: string; main_spec_id: string }[] }),
@@ -137,7 +145,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
             )}
             {mySlot ? (
               <p className="text-sm text-success">
-                You&apos;re in group {mySlot.group_no}
+                You&apos;re in {slotText(raid.splits, mySlot.split_no, mySlot.group_no)}
                 {mySlot.character_id !== mine?.characterId &&
                   ` on ${myCharacters?.find((c) => c.id === mySlot.character_id)?.name}`}
                 .{" "}
@@ -164,9 +172,9 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
 
       <SignupBoard
         raidId={raid.id}
-        size={raid.size}
+        size={raid.size * raid.splits}
         rows={rows}
-        requirements={requirementsOf(instance)}
+        requirements={requirementsOf(instance, raid.splits)}
         canEdit={isOfficer}
       />
 

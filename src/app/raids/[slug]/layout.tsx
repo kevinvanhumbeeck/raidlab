@@ -22,6 +22,8 @@ export default async function RaidLayout({
   const count = (table: "signups" | "comp_slots" | "attendance" | "reserves") =>
     supabase.from(table).select("raid_id", { count: "exact", head: true }).eq("raid_id", id);
 
+  // A split night (#60) has room for every split.
+  const capacity = raid.size * raid.splits;
   const started = hasStarted(raid.starts_at);
   const locked = isLocked(raid);
 
@@ -54,7 +56,7 @@ export default async function RaidLayout({
           )}
         </div>
         <p className="opacity-80">
-          {raid.size}-man · {formatRaidTime(raid.starts_at)} server time
+          {raid.size}-man{raid.splits > 1 && ` · ${raid.splits} splits`} · {formatRaidTime(raid.starts_at)} server time
         </p>
         {!locked && raid.locked_at && (
           <p className="text-sm opacity-70">Sign-ups lock {formatRaidTime(raid.locked_at)}.</p>
@@ -64,8 +66,8 @@ export default async function RaidLayout({
       <RaidTabs
         raidSlug={raid.slug}
         tabs={[
-          { segment: "", label: "Sign-ups", meta: `${accepted ?? 0}/${raid.size}` },
-          { segment: "comp", label: "Composition", meta: `${placed ?? 0}/${raid.size}` },
+          { segment: "", label: "Sign-ups", meta: `${accepted ?? 0}/${capacity}` },
+          { segment: "comp", label: "Composition", meta: `${placed ?? 0}/${capacity}` },
           { segment: "loot", label: "Loot", meta: `${reserved ?? 0}` },
           {
             segment: "attendance",
