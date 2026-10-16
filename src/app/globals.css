@@ -86,6 +86,19 @@
   --accent-foreground: #fff4f1;
 }
 
+/* Illidan: fel green and scorched black, over Illidan's Legion art (see body below). */
+[data-theme="illidan"] {
+  --background: #060a05;
+  --foreground: #e6f0dc;
+  --panel: #0c140a;
+  --panel-raised: #121d0e;
+  --border: #2b4a1d;
+  --muted: #9cb08b;
+  --accent: #7ee03a;
+  --accent-hover: #98ec5c;
+  --accent-foreground: #0b1405;
+}
+
 /* Light: warm paper and ink, with the logo's gold deepened to read on white. */
 [data-theme="light"] {
   --background: #f3f1ec;
@@ -138,6 +151,14 @@ body {
   background:
     linear-gradient(rgb(6 12 32 / 0.55), rgb(6 12 32 / 0.55)),
     var(--background) url("/themes/alliance.jpg") center / cover;
+  background-attachment: fixed;
+}
+
+/* Busy, bright art; a darker veil than Alliance keeps text readable. */
+[data-theme="illidan"] body {
+  background:
+    linear-gradient(rgb(6 10 5 / 0.6), rgb(6 10 5 / 0.6)),
+    var(--background) url("/themes/illidan.jpg") center / cover;
   background-attachment: fixed;
 }
 
