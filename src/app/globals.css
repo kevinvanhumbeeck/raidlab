@@ -81,7 +81,7 @@ body {
 }
 
 [data-theme="modern"] body {
-  background: var(--background) url("/themes/modern.webp") center / cover fixed;
+  background: var(--background) url("/themes/modern.jpg") center / cover fixed;
 }
 
 /* In the base layer so a font-* utility (e.g. the RaidLab wordmark) still wins. Zen Dots has one weight: no faux bold. */
