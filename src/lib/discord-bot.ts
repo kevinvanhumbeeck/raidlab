@@ -115,8 +115,8 @@ async function buildMessage(raid: RaidForMessage) {
       {
         type: 1,
         components: [
-          { type: 2, style: 3, label: "In", emoji: { name: "✅" }, custom_id: `in:${raid.id}`, disabled: locked },
-          { type: 2, style: 4, label: "Out", emoji: { name: "❌" }, custom_id: `out:${raid.id}`, disabled: locked },
+          { type: 2, style: 2, label: "In", emoji: { name: "✅" }, custom_id: `in:${raid.id}`, disabled: locked },
+          { type: 2, style: 2, label: "Out", emoji: { name: "❌" }, custom_id: `out:${raid.id}`, disabled: locked },
           { type: 2, style: 2, label: "Character / spec", custom_id: `spec:${raid.id}`, disabled: locked },
           { type: 2, style: 5, label: "Open in RaidLab", url },
         ],
