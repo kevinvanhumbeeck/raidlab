@@ -29,6 +29,7 @@ export async function noResponse(supabase: SupabaseClient, raidId: string): Prom
       supabase
         .from("characters")
         .select("id, owner_id, name, class_id, main_spec_id")
+        .is("archived_at", null)
         .order("is_main", { ascending: false })
         .order("created_at"),
       supabase.from("signups").select("character_id").eq("raid_id", raidId),

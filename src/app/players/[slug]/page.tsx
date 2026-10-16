@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { deleteCharacter } from "@/app/characters/actions";
+import { ConfirmButton } from "@/components/confirm-button";
 import { CharacterSpecs, SpecIcon } from "@/components/spec-icon";
 import { attendanceSummary, betterStatus, type RecordedRaid } from "@/lib/attendance";
 import { iconUrl, qualityColor } from "@/lib/loot";
@@ -41,13 +43,15 @@ export default async function PlayerPage({
   const profile = await getPlayer(slug);
   const { id } = profile;
   const { character: highlighted } = await searchParams;
-  const { supabase, user } = await requireViewer();
+  const { supabase, user, isAdmin } = await requireViewer();
 
   const [{ data: characters }, { data: classes }, { data: specs }, { data: recorded }] = await Promise.all([
     supabase
       .from("characters")
-      .select("id, name, class_id, main_spec_id, off_spec_ids, is_main")
+      .select("id, name, class_id, main_spec_id, off_spec_ids, is_main, archived_at")
       .eq("owner_id", id)
+      // Archived characters (#89) last: they keep their history here, but the main is an active one.
+      .order("archived_at", { ascending: true, nullsFirst: true })
       .order("is_main", { ascending: false })
       .order("name"),
     supabase.from("classes").select("id, name, color"),
@@ -206,7 +210,19 @@ export default async function PlayerPage({
                     <span className="text-xs opacity-60">
                       {specName(c.main_spec_id)} {cls?.name}
                     </span>
-                    <span className="ml-auto text-xs opacity-60">{c.is_main ? "main" : "alt"}</span>
+                    <span className="ml-auto text-xs opacity-60">
+                      {c.archived_at ? "archived" : c.is_main ? "main" : "alt"}
+                    </span>
+                    {isAdmin && c.archived_at && (
+                      <form action={deleteCharacter.bind(null, c.id)}>
+                        <ConfirmButton
+                          message={`Delete ${c.name} for good? This also removes their sign-ups, comp places, reserves and attendance, and can't be undone.`}
+                          className="text-xs text-danger hover:underline"
+                        >
+                          Delete
+                        </ConfirmButton>
+                      </form>
+                    )}
                   </li>
                 );
               })}

@@ -66,6 +66,7 @@ export async function POST(request: Request) {
     .from("characters")
     .select("id, name, main_spec_id, off_spec_ids")
     .eq("owner_id", profile.id)
+    .is("archived_at", null)
     .order("is_main", { ascending: false })
     .order("created_at");
   if (!characters?.length) return reply(`Add a character first: ${SITE_URL}/characters`);

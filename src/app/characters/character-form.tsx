@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { ConfirmButton } from "@/components/confirm-button";
 import { SpecPicker } from "@/components/spec-picker";
-import { deleteCharacter, saveCharacter, type CharacterFormState } from "./actions";
+import { archiveCharacter, saveCharacter, type CharacterFormState } from "./actions";
 
 type ClassOption = { id: string; name: string; color: string };
 type SpecOption = { id: string; class_id: string; name: string };
@@ -106,11 +106,11 @@ export function CharacterForm({
         </button>
         {character && (
           <ConfirmButton
-            formAction={deleteCharacter}
-            message={`Delete ${character.name}? This also removes their sign-ups and attendance.`}
-            className="rounded bg-red-400 px-3 py-1.5 text-sm font-medium text-red-950 hover:bg-red-300"
+            formAction={archiveCharacter}
+            message={`Archive ${character.name}? They leave upcoming raids, but keep their raid history. You can restore them later.`}
+            className="rounded border border-border px-3 py-1.5 text-sm hover:bg-foreground/5"
           >
-            Delete {character.name}
+            Archive {character.name}
           </ConfirmButton>
         )}
         {state.error && <span className="text-sm text-danger">{state.error}</span>}
