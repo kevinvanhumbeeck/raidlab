@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { deleteCharacter } from "@/app/characters/actions";
 import { ConfirmButton } from "@/components/confirm-button";
+import { Pager, pageParam } from "@/components/pager";
 import { CharacterSpecs, SpecIcon } from "@/components/spec-icon";
 import { attendanceSummary, betterStatus, type RecordedRaid } from "@/lib/attendance";
 import { iconUrl, qualityColor } from "@/lib/loot";
@@ -29,6 +30,7 @@ import {
 import { readable } from "@/lib/theme";
 
 const RECENT = 20;
+const HISTORY_PAGE_SIZE = 25;
 
 type RaidInfo = { id: string; slug: string; title: string; instance: string; splits: number; starts_at: string };
 
@@ -37,12 +39,13 @@ export default async function PlayerPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ character?: string }>;
+  searchParams: Promise<{ character?: string; page?: string }>;
 }) {
   const { slug } = await params;
   const profile = await getPlayer(slug);
   const { id } = profile;
-  const { character: highlighted } = await searchParams;
+  const { character: highlighted, page: pageValue } = await searchParams;
+  const page = pageParam(pageValue);
   const { supabase, user, isAdmin } = await requireViewer();
 
   const [{ data: characters }, { data: classes }, { data: specs }, { data: recorded }] = await Promise.all([
@@ -138,6 +141,16 @@ export default async function PlayerPage({
   });
   const upcoming = history.filter((h) => !hasStarted(h.raid.starts_at) && h.signup).reverse();
   const past = history.filter((h) => hasStarted(h.raid.starts_at));
+  // The table shows a page at a time; the stats above count every raid.
+  const shownPast = past.slice((page - 1) * HISTORY_PAGE_SIZE, page * HISTORY_PAGE_SIZE);
+  const hasOlder = past.length > page * HISTORY_PAGE_SIZE;
+  const historyHref = (n: number) => {
+    const query = new URLSearchParams({
+      ...(highlighted && { character: highlighted }),
+      ...(n > 1 && { page: String(n) }),
+    });
+    return `${query.size ? `?${query}` : `/players/${profile.slug}`}#history`;
+  };
   const attended = past.filter((h) => h.status && COUNTS_AS_ATTENDED.includes(h.status));
 
   const countBy = <T extends string>(items: T[]) => {
@@ -322,7 +335,9 @@ export default async function PlayerPage({
       )}
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Raid history</h2>
+        <h2 id="history" className="scroll-mt-4 text-lg font-semibold">
+          Raid history
+        </h2>
         {past.length ? (
           <div className="overflow-x-auto rounded-xl border border-border bg-panel/90">
             <table className="w-full text-sm">
@@ -337,7 +352,7 @@ export default async function PlayerPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {past.map((h) => (
+                {shownPast.map((h) => (
                   <tr key={h.raid.id}>
                     <td className="px-3 py-2">
                       <Link href={`/raids/${h.raid.slug}/attendance`} className="font-medium hover:underline">
@@ -376,6 +391,7 @@ export default async function PlayerPage({
         ) : (
           <p className="opacity-70">No raids yet.</p>
         )}
+        <Pager newer={page > 1 ? historyHref(page - 1) : null} older={hasOlder ? historyHref(page + 1) : null} />
       </section>
     </div>
   );
