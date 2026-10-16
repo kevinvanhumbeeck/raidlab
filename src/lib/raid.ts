@@ -2,7 +2,7 @@ import { cache } from "react";
 import { notFound, permanentRedirect } from "next/navigation";
 import { roleCoverage, roleOptions } from "@/lib/coverage";
 import { requireViewer } from "@/lib/viewer";
-import { FIXED_ROLES, isLocked, primaryRole, requirementsOf, rolesText } from "@/lib/wow";
+import { FIXED_ROLES, isLocked, primaryRole, requirementsOf, rolesText, type RaidDuty } from "@/lib/wow";
 
 type Supabase = Awaited<ReturnType<typeof requireViewer>>["supabase"];
 
@@ -83,4 +83,16 @@ export async function lockWarning(supabase: Supabase, raid: { id: string; instan
     return `${rolesText(have, role)} of ${requirements[role]}`;
   });
   return short.length ? `Only ${short.join(" and ")} signed up, even with offspecs. Lock sign-ups anyway?` : null;
+}
+
+// The splits of a raid where the viewer holds a duty, e.g. the raid lead or loot lead of split 2. They get that
+// split's Gargul exports without being an officer.
+export async function myDutySplits(supabase: Supabase, raidId: string, userId: string, duty: RaidDuty) {
+  const { data } = await supabase
+    .from("raid_duties")
+    .select("split_no, characters!inner(owner_id)")
+    .eq("raid_id", raidId)
+    .eq("duty", duty)
+    .eq("characters.owner_id", userId);
+  return new Set((data ?? []).map((d) => d.split_no as number));
 }

@@ -4,7 +4,7 @@ import { CopyButton, DownloadButton } from "@/components/copy-button";
 import { ItemLink } from "@/components/item-link";
 import { gargulExport, softresCsv, type ReserveExportRow } from "@/lib/gargul";
 import { groupByBoss, type LootItem } from "@/lib/loot";
-import { getRaid } from "@/lib/raid";
+import { getRaid, myDutySplits } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import { STATUS_LABELS, isLocked, playerHref, type SignupStatus } from "@/lib/wow";
 import { hardReserveItem, reserveItem, unhardReserveItem, unreserveItem } from "./actions";
@@ -39,6 +39,7 @@ export default async function LootPage({
     { data: mySignups },
     { data: classes },
     { data: slots },
+    lootLeading,
   ] = await Promise.all([
       supabase.from("instances").select("reserves").eq("name", raid.instance).maybeSingle(),
       supabase
@@ -69,6 +70,7 @@ export default async function LootPage({
         >(),
       supabase.from("classes").select("id, name, color"),
       supabase.from("comp_slots").select("character_id, split_no").eq("raid_id", id),
+      myDutySplits(supabase, id, user.id, "loot_lead"),
     ]);
 
   // Each player signs up with one character per raid.
@@ -110,8 +112,10 @@ export default async function LootPage({
   const myReserves = new Set(allReserves.filter((r) => r.character_id === mine?.character_id).map((r) => r.item_id));
   const full = !isOfficer && myReserves.size >= limit;
 
+  // Officers export any split or the whole night; a split's loot lead exports their own split.
+  const canExport = isOfficer || lootLeading.has(raid.splits < 2 ? 1 : selectedSplit);
   let exportRows: ReserveExportRow[] = [];
-  if (isOfficer) {
+  if (canExport) {
     exportRows = reserves.flatMap((r) => {
       const item = itemById.get(r.item_id);
       if (!item || !r.characters) return [];
@@ -191,7 +195,7 @@ export default async function LootPage({
         </section>
       )}
 
-      {isOfficer && (
+      {canExport && (
         <section className="space-y-2 rounded-xl border border-border bg-panel/90 p-4 text-sm">
           <h2 className="font-sans font-semibold">
             Export for the loot master{selectedSplit > 0 && ` of split ${selectedSplit}`}
@@ -220,12 +224,14 @@ export default async function LootPage({
             >
               Download CSV
             </DownloadButton>
-            <Link
-              href={`/officers/loot/${encodeURIComponent(raid.instance)}`}
-              className="ml-auto rounded border border-border px-3 py-1 hover:bg-foreground/5"
-            >
-              Edit loot table
-            </Link>
+            {isOfficer && (
+              <Link
+                href={`/officers/loot/${encodeURIComponent(raid.instance)}`}
+                className="ml-auto rounded border border-border px-3 py-1 hover:bg-foreground/5"
+              >
+                Edit loot table
+              </Link>
+            )}
           </div>
         </section>
       )}

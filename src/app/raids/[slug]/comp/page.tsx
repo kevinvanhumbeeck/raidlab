@@ -2,7 +2,7 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { CopyButton } from "@/components/copy-button";
 import { roleOptions } from "@/lib/coverage";
 import { gargulGroups } from "@/lib/gargul";
-import { getRaid } from "@/lib/raid";
+import { getRaid, myDutySplits } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
 import { MAX_SPLITS, primaryRole, requirementsOf, type RaidDuty, type Role, type SignupStatus } from "@/lib/wow";
 import { setSplits } from "./actions";
@@ -22,7 +22,8 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const raid = await getRaid(slug);
   const { id } = raid;
-  const { supabase, isOfficer } = await requireViewer();
+  const { supabase, user, isOfficer } = await requireViewer();
+  const leading = await myDutySplits(supabase, id, user.id, "raid_lead");
 
   // Other raids within 6 hours, to flag players already placed in a parallel split.
   const start = new Date(raid.starts_at).getTime();
@@ -138,6 +139,8 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
     );
     return { splitNo, count: inSplit.length, text };
   });
+  // Officers get every split's roster; a split's raid lead gets their own.
+  const visibleExports = groupsExports.filter((e) => e.count > 0 && (isOfficer || leading.has(e.splitNo)));
 
   const dutyMap: Record<number, Partial<Record<RaidDuty, string>>> = {};
   for (const d of duties ?? []) dutyMap[d.split_no] = { ...dutyMap[d.split_no], [d.duty as RaidDuty]: d.character_id };
@@ -191,19 +194,17 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
         canEdit={isOfficer}
       />
 
-      {isOfficer && (slots ?? []).length > 0 && (
+      {visibleExports.length > 0 && (
         <section className="space-y-2 rounded-xl border border-border bg-panel/90 p-4 text-sm">
           <h2 className="font-sans font-semibold">Invites and groups</h2>
           <p className="opacity-70">
-            {(slots ?? []).length} players in the comp. In game, type <code>/gl groups</code> (Gargul) and paste
+            {visibleExports.reduce((n, e) => n + e.count, 0)} players. In game, type <code>/gl groups</code> (Gargul) and paste
             the copied roster. From there you can invite everyone, see who&apos;s missing, sort the groups and
             assign the tanks.
-            {raid.splits > 1 && " Each split's raid lead copies their own split."}
+            {raid.splits > 1 && isOfficer && " Each split's raid lead can copy their own split here too."}
           </p>
           <div className="flex flex-wrap gap-2">
-            {groupsExports
-              .filter((e) => e.count > 0)
-              .map((e) => (
+            {visibleExports.map((e) => (
                 <CopyButton
                   key={e.splitNo}
                   text={e.text}
