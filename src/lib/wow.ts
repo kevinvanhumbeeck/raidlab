@@ -103,7 +103,8 @@ export function upcomingCutoff() {
   return new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
 }
 
-export const RAID_DUTIES = ["raid_lead", "tank_assist", "heal_assist", "loot_lead"] as const;
+// Most important first: the order of the comp board and player profiles.
+export const RAID_DUTIES = ["raid_lead", "loot_lead", "tank_assist", "heal_assist"] as const;
 export type RaidDuty = (typeof RAID_DUTIES)[number];
 
 export const DUTY_LABELS: Record<RaidDuty, string> = {

@@ -66,7 +66,13 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
     isOfficer
       ? supabase.from("characters").select("id, name, owner_id, class_id, main_spec_id").order("name")
       : Promise.resolve({
-          data: [] as { id: string; name: string; owner_id: string; class_id: string; main_spec_id: string }[],
+          data: [] as {
+            id: string;
+            name: string;
+            owner_id: string;
+            class_id: string;
+            main_spec_id: string;
+          }[],
         }),
     supabase.from("instances").select("name, size, tanks, healers, dps").eq("name", raid.instance).maybeSingle(),
   ]);
@@ -97,6 +103,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
   });
 
   const mine = rows.find((r) => r.isMine);
+  const unsigned = (allCharacters ?? []).filter((c) => !rows.some((r) => r.characterId === c.id));
   // Officers signing up an alt of someone who's already in replace that sign-up.
   const signedUpAs = new Map(
     (signups ?? []).flatMap((s) => (s.characters ? [[s.characters.owner_id, s.characters.name] as const] : [])),
@@ -188,43 +195,47 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
         <section className="space-y-3 border-t border-border pt-6">
           <h2 className="text-lg font-semibold">Officer tools</h2>
           <h3 className="text-sm font-medium opacity-80">Sign up a player</h3>
-          <form
-            action={officerSignUp.bind(null, raid.id)}
-            className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-panel/90 p-4"
-          >
-            <label className="space-y-1">
-              <span className="block text-sm">Character</span>
-              <select name="character_id" required className="h-9.5 rounded border border-border bg-background px-2">
-                {allCharacters
-                  ?.filter((c) => !rows.some((r) => r.characterId === c.id))
-                  .map((c) => (
+          {unsigned.length === 0 ? (
+            <p className="rounded-xl border border-border bg-panel/90 p-4 text-sm opacity-70">
+              Every character is signed up.
+            </p>
+          ) : (
+            <form
+              action={officerSignUp.bind(null, raid.id)}
+              className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-panel/90 p-4"
+            >
+              <label className="space-y-1">
+                <span className="block text-sm">Character</span>
+                <select name="character_id" required className="h-9.5 rounded border border-border bg-background px-2">
+                  {unsigned.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name} — {specById.get(c.main_spec_id)?.name}
                       {signedUpAs.has(c.owner_id) && ` (replaces ${signedUpAs.get(c.owner_id)})`}
                     </option>
                   ))}
-              </select>
-            </label>
-            <label className="space-y-1">
-              <span className="block text-sm">Status</span>
-              <select
-                name="status"
-                defaultValue="accepted"
-                className="h-9.5 rounded border border-border bg-background px-2"
-              >
-                {SIGNUP_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {STATUS_LABELS[s]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {/* Same box as the selects. The fill stops inside a transparent border, because the selects' dim
+                </select>
+              </label>
+              <label className="space-y-1">
+                <span className="block text-sm">Status</span>
+                <select
+                  name="status"
+                  defaultValue="accepted"
+                  className="h-9.5 rounded border border-border bg-background px-2"
+                >
+                  {SIGNUP_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {STATUS_LABELS[s]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {/* Same box as the selects. The fill stops inside a transparent border, because the selects' dim
                 border reads as background and a full-bleed fill looks a pixel taller on each side. */}
-            <button className="h-9.5 rounded border border-transparent bg-accent bg-clip-padding px-3 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
-              Add
-            </button>
-          </form>
+              <button className="h-9.5 rounded border border-transparent bg-accent bg-clip-padding px-3 text-sm font-medium text-accent-foreground hover:bg-accent-hover">
+                Add
+              </button>
+            </form>
+          )}
           <div className="flex flex-wrap gap-2">
             {botEnabled() && (
               <form action={postToDiscord.bind(null, raid.id)}>
