@@ -197,7 +197,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
           <h3 className="text-sm font-medium opacity-80">Sign up a player</h3>
           {unsigned.length === 0 ? (
             <p className="rounded-xl border border-border bg-panel/90 p-4 text-sm opacity-70">
-              Every character is signed up.
+              Every player is signed up.
             </p>
           ) : (
             <form
