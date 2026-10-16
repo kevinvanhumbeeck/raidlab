@@ -42,17 +42,17 @@
   --accent-foreground: #0a1a22;
 }
 
-/* Fel: dark greens. */
-[data-theme="fel"] {
-  --background: #0d120c;
-  --foreground: #e4ecdc;
-  --panel: #131a11;
-  --panel-raised: #182116;
-  --border: #27341f;
-  --muted: #93a487;
-  --accent: #8fd14f;
-  --accent-hover: #a3dd6a;
-  --accent-foreground: #10180a;
+/* Modern: graphite over the layered paper-cut backdrop, steel greys with a silver-blue accent. */
+[data-theme="modern"] {
+  --background: #121319;
+  --foreground: #e6e8ee;
+  --panel: #1a1c23;
+  --panel-raised: #20232b;
+  --border: #30333d;
+  --muted: #8e93a1;
+  --accent: #b4c2e0;
+  --accent-hover: #cdd7ee;
+  --accent-foreground: #121319;
 }
 
 @theme inline {
@@ -78,6 +78,10 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+[data-theme="modern"] body {
+  background: var(--background) url("/themes/modern.webp") center / cover fixed;
 }
 
 /* In the base layer so a font-* utility (e.g. the RaidLab wordmark) still wins. Zen Dots has one weight: no faux bold. */
