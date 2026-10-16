@@ -38,9 +38,10 @@ export async function saveCharacter(prev: CharacterFormState, formData: FormData
     is_main: formData.get("is_main") === "on",
   };
 
-  const { data: saved, error } = await (id
-    ? supabase.from("characters").update(fields).eq("id", id)
-    : supabase.from("characters").insert({ ...fields, owner_id: user.id, class_id: classId })
+  const { data: saved, error } = await (
+    id
+      ? supabase.from("characters").update(fields).eq("id", id)
+      : supabase.from("characters").insert({ ...fields, owner_id: user.id, class_id: classId })
   )
     .select("id")
     .single();
@@ -65,7 +66,10 @@ export async function saveCharacter(prev: CharacterFormState, formData: FormData
 
 export async function deleteCharacter(formData: FormData) {
   const { supabase } = await requireViewer();
-  const { error } = await supabase.from("characters").delete().eq("id", String(formData.get("id")));
+  const { error } = await supabase
+    .from("characters")
+    .delete()
+    .eq("id", String(formData.get("id")));
   if (error) throw error;
   revalidatePath("/characters");
   revalidatePath("/");

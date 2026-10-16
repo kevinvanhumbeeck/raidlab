@@ -85,11 +85,7 @@ async function buildMessage(raid: RaidForMessage) {
   const description = [
     `**${raid.instance}** · <t:${unix(raid.starts_at)}:F> (<t:${unix(raid.starts_at)}:R>)`,
     raid.notes,
-    locked
-      ? "🔒 Sign-ups are locked."
-      : raid.locked_at
-        ? `Sign-ups close <t:${unix(raid.locked_at)}:R>.`
-        : null,
+    locked ? "🔒 Sign-ups are locked." : raid.locked_at ? `Sign-ups close <t:${unix(raid.locked_at)}:R>.` : null,
   ]
     .filter(Boolean)
     .join("\n");

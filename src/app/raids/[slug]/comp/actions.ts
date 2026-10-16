@@ -37,12 +37,7 @@ export async function moveToSlot(
       .eq("raid_id", raidId)
       .eq("character_id", characterId)
       .maybeSingle(),
-    supabase
-      .from("signups")
-      .select("spec_id")
-      .eq("raid_id", raidId)
-      .eq("character_id", characterId)
-      .maybeSingle(),
+    supabase.from("signups").select("spec_id").eq("raid_id", raidId).eq("character_id", characterId).maybeSingle(),
   ]);
   if (occupant?.character_id === characterId) return;
 
@@ -109,7 +104,11 @@ export async function setSlotRole(raidId: string, characterId: string, role: Rol
       .single()
       .overrideTypes<{ spec_id: string | null; characters: { main_spec_id: string } | null }, { merge: false }>();
     const specId = slot?.spec_id ?? slot?.characters?.main_spec_id;
-    const { data: spec } = await supabase.from("specs").select("roles").eq("id", specId ?? "").single();
+    const { data: spec } = await supabase
+      .from("specs")
+      .select("roles")
+      .eq("id", specId ?? "")
+      .single();
     if (!spec?.roles.includes(role)) throw new Error("This spec can't fill that role");
   }
 
@@ -125,11 +124,7 @@ export async function setSlotRole(raidId: string, characterId: string, role: Rol
 
 export async function removeFromComp(raidId: string, characterId: string) {
   const supabase = await requireOfficer();
-  const { error } = await supabase
-    .from("comp_slots")
-    .delete()
-    .eq("raid_id", raidId)
-    .eq("character_id", characterId);
+  const { error } = await supabase.from("comp_slots").delete().eq("raid_id", raidId).eq("character_id", characterId);
   if (error) throw error;
 
   revalidatePath("/raids/[slug]", "layout");
@@ -141,9 +136,7 @@ export async function setDuty(raidId: string, splitNo: number, duty: RaidDuty, c
   if (!RAID_DUTIES.includes(duty)) throw new Error("Unknown duty");
 
   const { error } = characterId
-    ? await supabase
-        .from("raid_duties")
-        .upsert({ raid_id: raidId, split_no: splitNo, duty, character_id: characterId })
+    ? await supabase.from("raid_duties").upsert({ raid_id: raidId, split_no: splitNo, duty, character_id: characterId })
     : await supabase.from("raid_duties").delete().eq("raid_id", raidId).eq("split_no", splitNo).eq("duty", duty);
   if (error) throw error;
 

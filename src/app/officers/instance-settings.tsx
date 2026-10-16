@@ -51,9 +51,9 @@ export function InstanceSettings({ instances }: { instances: InstanceRow[] }) {
     <section className="space-y-3">
       <h2 className="text-lg font-semibold">Raid instances</h2>
       <p className="text-sm opacity-70">
-        Tanks and healers each raid needs; the rest of the raid is DPS. Comp boards warn when a comp has more or
-        fewer, and locking sign-ups asks first when they&apos;re short. Reserves is how many items each player can
-        soft-reserve per raid.
+        Tanks and healers each raid needs; the rest of the raid is DPS. Comp boards warn when a comp has more or fewer,
+        and locking sign-ups asks first when they&apos;re short. Reserves is how many items each player can soft-reserve
+        per raid.
       </p>
       <ul className="divide-y divide-border rounded-xl border border-border bg-panel/90">
         {instances.map((instance) => (
