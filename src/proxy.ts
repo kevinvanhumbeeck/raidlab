@@ -24,7 +24,8 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  await supabase.auth.getUser();
+  // Verifies the JWT locally against the project's signing keys; only refreshing it hits Supabase.
+  await supabase.auth.getClaims();
   return response;
 }
 
