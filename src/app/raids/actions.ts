@@ -246,7 +246,7 @@ export async function pingNoResponse(raidId: string) {
   }
 
   revalidatePath("/raids/[slug]", "layout");
-  revalidatePath("/officers");
+  revalidatePath("/manage");
 }
 
 // Officers post a raid to Discord by hand, e.g. one created before the bot was set up, or update its post.

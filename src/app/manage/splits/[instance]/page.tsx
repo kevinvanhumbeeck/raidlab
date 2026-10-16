@@ -58,7 +58,7 @@ export default async function SplitRosterPage({ params }: { params: Promise<{ in
   return (
     <div className="space-y-6">
       <section className="space-y-1">
-        <Breadcrumbs items={[{ label: "Manage", href: "/officers" }, { label: `${instance.name} splits` }]} />
+        <Breadcrumbs items={[{ label: "Manage", href: "/manage" }, { label: `${instance.name} splits` }]} />
         <h1 className="text-2xl font-semibold">{instance.name} splits</h1>
         <p className="text-sm opacity-70">
           On a split night, each split has {instance.size} players. Put every character in the split they usually raid

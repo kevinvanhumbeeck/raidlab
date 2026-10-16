@@ -227,7 +227,7 @@ export default async function LootPage({
             </DownloadButton>
             {isAdmin && (
               <Link
-                href={`/officers/loot/${encodeURIComponent(raid.instance)}`}
+                href={`/manage/loot/${encodeURIComponent(raid.instance)}`}
                 className="ml-auto rounded border border-border px-3 py-1 hover:bg-foreground/5"
               >
                 Edit loot table
@@ -243,10 +243,7 @@ export default async function LootPage({
           {isAdmin && (
             <>
               {" "}
-              <Link
-                href={`/officers/loot/${encodeURIComponent(raid.instance)}`}
-                className="text-accent hover:underline"
-              >
+              <Link href={`/manage/loot/${encodeURIComponent(raid.instance)}`} className="text-accent hover:underline">
                 Add items
               </Link>
             </>

@@ -31,7 +31,7 @@ export default async function LootTablePage({
   return (
     <div className="space-y-6">
       <section className="space-y-1">
-        <Breadcrumbs items={[{ label: "Manage", href: "/officers" }, { label: `${instance.name} loot` }]} />
+        <Breadcrumbs items={[{ label: "Manage", href: "/manage" }, { label: `${instance.name} loot` }]} />
         <h1 className="text-2xl font-semibold">{instance.name} loot</h1>
         <p className="text-sm opacity-70">
           Players can soft-reserve {instance.reserves} of these items per raid. Item names and icons come from

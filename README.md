@@ -43,7 +43,7 @@ update profiles set is_officer = true where display_name = 'YourName';
 - **Access**: only members of Discord server `1230423637182382132` with the @raider, @pug or @officer role
   get in; @officer also makes them an officer in the app. Checked at every login (OAuth scope
   `guilds.members.read`, no bot needed), so role changes apply at the next login. Officers can revoke access
-  at `/officers` until that player's next login.
+  at `/manage` until that player's next login.
 - **Discord bot** (optional, #49): announces new raids in `DISCORD_RAID_CHANNEL_ID` with In / Out /
   Character-spec buttons and keeps the post up to date. Needs `DISCORD_PUBLIC_KEY` and `DISCORD_BOT_TOKEN`
   from the same Discord app as the login, and its **Interactions Endpoint URL** set to

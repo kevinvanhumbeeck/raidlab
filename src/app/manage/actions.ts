@@ -10,7 +10,7 @@ export async function setOfficer(profileId: string, value: boolean) {
   const { supabase } = await requireViewer();
   const { error } = await supabase.rpc("set_officer", { target: profileId, value });
   if (error) throw new Error(error.message);
-  revalidatePath("/officers");
+  revalidatePath("/manage");
 }
 
 // Admins (#87) are managed here only, never from Discord.
@@ -25,7 +25,7 @@ export async function setMember(profileId: string, value: boolean) {
   const { supabase } = await requireViewer();
   const { error } = await supabase.rpc("set_member", { target: profileId, value });
   if (error) throw new Error(error.message);
-  revalidatePath("/officers");
+  revalidatePath("/manage");
 }
 
 // Instance settings: size, tanks, healers and reserves per player. DPS is generated: the rest of the raid.
@@ -55,7 +55,7 @@ export async function saveInstance(formData: FormData) {
     .update(readInstance(formData))
     .eq("name", String(formData.get("name")));
   if (error) throw new Error(error.message);
-  revalidatePath("/officers");
+  revalidatePath("/manage");
 }
 
 export async function addInstance(formData: FormData) {
@@ -71,7 +71,7 @@ export async function addInstance(formData: FormData) {
     .insert({ name, ...readInstance(formData), sort: (last?.[0]?.sort ?? 0) + 1 });
   if (error?.code === "23505") throw new Error(`${name} already exists`);
   if (error) throw new Error(error.message);
-  revalidatePath("/officers");
+  revalidatePath("/manage");
 }
 
 // Put a character in an instance's standing split roster (#60), or take them out (null).
@@ -86,6 +86,6 @@ export async function setRosterSplit(instance: string, characterId: string, spli
     ? await supabase.from("split_rosters").upsert({ instance, character_id: characterId, split_no: splitNo })
     : await supabase.from("split_rosters").delete().eq("instance", instance).eq("character_id", characterId);
   if (error) throw new Error(error.message);
-  revalidatePath("/officers/splits/[instance]", "page");
+  revalidatePath("/manage/splits/[instance]", "page");
   revalidatePath("/raids/[slug]", "layout");
 }

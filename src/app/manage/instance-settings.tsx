@@ -72,7 +72,7 @@ export function InstanceSettings({ instances, editable }: { instances: InstanceR
                 <>
                   <button className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5">Save</button>
                   <Link
-                    href={`/officers/loot/${encodeURIComponent(instance.name)}`}
+                    href={`/manage/loot/${encodeURIComponent(instance.name)}`}
                     className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5"
                   >
                     Loot table
@@ -80,7 +80,7 @@ export function InstanceSettings({ instances, editable }: { instances: InstanceR
                 </>
               )}
               <Link
-                href={`/officers/splits/${encodeURIComponent(instance.name)}`}
+                href={`/manage/splits/${encodeURIComponent(instance.name)}`}
                 className="rounded border border-border px-3 py-1 text-sm hover:bg-foreground/5"
               >
                 Splits

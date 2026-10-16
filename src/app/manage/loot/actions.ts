@@ -11,7 +11,7 @@ async function requireAdmin() {
   return viewer.supabase;
 }
 
-const lootHref = (instance: string) => `/officers/loot/${encodeURIComponent(instance)}`;
+const lootHref = (instance: string) => `/manage/loot/${encodeURIComponent(instance)}`;
 
 // Name, quality and icon from Wowhead's Forever item database, or null for unknown items.
 async function fetchItemInfo(id: number) {
