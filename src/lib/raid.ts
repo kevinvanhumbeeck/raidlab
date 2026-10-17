@@ -117,7 +117,7 @@ export async function lockWarning(supabase: Supabase, raid: { id: string; instan
         id: s.character_id,
         name: ch.name,
         role: primaryRole(specById.get(specId)),
-        options: roleOptions([specId, ch.main_spec_id, ...ch.off_spec_ids], specById),
+        options: roleOptions(specId, ch, specById),
       },
     ];
   });

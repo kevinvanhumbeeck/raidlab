@@ -130,7 +130,7 @@ export default async function CompPage({ params }: { params: Promise<{ slug: str
       specName: spec?.name ?? "",
       role: primaryRole(spec),
       roles: (spec?.roles ?? []) as Role[],
-      options: roleOptions([resolvedSpecId, ch.main_spec_id, ...ch.off_spec_ids], specById),
+      options: roleOptions(resolvedSpecId, ch, specById),
       status,
       note,
       elsewhere: elsewhere.get(ch.owner_id) ?? null,
