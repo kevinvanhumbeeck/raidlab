@@ -3,7 +3,7 @@ import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { attendanceSummary, betterStatus, type RecordedRaid } from "@/lib/attendance";
-import { REALM_TIMEZONE, hasStarted, playerHref, type AttendanceStatus } from "@/lib/wow";
+import { REALM_TIMEZONE, formatRaidDate, hasStarted, playerHref, type AttendanceStatus } from "@/lib/wow";
 
 // Fun guild stats for the homepage (#107). Counted in the app for now: every query is paged past PostgREST's
 // 1000-row limit, and the result is cached for an hour (and dropped when attendance is saved), so the cost is a few
@@ -114,8 +114,22 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
       fetchAll<{ id: string; name: string; color: string }>((f, t) =>
         supabase.from("classes").select("id, name, color").order("id").range(f, t),
       ),
-      fetchAll<{ id: string; title: string; instance: string; starts_at: string; locked_at: string | null }>((f, t) =>
-        supabase.from("raids").select("id, title, instance, starts_at, locked_at").order("id").range(f, t),
+      fetchAll<{
+        id: string;
+        slug: string;
+        title: string;
+        instance: string;
+        size: number;
+        splits: number;
+        starts_at: string;
+        locked_at: string | null;
+        created_at: string;
+      }>((f, t) =>
+        supabase
+          .from("raids")
+          .select("id, slug, title, instance, size, splits, starts_at, locked_at, created_at")
+          .order("id")
+          .range(f, t),
       ),
       fetchAll<{ raid_id: string; character_id: string; status: AttendanceStatus }>((f, t) =>
         supabase
@@ -283,6 +297,24 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
       closestPullOut.set(owner, beforeLock);
     }
   }
+  // Sold out: replay every sign-up change (officers' too: they fill spots as well) and note when a raid's accepted
+  // sign-ups first reach its spots (size per split). Only raids posted after the audit log started, since it misses
+  // the sign-ups of older ones.
+  const logStart = history[0]?.at;
+  const accepted = new Map<string, Set<string>>();
+  const filledAfter = new Map<string, number>();
+  for (const h of history) {
+    const raid = h.raid_id ? raidById.get(h.raid_id) : undefined;
+    if (!raid || !logStart || raid.created_at < logStart || filledAfter.has(raid.id)) continue;
+    const ids = accepted.get(raid.id) ?? new Set<string>();
+    if (h.old_character) ids.delete(h.old_character);
+    if (h.action !== "delete" && h.new_character && h.new_status === "accepted") ids.add(h.new_character);
+    accepted.set(raid.id, ids);
+    if (ids.size >= raid.size * raid.splits) {
+      filledAfter.set(raid.id, new Date(h.at).getTime() - new Date(raid.created_at).getTime());
+    }
+  }
+
   const earlyBird = new Map<string, number>();
   for (const owner of firstSignup.values()) bump(earlyBird, owner);
 
@@ -431,6 +463,25 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
       layout: "top",
       blurb: "Most different specs played in raids",
       entries: playerTop(versatility, (n) => plural(n, "spec")),
+    },
+    {
+      id: "sold-out",
+      title: "Sold Out",
+      layout: "top",
+      blurb: "Raids that filled up fastest after being posted",
+      entries: [...filledAfter]
+        .sort((a, b) => a[1] - b[1])
+        .slice(0, TOP)
+        .map(([id, ms]) => {
+          const raid = raidById.get(id)!;
+          return {
+            key: id,
+            name: raid.title,
+            href: `/raids/${raid.slug}`,
+            value: duration(ms),
+            hint: formatRaidDate(raid.starts_at),
+          };
+        }),
     },
     {
       id: "raids-run",
