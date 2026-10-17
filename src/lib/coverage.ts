@@ -14,7 +14,8 @@ export type CoveragePlayer = {
   options: RoleOption[];
 };
 
-export type RoleOption = { role: Role; specId: string; specName: string };
+// main: one of the roles of the character's main spec, so playing it is their usual role, not an offspec.
+export type RoleOption = { role: Role; specId: string; specName: string; main: boolean };
 
 export type Switch = { id: string; name: string; from: Role; to: Role; specName: string };
 
@@ -63,10 +64,16 @@ function findPath(
   const seen = new Set<Role>([target]);
   while (queue.length) {
     const to = queue.shift()!;
-    // Prefer the least flexible player, so players who can fill several roles stay available.
+    // Prefer players whose main spec fills the role (a Discipline main signed up as Shadow heals before a
+    // Shadow main with a healing offspec), then the least flexible, so players who can fill several roles
+    // stay available.
+    const isMain = (p: CoveragePlayer) => p.options.some((o) => o.role === to && o.main);
     const candidates = players
       .filter((p) => roleOf.get(p.id) !== to && p.options.some((o) => o.role === to))
-      .sort((a, b) => a.options.length - b.options.length || a.name.localeCompare(b.name));
+      .sort(
+        (a, b) =>
+          Number(isMain(b)) - Number(isMain(a)) || a.options.length - b.options.length || a.name.localeCompare(b.name),
+      );
     for (const p of candidates) {
       const from = roleOf.get(p.id)!;
       if (seen.has(from)) continue;
@@ -106,14 +113,16 @@ export function coverageSummary({ states, switches }: Coverage) {
 // Roles a character can fill: those of its signed-up spec first, then its main and offspecs. Each role
 // keeps the first spec found, so playing another role of the same spec wins over a respec.
 export function roleOptions(
-  specIds: (string | null | undefined)[],
+  signedSpecId: string | null | undefined,
+  character: { main_spec_id: string; off_spec_ids: string[] },
   specById: Map<string, { name: string; roles: string[] }>,
 ): RoleOption[] {
+  const mainRoles = specById.get(character.main_spec_id)?.roles ?? [];
   const out = new Map<Role, RoleOption>();
-  for (const id of specIds) {
+  for (const id of [signedSpecId, character.main_spec_id, ...character.off_spec_ids]) {
     const spec = id ? specById.get(id) : undefined;
     for (const r of (spec?.roles ?? []) as Role[]) {
-      if (!out.has(r)) out.set(r, { role: r, specId: id!, specName: spec!.name });
+      if (!out.has(r)) out.set(r, { role: r, specId: id!, specName: spec!.name, main: mainRoles.includes(r) });
     }
   }
   return [...out.values()];

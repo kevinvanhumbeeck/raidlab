@@ -110,7 +110,7 @@ export default async function RaidPage({ params }: { params: Promise<{ slug: str
       specId,
       specName: spec?.name ?? "",
       role: primaryRole(spec),
-      options: roleOptions([specId, ch.main_spec_id, ...ch.off_spec_ids], specById),
+      options: roleOptions(specId, ch, specById),
     };
     return [row];
   });
