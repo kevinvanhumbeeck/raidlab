@@ -381,7 +381,7 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
       id: "ghost",
       title: "Ghost",
       layout: "spotlight",
-      blurb: "Signed up, never showed up",
+      blurb: "Most no-shows",
       entries: playerTop(noShows, (n) => plural(n, "no-show")),
     },
     {
