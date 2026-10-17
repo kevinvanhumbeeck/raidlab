@@ -119,7 +119,7 @@ export default async function OfficersPage() {
                         <span key={c.name}>
                           {i > 0 && ", "}
                           <Link
-                            href={playerHref(p.slug, c.name)}
+                            href={playerHref(p.slug)}
                             className="hover:underline"
                             style={{ color: readable(color.get(c.class_id)) }}
                           >

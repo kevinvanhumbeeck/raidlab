@@ -87,7 +87,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
                       <li key={c.id} className="flex items-center gap-2 px-4 py-2">
                         <SpecIcon specId={c.main_spec_id} name={specById.get(c.main_spec_id)?.name ?? ""} />
                         <Link
-                          href={playerHref(c.profiles?.slug ?? "", c.name)}
+                          href={playerHref(c.profiles?.slug ?? "")}
                           className="font-medium hover:underline"
                           style={{ color: readable(cls.color) }}
                         >

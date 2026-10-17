@@ -164,7 +164,7 @@ function PlayerRow({
     >
       <SpecIcon specId={r.specId} name={r.specName} />
       <Link
-        href={playerHref(r.playerSlug, r.name)}
+        href={playerHref(r.playerSlug)}
         className="truncate font-medium hover:underline"
         style={{ color: readable(r.color) }}
         title={r.player ?? undefined}

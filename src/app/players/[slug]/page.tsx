@@ -39,12 +39,12 @@ export default async function PlayerPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ character?: string; page?: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
   const { slug } = await params;
   const profile = await getPlayer(slug);
   const { id } = profile;
-  const { character: highlighted, page: pageValue } = await searchParams;
+  const { page: pageValue } = await searchParams;
   const page = pageParam(pageValue);
   const { supabase, user, isAdmin } = await requireViewer();
 
@@ -144,13 +144,7 @@ export default async function PlayerPage({
   // The table shows a page at a time; the stats above count every raid.
   const shownPast = past.slice((page - 1) * HISTORY_PAGE_SIZE, page * HISTORY_PAGE_SIZE);
   const hasOlder = past.length > page * HISTORY_PAGE_SIZE;
-  const historyHref = (n: number) => {
-    const query = new URLSearchParams({
-      ...(highlighted && { character: highlighted }),
-      ...(n > 1 && { page: String(n) }),
-    });
-    return `${query.size ? `?${query}` : `/players/${profile.slug}`}#history`;
-  };
+  const historyHref = (n: number) => `${n > 1 ? `?page=${n}` : `/players/${profile.slug}`}#history`;
   const attended = past.filter((h) => h.status && COUNTS_AS_ATTENDED.includes(h.status));
 
   const countBy = <T extends string>(items: T[]) => {
@@ -210,12 +204,7 @@ export default async function PlayerPage({
               {characters.map((c) => {
                 const cls = classById.get(c.class_id);
                 return (
-                  <li
-                    key={c.id}
-                    className={`flex items-center gap-2 rounded px-1.5 py-1 ${
-                      c.name.toLowerCase() === highlighted?.toLowerCase() ? "bg-accent/15 ring-1 ring-accent/60" : ""
-                    }`}
-                  >
+                  <li key={c.id} className="flex items-center gap-2 rounded px-1.5 py-1">
                     <CharacterSpecs mainSpecId={c.main_spec_id} offSpecIds={c.off_spec_ids} specName={specName} />
                     <span className="font-medium" style={{ color: readable(cls?.color) }}>
                       {c.name}
