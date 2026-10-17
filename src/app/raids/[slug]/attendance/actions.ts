@@ -1,7 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { GUILD_STATS_TAG } from "@/lib/guild-stats";
 import { requireRaidEditor } from "@/lib/raid";
 import { ATTENDANCE_STATUSES, hasStarted, type AttendanceStatus } from "@/lib/wow";
 
@@ -25,5 +26,6 @@ export async function saveAttendance(raidId: string, raidSlug: string, formData:
 
   revalidatePath("/raids/[slug]", "layout");
   revalidatePath("/attendance");
+  revalidateTag(GUILD_STATS_TAG, "max");
   redirect(`/raids/${raidSlug}/attendance?saved=1`);
 }
