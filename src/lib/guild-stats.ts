@@ -289,24 +289,6 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
         .map(([id, n]) => playerEntry(id, plural(n, "raid"), `${attendedPct.get(id) ?? 0}%`)),
     },
     {
-      id: "classes",
-      title: "Classes in Raids",
-      layout: "bars",
-      blurb: "Times each class was present",
-      // Every class, also the ones that never came, highest first.
-      entries: (classCounts.size ? classes : [])
-        .map((c) => ({ c, n: classCounts.get(c.id) ?? 0 }))
-        .sort((a, b) => b.n - a.n || a.c.name.localeCompare(b.c.name))
-        .map(({ c, n }) => ({
-          key: c.id,
-          name: c.name,
-          color: c.color,
-          icon: `/classes/${c.id}.jpg`,
-          count: n,
-          value: String(n),
-        })),
-    },
-    {
       id: "alt-oholic",
       title: "Alt-oholic",
       layout: "spotlight",
@@ -407,6 +389,24 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
       layout: "spotlight",
       blurb: "Newest member. Welcome!",
       entries: newest.map((p) => playerEntry(p.id, joined.format(new Date(p.created_at)))),
+    },
+    {
+      id: "classes",
+      title: "Classes in Raids",
+      layout: "bars",
+      blurb: "Times each class was present",
+      // Every class, also the ones that never came, highest first.
+      entries: (classCounts.size ? classes : [])
+        .map((c) => ({ c, n: classCounts.get(c.id) ?? 0 }))
+        .sort((a, b) => b.n - a.n || a.c.name.localeCompare(b.c.name))
+        .map(({ c, n }) => ({
+          key: c.id,
+          name: c.name,
+          color: c.color,
+          icon: `/classes/${c.id}.jpg`,
+          count: n,
+          value: String(n),
+        })),
     },
   ];
   return stats.filter((s) => s.entries.length > 0);
