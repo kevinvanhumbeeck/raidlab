@@ -21,11 +21,13 @@ export type StatEntry = {
   color?: string;
   specId?: string;
   item?: StatItem;
+  avatar?: string | null;
   value: string;
   hint?: string;
 };
 
-export type Stat = { id: string; title: string; blurb: string; entries: StatEntry[] };
+// "top" lists the first few; "spotlight" shows only the winner, big, with their Discord avatar (or the item icon).
+export type Stat = { id: string; title: string; blurb: string; layout: "top" | "spotlight"; entries: StatEntry[] };
 
 // Sign-up changes this close to the start (or after it) count as last minute.
 const LAST_MINUTE_HOURS = 3;
@@ -71,8 +73,9 @@ type HistoryRow = {
 
 async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
   const [profiles, characters, classes, specs, raids, attendance, slots, reserves, items, history] = await Promise.all([
-    fetchAll<{ id: string; slug: string; display_name: string; created_at: string }>((f, t) =>
-      supabase.from("profiles").select("id, slug, display_name, created_at").order("id").range(f, t),
+    fetchAll<{ id: string; slug: string; display_name: string; avatar_url: string | null; created_at: string }>(
+      (f, t) =>
+        supabase.from("profiles").select("id, slug, display_name, avatar_url, created_at").order("id").range(f, t),
     ),
     fetchAll<{
       id: string;
@@ -161,6 +164,7 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
       name: main.name,
       href: playerHref(p.slug),
       color: classById.get(main.class_id)?.color,
+      avatar: p.avatar_url,
       value,
       hint: hint ?? (p.display_name !== main.name ? p.display_name : undefined),
     };
@@ -301,6 +305,7 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
     {
       id: "iron-raider",
       title: "Iron Raider",
+      layout: "top",
       blurb: "Most raids attended (present or benched)",
       entries: top(attended, playerName)
         .filter(([id]) => profileById.has(id))
@@ -309,18 +314,21 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
     {
       id: "streak-master",
       title: "Streak Master",
+      layout: "top",
       blurb: "Longest run of raids attended in a row",
       entries: playerTop(longestStreak, (n) => plural(n, "raid")),
     },
     {
       id: "on-a-roll",
       title: "On a Roll",
+      layout: "top",
       blurb: "Raids attended in a row, up to the last one",
       entries: playerTop(new Map([...currentStreak].filter(([, n]) => n > 1)), (n) => plural(n, "raid")),
     },
     {
       id: "class",
       title: "Most Played Class",
+      layout: "top",
       blurb: "Comp spots in raids so far",
       entries: top(classCounts, (id) => classById.get(id)?.name ?? id).map(([id, n]) => ({
         key: id,
@@ -332,54 +340,63 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
     {
       id: "spec",
       title: "Most Played Spec",
+      layout: "top",
       blurb: "Comp spots in raids so far",
       entries: top(specCounts, specName).map(specEntry),
     },
     {
       id: "rare-spec",
       title: "Rare Sighting",
+      layout: "top",
       blurb: "Specs that raided, but hardly ever",
       entries: top(specCounts, specName, specCounts.size).reverse().slice(0, 3).map(specEntry),
     },
     {
       id: "alt-oholic",
       title: "Alt-oholic",
+      layout: "spotlight",
       blurb: "Most characters",
       entries: playerTop(new Map([...characterCounts].filter(([, n]) => n > 1)), (n) => plural(n, "character")),
     },
     {
       id: "bench-warmer",
       title: "Bench Warmer",
+      layout: "top",
       blurb: "Most times benched. Thanks for your patience!",
       entries: playerTop(benched, (n) => plural(n, "time")),
     },
     {
       id: "ghost",
       title: "Ghost",
+      layout: "spotlight",
       blurb: "Signed up, never showed up",
       entries: playerTop(noShows, (n) => plural(n, "no-show")),
     },
     {
       id: "last-minute",
       title: "Last Minute Larry",
+      layout: "spotlight",
       blurb: `Sign-up changes in the last ${LAST_MINUTE_HOURS} hours before a raid`,
       entries: playerTop(lastMinute, (n) => plural(n, "change")),
     },
     {
       id: "flip-flopper",
       title: "Flip-flopper",
+      layout: "spotlight",
       blurb: "Most switches between accepted and declined",
       entries: playerTop(flipFlops, (n) => plural(n, "switch", "switches")),
     },
     {
       id: "early-bird",
       title: "Early Bird",
+      layout: "spotlight",
       blurb: "First to sign up for a raid",
       entries: playerTop(earlyBird, (n) => plural(n, "raid")),
     },
     {
       id: "most-wanted",
       title: "Most Wanted",
+      layout: "spotlight",
       blurb: "Most soft reserved items",
       entries: top(itemReserves, itemName).map(([id, n]) => ({
         key: String(id),
@@ -391,6 +408,7 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
     {
       id: "contested",
       title: "Contested",
+      layout: "spotlight",
       blurb: "Most reserves on one item in one raid",
       entries: top(new Map([...raidItemReserves].filter(([, n]) => n > 1)), (key) => key, 3).map(([key, n]) => {
         const [raidId, itemId] = key.split(":");
@@ -406,18 +424,21 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
     {
       id: "same-old",
       title: "Same Old",
+      layout: "spotlight",
       blurb: "Reserved the same item, raid after raid",
       entries: sameOld.map((x) => playerEntry(x.owner, plural(x.raids, "raid"), itemName(x.item))),
     },
     {
       id: "raids-run",
       title: "Raids Run",
+      layout: "top",
       blurb: `${plural(pastRaids.size, "raid")} and ${plural(raiderNights, "raider night")} so far`,
       entries: top(instanceCounts, (name) => name).map(([name, n]) => ({ key: name, name, value: plural(n, "raid") })),
     },
     {
       id: "busiest-night",
       title: "Busiest Night",
+      layout: "spotlight",
       blurb: "Raids per weekday",
       entries: top(weekdayCounts, (day) => day, 3).map(([day, n]) => ({
         key: day,
@@ -428,6 +449,7 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
     {
       id: "newest",
       title: "Fresh Meat",
+      layout: "spotlight",
       blurb: "Newest members. Welcome!",
       entries: newest.map((p) => playerEntry(p.id, joined.format(new Date(p.created_at)))),
     },
@@ -441,6 +463,7 @@ export const getGuildStats = unstable_cache(
     const admin = createAdminClient();
     return admin ? computeGuildStats(admin) : [];
   },
-  ["guild-stats"],
+  // Bump the version when the shape of the stats changes: the cache outlives deployments.
+  ["guild-stats", "v2"],
   { revalidate: 3600, tags: [GUILD_STATS_TAG] },
 );
