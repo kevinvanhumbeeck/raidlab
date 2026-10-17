@@ -82,7 +82,6 @@ export default async function SplitRosterPage({ params }: { params: Promise<{ in
                 return (
                   <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
                     <SpecIcon specId={c.main_spec_id} name={spec?.name ?? ""} />
-                    <RoleIcon role={primaryRole(spec)} />
                     <span className="font-medium" style={{ color: readable(color.get(c.class_id)) }}>
                       {c.name}
                     </span>
@@ -90,7 +89,8 @@ export default async function SplitRosterPage({ params }: { params: Promise<{ in
                       {c.profiles?.display_name}
                       {!c.is_main && " · alt"}
                     </span>
-                    <form className="ml-auto flex gap-1">
+                    <RoleIcon role={primaryRole(spec)} className="ml-auto opacity-60" />
+                    <form className="flex gap-1">
                       {Array.from({ length: MAX_SPLITS }, (_, i) => i + 1).map((n) => (
                         <button
                           key={n}
