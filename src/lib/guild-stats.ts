@@ -407,7 +407,7 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
     },
     {
       id: "last-pull-out",
-      title: "The Withdrawal Method",
+      title: "Premature Exit",
       layout: "spotlight",
       blurb: "Last to pull out of a raid",
       entries:
