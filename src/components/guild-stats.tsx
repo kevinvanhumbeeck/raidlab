@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Card, CardHeader } from "@/components/card";
 import { ItemLink } from "@/components/item-link";
-import { SpecIcon } from "@/components/spec-icon";
 import { WowheadTooltips } from "@/components/wowhead-tooltips";
 import { getGuildStats, type Stat, type StatEntry } from "@/lib/guild-stats";
 import { iconUrl, qualityColor, wowheadItemUrl } from "@/lib/loot";
@@ -30,19 +29,44 @@ function TopCard({ stat }: { stat: Stat }) {
             <span className={`w-4 shrink-0 text-xs tabular-nums ${i === 0 ? "text-accent" : "text-muted"}`}>
               {i + 1}
             </span>
-            {entry.item ? (
-              <ItemLink item={entry.item} size="sm" />
-            ) : (
-              <span className="flex min-w-0 items-center gap-2">
-                {entry.specId && <SpecIcon specId={entry.specId} name={entry.name} />}
-                <EntryName entry={entry} />
-              </span>
-            )}
+            {entry.item ? <ItemLink item={entry.item} size="sm" /> : <EntryName entry={entry} />}
             {entry.hint && <span className="truncate text-xs text-muted">{entry.hint}</span>}
             <span className="ml-auto shrink-0 tabular-nums">{entry.value}</span>
           </li>
         ))}
       </ol>
+    </Card>
+  );
+}
+
+// Horizontal bars, highest first, in each entry's colour (a class colour); the name and count stay plain text.
+function BarsCard({ stat }: { stat: Stat }) {
+  const max = Math.max(...stat.entries.map((e) => e.count ?? 0));
+  return (
+    <Card className="sm:col-span-2">
+      <CardHeader title={stat.title} subtitle={stat.blurb} />
+      <ul className="space-y-1.5 px-4 py-3 text-sm">
+        {stat.entries.map((entry) => {
+          const count = entry.count ?? 0;
+          return (
+            <li key={entry.key} className="flex items-center gap-3" title={`${entry.name}: ${count}`}>
+              <span className="w-16 shrink-0 truncate">{entry.name}</span>
+              <span className="h-3 flex-1">
+                {count > 0 && (
+                  <span
+                    className="block h-full min-w-0.5 rounded-r"
+                    style={{
+                      width: `${(count / max) * 100}%`,
+                      backgroundColor: entry.color ? readable(entry.color) : undefined,
+                    }}
+                  />
+                )}
+              </span>
+              <span className="w-8 shrink-0 text-right tabular-nums text-muted">{entry.value}</span>
+            </li>
+          );
+        })}
+      </ul>
     </Card>
   );
 }
@@ -114,7 +138,7 @@ export async function GuildStats() {
   const stats = await getGuildStats();
   if (stats.length === 0) return null;
   const spotlights = stats.filter((s) => s.layout === "spotlight");
-  const tops = stats.filter((s) => s.layout === "top");
+  const tops = stats.filter((s) => s.layout !== "spotlight");
 
   return (
     <section className="space-y-3">
@@ -128,9 +152,9 @@ export async function GuildStats() {
       )}
       {tops.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {tops.map((stat) => (
-            <TopCard key={stat.id} stat={stat} />
-          ))}
+          {tops.map((stat) =>
+            stat.layout === "bars" ? <BarsCard key={stat.id} stat={stat} /> : <TopCard key={stat.id} stat={stat} />,
+          )}
         </div>
       )}
       <p className="text-xs text-muted">

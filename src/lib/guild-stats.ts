@@ -3,7 +3,7 @@ import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { attendanceSummary, betterStatus, type RecordedRaid } from "@/lib/attendance";
-import { COUNTS_AS_ATTENDED, REALM_TIMEZONE, hasStarted, playerHref, type AttendanceStatus } from "@/lib/wow";
+import { REALM_TIMEZONE, hasStarted, playerHref, type AttendanceStatus } from "@/lib/wow";
 
 // Fun guild stats for the homepage (#107). Counted in the app for now: every query is paged past PostgREST's
 // 1000-row limit, and the result is cached for an hour (and dropped when attendance is saved), so the cost is a few
@@ -13,21 +13,29 @@ export const GUILD_STATS_TAG = "guild-stats";
 
 export type StatItem = { id: number; name: string; quality: number; icon: string | null };
 
-// One line of a stat card: a player (main character in class colour), a class, a spec, an item or plain text.
+// One line of a stat card: a player (main character in class colour), a class, an item or plain text. Bars also get
+// the count itself.
 export type StatEntry = {
   key: string;
   name: string;
   href?: string;
   color?: string;
-  specId?: string;
+  count?: number;
   item?: StatItem;
   avatar?: string | null;
   value: string;
   hint?: string;
 };
 
-// "top" lists the first few; "spotlight" shows only the winner, big, with their Discord avatar (or the item icon).
-export type Stat = { id: string; title: string; blurb: string; layout: "top" | "spotlight"; entries: StatEntry[] };
+// "top" lists the first few; "spotlight" shows only the winner, big, with their Discord avatar (or the item icon);
+// "bars" is a bar chart of every entry, twice as wide as a top card.
+export type Stat = {
+  id: string;
+  title: string;
+  blurb: string;
+  layout: "top" | "spotlight" | "bars";
+  entries: StatEntry[];
+};
 
 // Sign-up changes this close to the start (or after it) count as last minute.
 const LAST_MINUTE_HOURS = 3;
@@ -81,7 +89,7 @@ type HistoryRow = {
 };
 
 async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
-  const [profiles, characters, classes, specs, raids, attendance, slots, reserves, items, history] = await Promise.all([
+  const [profiles, characters, classes, raids, attendance, reserves, items, history] = await Promise.all([
     fetchAll<{ id: string; slug: string; display_name: string; avatar_url: string | null; created_at: string }>(
       (f, t) =>
         supabase.from("profiles").select("id, slug, display_name, avatar_url, created_at").order("id").range(f, t),
@@ -104,9 +112,6 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
     fetchAll<{ id: string; name: string; color: string }>((f, t) =>
       supabase.from("classes").select("id, name, color").order("id").range(f, t),
     ),
-    fetchAll<{ id: string; name: string; class_id: string }>((f, t) =>
-      supabase.from("specs").select("id, name, class_id").order("id").range(f, t),
-    ),
     fetchAll<{ id: string; title: string; instance: string; starts_at: string; locked_at: string | null }>((f, t) =>
       supabase.from("raids").select("id, title, instance, starts_at, locked_at").order("id").range(f, t),
     ),
@@ -114,14 +119,6 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
       supabase
         .from("attendance")
         .select("raid_id, character_id, status")
-        .order("raid_id")
-        .order("character_id")
-        .range(f, t),
-    ),
-    fetchAll<{ raid_id: string; character_id: string; spec_id: string | null }>((f, t) =>
-      supabase
-        .from("comp_slots")
-        .select("raid_id, character_id, spec_id")
         .order("raid_id")
         .order("character_id")
         .range(f, t),
@@ -150,7 +147,6 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
   ]);
 
   const classById = new Map(classes.map((c) => [c.id, c]));
-  const specById = new Map(specs.map((s) => [s.id, s]));
   const itemById = new Map(items.map((i) => [i.id, i]));
   const charById = new Map(characters.map((c) => [c.id, c]));
   const raidById = new Map(raids.map((r) => [r.id, r]));
@@ -202,52 +198,20 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
   const attendedPct = new Map<string, number | null>();
   const benched = new Map<string, number>();
   const noShows = new Map<string, number>();
-  const longestStreak = new Map<string, number>();
-  const currentStreak = new Map<string, number>();
   for (const [id, p] of profileById) {
     const summary = attendanceSummary(recordedRaids, byPlayer.get(id) ?? new Map(), p.created_at);
     attended.set(id, summary.counts.present + summary.counts.benched);
     attendedPct.set(id, summary.pct);
     benched.set(id, summary.counts.benched);
     noShows.set(id, summary.counts.no_show);
-    // History is newest first: the current streak runs from the newest raid back, the longest anywhere.
-    const hits = summary.history.map((h) => COUNTS_AS_ATTENDED.includes(h.status));
-    const current = hits.indexOf(false);
-    currentStreak.set(id, current === -1 ? hits.length : current);
-    let run = 0;
-    let best = 0;
-    for (const hit of hits) {
-      run = hit ? run + 1 : 0;
-      best = Math.max(best, run);
-    }
-    longestStreak.set(id, best);
   }
 
-  // Classes and specs as placed in comps of raids that have started. Where attendance was recorded, only players who
-  // were there count.
-  const presentIn = new Set(
-    attendance.filter((a) => a.status === "present").map((a) => `${a.raid_id}:${a.character_id}`),
-  );
+  // Classes in raids: a character's attendance as present counts for its class.
   const classCounts = new Map<string, number>();
-  const specCounts = new Map<string, number>();
-  for (const s of slots) {
-    const c = charById.get(s.character_id);
-    if (!c || !pastRaids.has(s.raid_id)) continue;
-    if (recorded.has(s.raid_id) && !presentIn.has(`${s.raid_id}:${s.character_id}`)) continue;
-    bump(classCounts, c.class_id);
-    bump(specCounts, s.spec_id ?? c.main_spec_id);
+  for (const a of attendance) {
+    const c = charById.get(a.character_id);
+    if (c && a.status === "present") bump(classCounts, c.class_id);
   }
-  const specName = (id: string) => {
-    const s = specById.get(id);
-    return s ? `${s.name} ${classById.get(s.class_id)?.name ?? ""}`.trim() : id;
-  };
-  const specEntry = ([id, n]: [string, number]): StatEntry => ({
-    key: id,
-    name: specName(id),
-    specId: id,
-    color: classById.get(specById.get(id)?.class_id ?? "")?.color,
-    value: plural(n, "raid"),
-  });
 
   // Alts: characters still in use.
   const characterCounts = new Map<string, number>();
@@ -324,44 +288,15 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
         .map(([id, n]) => playerEntry(id, plural(n, "raid"), `${attendedPct.get(id) ?? 0}%`)),
     },
     {
-      id: "streak-master",
-      title: "Streak Master",
-      layout: "top",
-      blurb: "Longest run of raids attended in a row",
-      entries: playerTop(longestStreak, (n) => plural(n, "raid")),
-    },
-    {
-      id: "on-a-roll",
-      title: "On a Roll",
-      layout: "top",
-      blurb: "Raids attended in a row, up to the last one",
-      entries: playerTop(new Map([...currentStreak].filter(([, n]) => n > 1)), (n) => plural(n, "raid")),
-    },
-    {
-      id: "class",
-      title: "Most Played Class",
-      layout: "top",
-      blurb: "Comp spots in raids so far",
-      entries: top(classCounts, (id) => classById.get(id)?.name ?? id).map(([id, n]) => ({
-        key: id,
-        name: classById.get(id)?.name ?? id,
-        color: classById.get(id)?.color,
-        value: plural(n, "raid"),
-      })),
-    },
-    {
-      id: "spec",
-      title: "Most Played Spec",
-      layout: "top",
-      blurb: "Comp spots in raids so far",
-      entries: top(specCounts, specName).map(specEntry),
-    },
-    {
-      id: "rare-spec",
-      title: "Rare Sighting",
-      layout: "top",
-      blurb: "Specs that raided, but hardly ever",
-      entries: top(specCounts, specName, specCounts.size).reverse().slice(0, 3).map(specEntry),
+      id: "classes",
+      title: "Classes in Raids",
+      layout: "bars",
+      blurb: "Times each class was present",
+      // Every class, also the ones that never came, highest first.
+      entries: (classCounts.size ? classes : [])
+        .map((c) => ({ c, n: classCounts.get(c.id) ?? 0 }))
+        .sort((a, b) => b.n - a.n || a.c.name.localeCompare(b.c.name))
+        .map(({ c, n }) => ({ key: c.id, name: c.name, color: c.color, count: n, value: String(n) })),
     },
     {
       id: "alt-oholic",
