@@ -14,13 +14,14 @@ export const GUILD_STATS_TAG = "guild-stats";
 export type StatItem = { id: number; name: string; quality: number; icon: string | null };
 
 // One line of a stat card: a player (main character in class colour), a class, an item or plain text. Bars also get
-// the count itself.
+// the count itself and an icon.
 export type StatEntry = {
   key: string;
   name: string;
   href?: string;
   color?: string;
   count?: number;
+  icon?: string;
   item?: StatItem;
   avatar?: string | null;
   value: string;
@@ -296,7 +297,14 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
       entries: (classCounts.size ? classes : [])
         .map((c) => ({ c, n: classCounts.get(c.id) ?? 0 }))
         .sort((a, b) => b.n - a.n || a.c.name.localeCompare(b.c.name))
-        .map(({ c, n }) => ({ key: c.id, name: c.name, color: c.color, count: n, value: String(n) })),
+        .map(({ c, n }) => ({
+          key: c.id,
+          name: c.name,
+          color: c.color,
+          icon: `/classes/${c.id}.jpg`,
+          count: n,
+          value: String(n),
+        })),
     },
     {
       id: "alt-oholic",

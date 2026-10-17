@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Card, CardHeader } from "@/components/card";
 import { ItemLink } from "@/components/item-link";
@@ -39,30 +40,39 @@ function TopCard({ stat }: { stat: Stat }) {
   );
 }
 
-// Horizontal bars, highest first, in each entry's colour (a class colour); the name and count stay plain text.
+// Columns, highest first, in each entry's colour (a class colour), with the entry's icon and count below (its name on
+// hover).
 function BarsCard({ stat }: { stat: Stat }) {
   const max = Math.max(...stat.entries.map((e) => e.count ?? 0));
   return (
-    <Card className="sm:col-span-2">
+    <Card className="flex flex-col sm:col-span-2">
       <CardHeader title={stat.title} subtitle={stat.blurb} />
-      <ul className="space-y-1.5 px-4 py-3 text-sm">
+      <ul className="flex flex-1 items-end gap-2 px-4 pb-3 pt-4">
         {stat.entries.map((entry) => {
           const count = entry.count ?? 0;
           return (
-            <li key={entry.key} className="flex items-center gap-3" title={`${entry.name}: ${count}`}>
-              <span className="w-16 shrink-0 truncate">{entry.name}</span>
-              <span className="h-3 flex-1">
+            <li key={entry.key} className="flex flex-1 flex-col items-center gap-1.5" title={`${entry.name}: ${count}`}>
+              <span className="flex h-40 w-full items-end justify-center">
                 {count > 0 && (
                   <span
-                    className="block h-full min-w-0.5 rounded-r"
+                    className="block w-full max-w-8 rounded-t"
                     style={{
-                      width: `${(count / max) * 100}%`,
+                      height: `${(count / max) * 100}%`,
                       backgroundColor: entry.color ? readable(entry.color) : undefined,
                     }}
                   />
                 )}
               </span>
-              <span className="w-8 shrink-0 text-right tabular-nums text-muted">{entry.value}</span>
+              {entry.icon && (
+                <Image
+                  src={entry.icon}
+                  alt={entry.name}
+                  width={24}
+                  height={24}
+                  className="shrink-0 rounded-sm ring-1 ring-black/60"
+                />
+              )}
+              <span className="text-xs tabular-nums text-muted">{entry.value}</span>
             </li>
           );
         })}
