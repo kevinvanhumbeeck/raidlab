@@ -296,15 +296,9 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
     .sort((a, b) => b.raids - a.raids || playerName(a.owner).localeCompare(playerName(b.owner)))
     .slice(0, TOP);
 
-  // Raids run, per instance and weekday (in server time).
+  // Raids run, per instance.
   const instanceCounts = new Map<string, number>();
-  const weekdayCounts = new Map<string, number>();
-  const weekday = new Intl.DateTimeFormat("en-GB", { timeZone: REALM_TIMEZONE, weekday: "long" });
-  for (const id of pastRaids) {
-    const raid = raidById.get(id)!;
-    bump(instanceCounts, raid.instance);
-    bump(weekdayCounts, weekday.format(new Date(raid.starts_at)));
-  }
+  for (const id of pastRaids) bump(instanceCounts, raidById.get(id)!.instance);
   const raiderNights = [...byPlayer.values()].reduce(
     (sum, perRaid) => sum + [...perRaid.values()].filter((s) => s === "present").length,
     0,
@@ -464,17 +458,6 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
       entries: top(instanceCounts, (name) => name).map(([name, n]) => ({ key: name, name, value: plural(n, "raid") })),
     },
     {
-      id: "busiest-night",
-      title: "Busiest Night",
-      layout: "spotlight",
-      blurb: "Raids per weekday",
-      entries: top(weekdayCounts, (day) => day, 3).map(([day, n]) => ({
-        key: day,
-        name: day,
-        value: plural(n, "raid"),
-      })),
-    },
-    {
       id: "newest",
       title: "Fresh Meat",
       layout: "spotlight",
@@ -492,6 +475,6 @@ export const getGuildStats = unstable_cache(
     return admin ? computeGuildStats(admin) : [];
   },
   // Bump the version when the shape of the stats changes: the cache outlives deployments.
-  ["guild-stats", "v3"],
+  ["guild-stats", "v4"],
   { revalidate: 3600, tags: [GUILD_STATS_TAG] },
 );
