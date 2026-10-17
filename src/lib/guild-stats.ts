@@ -312,7 +312,7 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
   // Raids run, per instance.
   const instanceCounts = new Map<string, number>();
   for (const id of pastRaids) bump(instanceCounts, raidById.get(id)!.instance);
-  const raiderNights = [...byPlayer.values()].reduce(
+  const attendances = [...byPlayer.values()].reduce(
     (sum, perRaid) => sum + [...perRaid.values()].filter((s) => s === "present").length,
     0,
   );
@@ -436,7 +436,7 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
       id: "raids-run",
       title: "Raids Run",
       layout: "top",
-      blurb: `${plural(pastRaids.size, "raid")} and ${plural(raiderNights, "raider night")} so far`,
+      blurb: `${plural(pastRaids.size, "raid")} and ${plural(attendances, "attendance")} so far`,
       entries: top(instanceCounts, (name) => name).map(([name, n]) => ({ key: name, name, value: plural(n, "raid") })),
     },
     {
