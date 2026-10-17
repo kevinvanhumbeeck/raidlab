@@ -469,13 +469,17 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
   return stats.filter((s) => s.entries.length > 0);
 }
 
-// Cached for everyone alike, so it reads with the secret key (the audit log is admin-only); only counts leave it.
-export const getGuildStats = unstable_cache(
-  async () => {
-    const admin = createAdminClient();
-    return admin ? computeGuildStats(admin) : [];
-  },
-  // Bump the version when the shape of the stats changes: the cache outlives deployments.
-  ["guild-stats", "v5"],
-  { revalidate: 3600, tags: [GUILD_STATS_TAG] },
-);
+// Reads with the secret key (the audit log is admin-only); only names and counts leave it.
+async function loadGuildStats() {
+  const admin = createAdminClient();
+  return admin ? computeGuildStats(admin) : [];
+}
+
+// Cached for everyone alike. The cache outlives deployments, so the key holds the deployed commit: a deploy that
+// changes the stats starts afresh. Not cached in development, so changes show straight away.
+const cachedGuildStats = unstable_cache(loadGuildStats, ["guild-stats", process.env.VERCEL_GIT_COMMIT_SHA ?? "local"], {
+  revalidate: 3600,
+  tags: [GUILD_STATS_TAG],
+});
+
+export const getGuildStats = process.env.NODE_ENV === "development" ? loadGuildStats : cachedGuildStats;
