@@ -5,7 +5,7 @@ import { SpecIcon } from "@/components/spec-icon";
 import { readable } from "@/lib/theme";
 import { getInstance } from "@/lib/raid";
 import { requireViewer } from "@/lib/viewer";
-import { MAX_SPLITS, ROLES, primaryRole, rolesText, type Role } from "@/lib/wow";
+import { MAX_SPLITS, primaryRole } from "@/lib/wow";
 import { setRosterSplit } from "../../actions";
 
 type CharacterRow = {
@@ -23,7 +23,7 @@ export default async function SplitRosterPage({ params }: { params: Promise<{ in
   const { supabase, isOfficer } = await requireViewer();
   if (!isOfficer) redirect("/");
 
-  const instance = await getInstance((await params).instance, "splits");
+  const instance = await getInstance((await params).instance);
   const name = instance.name;
 
   const [{ data: characters }, { data: roster }, { data: classes }, { data: specs }] = await Promise.all([
@@ -51,16 +51,13 @@ export default async function SplitRosterPage({ params }: { params: Promise<{ in
     { splitNo: null, rows: members.filter((c) => !splitOf.has(c.id)) },
   ];
 
-  const roleCounts = (rows: CharacterRow[]) => {
-    const count = (role: Role) => rows.filter((c) => primaryRole(specById.get(c.main_spec_id)) === role).length;
-    return ROLES.map((role) => rolesText(count(role), role)).join(", ");
-  };
-
   return (
     <div className="space-y-6">
       <section className="space-y-1">
-        <Breadcrumbs items={[{ label: "Manage", href: "/manage" }, { label: `${instance.name} splits` }]} />
-        <h1 className="text-2xl font-semibold">{instance.name} splits</h1>
+        <Breadcrumbs
+          items={[{ label: "Instances", href: "/manage/instances" }, { label: `${instance.name} splits` }]}
+        />
+        <h2 className="text-lg font-semibold">{instance.name} splits</h2>
         <p className="text-sm opacity-70">
           On a split night, each split has {instance.size} players. Put every character in the split they usually raid
           in; the comp board shows it on the bench, and changes for one night are made there.
@@ -70,10 +67,13 @@ export default async function SplitRosterPage({ params }: { params: Promise<{ in
       {sections.map(({ splitNo, rows }) => (
         <section key={splitNo ?? "none"} className="space-y-2">
           <h2 className="flex flex-wrap items-baseline gap-x-3 font-semibold">
-            {splitNo ? `Split ${splitNo}` : "Not in a split"}
-            <span className="text-sm font-normal opacity-60">
-              {splitNo ? `${rows.length}/${instance.size} · ${roleCounts(rows)}` : rows.length}
-            </span>
+            {splitNo ? (
+              `Split ${splitNo}`
+            ) : (
+              <>
+                Not in a split <span className="text-sm font-normal opacity-60">{rows.length}</span>
+              </>
+            )}
           </h2>
           {rows.length > 0 && (
             <ul className="divide-y divide-border rounded-xl border border-border bg-panel/90">
