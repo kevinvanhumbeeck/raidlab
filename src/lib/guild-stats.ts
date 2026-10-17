@@ -462,7 +462,7 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
       id: "newest",
       title: "Fresh Meat",
       layout: "spotlight",
-      blurb: "Newest members. Welcome!",
+      blurb: "Newest member. Welcome!",
       entries: newest.map((p) => playerEntry(p.id, joined.format(new Date(p.created_at)))),
     },
   ];
