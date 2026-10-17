@@ -90,7 +90,7 @@ type HistoryRow = {
 };
 
 async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
-  const [profiles, characters, classes, raids, attendance, reserves, items, history] = await Promise.all([
+  const [profiles, characters, classes, raids, attendance, duties, reserves, items, history] = await Promise.all([
     fetchAll<{ id: string; slug: string; display_name: string; avatar_url: string | null; created_at: string }>(
       (f, t) =>
         supabase.from("profiles").select("id, slug, display_name, avatar_url, created_at").order("id").range(f, t),
@@ -122,6 +122,15 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
         .select("raid_id, character_id, status")
         .order("raid_id")
         .order("character_id")
+        .range(f, t),
+    ),
+    fetchAll<{ raid_id: string; character_id: string }>((f, t) =>
+      supabase
+        .from("raid_duties")
+        .select("raid_id, character_id")
+        .order("raid_id")
+        .order("split_no")
+        .order("duty")
         .range(f, t),
     ),
     fetchAll<{ raid_id: string; character_id: string; item_id: number }>((f, t) =>
@@ -214,6 +223,13 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
     if (c && a.status === "present") bump(classCounts, c.class_id);
   }
 
+  // Raid duties (raid lead, loot lead, assists) in raids that have started.
+  const dutyCounts = new Map<string, number>();
+  for (const d of duties) {
+    const owner = ownerOf(d.character_id);
+    if (owner && pastRaids.has(d.raid_id)) bump(dutyCounts, owner);
+  }
+
   // Alts: characters still in use.
   const characterCounts = new Map<string, number>();
   for (const c of characters) if (!c.archived_at) bump(characterCounts, c.owner_id);
@@ -248,12 +264,14 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
   const itemReserves = new Map<number, number>();
   const raidItemReserves = new Map<string, number>();
   const playerItemRaids = new Map<string, Set<string>>();
+  const playerReserves = new Map<string, number>();
   for (const r of reserves) {
     if (!pastRaids.has(r.raid_id) || !itemById.has(r.item_id)) continue;
     bump(itemReserves, r.item_id);
     bump(raidItemReserves, `${r.raid_id}:${r.item_id}`);
     const owner = ownerOf(r.character_id);
     if (!owner) continue;
+    bump(playerReserves, owner);
     const key = `${owner}:${r.item_id}`;
     playerItemRaids.set(key, (playerItemRaids.get(key) ?? new Set()).add(r.raid_id));
   }
@@ -375,6 +393,20 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
       layout: "spotlight",
       blurb: "Reserved the same item, raid after raid",
       entries: sameOld.map((x) => playerEntry(x.owner, plural(x.raids, "raid"), itemName(x.item))),
+    },
+    {
+      id: "shot-caller",
+      title: "Shot Caller",
+      layout: "top",
+      blurb: "Most raid duties: raid lead, loot lead and assists",
+      entries: playerTop(dutyCounts, (n) => plural(n, "duty", "duties")),
+    },
+    {
+      id: "shopaholic",
+      title: "Shopaholic",
+      layout: "top",
+      blurb: "Most soft reserves placed",
+      entries: playerTop(playerReserves, (n) => plural(n, "reserve")),
     },
     {
       id: "raids-run",
