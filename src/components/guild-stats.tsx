@@ -40,7 +40,7 @@ function TopCard({ stat }: { stat: Stat }) {
   );
 }
 
-// Columns, highest first, in each entry's colour (a class colour), with the entry's icon and count below (its name on
+// Columns, highest first, in each entry's colour (a class colour), with the entry's icon below (its name and count on
 // hover).
 function BarsCard({ stat }: { stat: Stat }) {
   const max = Math.max(...stat.entries.map((e) => e.count ?? 0));
@@ -55,7 +55,7 @@ function BarsCard({ stat }: { stat: Stat }) {
               <span className="flex h-40 w-full items-end justify-center">
                 {count > 0 && (
                   <span
-                    className="block w-full max-w-8 rounded-t"
+                    className="block w-full max-w-8"
                     style={{
                       height: `${(count / max) * 100}%`,
                       backgroundColor: entry.color ? readable(entry.color) : undefined,
@@ -72,7 +72,6 @@ function BarsCard({ stat }: { stat: Stat }) {
                   className="shrink-0 rounded-sm ring-1 ring-black/60"
                 />
               )}
-              <span className="text-xs tabular-nums text-muted">{entry.value}</span>
             </li>
           );
         })}
