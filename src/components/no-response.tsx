@@ -51,7 +51,7 @@ export function NoResponse({
                 <span key={m.id}>
                   {i > 0 && ", "}
                   <Link
-                    href={playerHref(m.slug, m.character?.name)}
+                    href={playerHref(m.slug)}
                     className="hover:underline"
                     style={{ color: readable(m.character?.color) }}
                   >

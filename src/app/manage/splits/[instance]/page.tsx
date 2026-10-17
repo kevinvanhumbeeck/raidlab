@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { RoleIcon } from "@/components/role-icon";
 import { SpecIcon } from "@/components/spec-icon";
 import { readable } from "@/lib/theme";
 import { getInstance } from "@/lib/raid";
@@ -88,7 +89,8 @@ export default async function SplitRosterPage({ params }: { params: Promise<{ in
                       {c.profiles?.display_name}
                       {!c.is_main && " · alt"}
                     </span>
-                    <form className="ml-auto flex gap-1">
+                    <RoleIcon role={primaryRole(spec)} className="ml-auto opacity-60" />
+                    <form className="flex gap-1">
                       {Array.from({ length: MAX_SPLITS }, (_, i) => i + 1).map((n) => (
                         <button
                           key={n}

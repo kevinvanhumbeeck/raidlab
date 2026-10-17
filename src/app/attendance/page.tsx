@@ -77,7 +77,7 @@ export default async function AttendancePage() {
                 <tr key={p.id} className={p.id === user.id ? "bg-foreground/5" : undefined}>
                   <td className="px-3 py-2">
                     <Link
-                      href={playerHref(p.slug, p.main.name)}
+                      href={playerHref(p.slug)}
                       className="font-medium hover:underline"
                       style={{ color: readable(color.get(p.main.class_id)) }}
                     >

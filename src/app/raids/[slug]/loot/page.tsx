@@ -282,7 +282,7 @@ export default async function LootPage({
                         {itemReserves.map((r) => (
                           <span key={r.character_id} className="inline-flex items-center gap-1">
                             <Link
-                              href={playerHref(r.characters?.profiles?.slug ?? "", r.characters?.name)}
+                              href={playerHref(r.characters?.profiles?.slug ?? "")}
                               className="hover:underline"
                               style={{ color: readable(classById.get(r.characters?.class_id ?? "")?.color) }}
                             >
