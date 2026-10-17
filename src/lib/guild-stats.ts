@@ -29,7 +29,7 @@ export type StatEntry = {
 };
 
 // "top" lists the first few; "spotlight" shows only the winner, big, with their Discord avatar (or the item icon);
-// "bars" is a bar chart of every entry, twice as wide as a top card.
+// "bars" is a column chart of every entry.
 export type Stat = {
   id: string;
   title: string;

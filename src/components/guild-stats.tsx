@@ -45,9 +45,9 @@ function TopCard({ stat }: { stat: Stat }) {
 function BarsCard({ stat }: { stat: Stat }) {
   const max = Math.max(...stat.entries.map((e) => e.count ?? 0));
   return (
-    <Card className="flex flex-col sm:col-span-2">
+    <Card className="flex flex-col">
       <CardHeader title={stat.title} subtitle={stat.blurb} />
-      <ul className="flex flex-1 items-end gap-2 px-4 pb-3 pt-4">
+      <ul className="flex flex-1 items-end gap-1.5 px-4 pb-3 pt-4">
         {stat.entries.map((entry) => {
           const count = entry.count ?? 0;
           return (
