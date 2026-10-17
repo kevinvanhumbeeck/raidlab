@@ -47,15 +47,16 @@ function BarsCard({ stat }: { stat: Stat }) {
   return (
     <Card className="flex flex-col">
       <CardHeader title={stat.title} subtitle={stat.blurb} />
-      <ul className="flex flex-1 items-end gap-1.5 px-4 pb-3 pt-4">
+      <ul className="flex flex-1 items-end px-4 pb-3 pt-4">
         {stat.entries.map((entry) => {
           const count = entry.count ?? 0;
           return (
             <li key={entry.key} className="flex flex-1 flex-col items-center gap-1.5" title={`${entry.name}: ${count}`}>
-              <span className="flex h-40 w-full items-end justify-center">
+              {/* No gap between the columns, so their bottom borders join into one baseline. */}
+              <span className="flex h-40 w-full items-end justify-center border-b border-border">
                 {count > 0 && (
                   <span
-                    className="block w-full max-w-8"
+                    className="block w-4/5 max-w-8 rounded-t"
                     style={{
                       height: `${(count / max) * 100}%`,
                       backgroundColor: entry.color ? readable(entry.color) : undefined,
