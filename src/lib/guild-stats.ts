@@ -90,71 +90,83 @@ type HistoryRow = {
 };
 
 async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
-  const [profiles, characters, classes, raids, attendance, duties, reserves, items, history] = await Promise.all([
-    fetchAll<{ id: string; slug: string; display_name: string; avatar_url: string | null; created_at: string }>(
-      (f, t) =>
-        supabase.from("profiles").select("id, slug, display_name, avatar_url, created_at").order("id").range(f, t),
-    ),
-    fetchAll<{
-      id: string;
-      owner_id: string;
-      name: string;
-      class_id: string;
-      main_spec_id: string;
-      is_main: boolean;
-      archived_at: string | null;
-    }>((f, t) =>
-      supabase
-        .from("characters")
-        .select("id, owner_id, name, class_id, main_spec_id, is_main, archived_at")
-        .order("id")
-        .range(f, t),
-    ),
-    fetchAll<{ id: string; name: string; color: string }>((f, t) =>
-      supabase.from("classes").select("id, name, color").order("id").range(f, t),
-    ),
-    fetchAll<{ id: string; title: string; instance: string; starts_at: string; locked_at: string | null }>((f, t) =>
-      supabase.from("raids").select("id, title, instance, starts_at, locked_at").order("id").range(f, t),
-    ),
-    fetchAll<{ raid_id: string; character_id: string; status: AttendanceStatus }>((f, t) =>
-      supabase
-        .from("attendance")
-        .select("raid_id, character_id, status")
-        .order("raid_id")
-        .order("character_id")
-        .range(f, t),
-    ),
-    fetchAll<{ raid_id: string; character_id: string }>((f, t) =>
-      supabase
-        .from("raid_duties")
-        .select("raid_id, character_id")
-        .order("raid_id")
-        .order("split_no")
-        .order("duty")
-        .range(f, t),
-    ),
-    fetchAll<{ raid_id: string; character_id: string; item_id: number }>((f, t) =>
-      supabase
-        .from("reserves")
-        .select("raid_id, character_id, item_id")
-        .order("raid_id")
-        .order("character_id")
-        .order("item_id")
-        .range(f, t),
-    ),
-    fetchAll<StatItem>((f, t) => supabase.from("loot_items").select("id, name, quality, icon").order("id").range(f, t)),
-    // Only the sign-up fields the stats need, not the whole old and new rows.
-    fetchAll<HistoryRow>((f, t) =>
-      supabase
-        .from("history")
-        .select(
-          "id, at, actor, action, raid_id, old_character:old->>character_id, old_status:old->>status, new_character:new->>character_id, new_status:new->>status",
-        )
-        .eq("table_name", "signups")
-        .order("id")
-        .range(f, t),
-    ),
-  ]);
+  const [profiles, characters, classes, raids, attendance, slots, duties, reserves, items, history] = await Promise.all(
+    [
+      fetchAll<{ id: string; slug: string; display_name: string; avatar_url: string | null; created_at: string }>(
+        (f, t) =>
+          supabase.from("profiles").select("id, slug, display_name, avatar_url, created_at").order("id").range(f, t),
+      ),
+      fetchAll<{
+        id: string;
+        owner_id: string;
+        name: string;
+        class_id: string;
+        main_spec_id: string;
+        is_main: boolean;
+        archived_at: string | null;
+      }>((f, t) =>
+        supabase
+          .from("characters")
+          .select("id, owner_id, name, class_id, main_spec_id, is_main, archived_at")
+          .order("id")
+          .range(f, t),
+      ),
+      fetchAll<{ id: string; name: string; color: string }>((f, t) =>
+        supabase.from("classes").select("id, name, color").order("id").range(f, t),
+      ),
+      fetchAll<{ id: string; title: string; instance: string; starts_at: string; locked_at: string | null }>((f, t) =>
+        supabase.from("raids").select("id, title, instance, starts_at, locked_at").order("id").range(f, t),
+      ),
+      fetchAll<{ raid_id: string; character_id: string; status: AttendanceStatus }>((f, t) =>
+        supabase
+          .from("attendance")
+          .select("raid_id, character_id, status")
+          .order("raid_id")
+          .order("character_id")
+          .range(f, t),
+      ),
+      fetchAll<{ raid_id: string; character_id: string; spec_id: string | null }>((f, t) =>
+        supabase
+          .from("comp_slots")
+          .select("raid_id, character_id, spec_id")
+          .order("raid_id")
+          .order("character_id")
+          .range(f, t),
+      ),
+      fetchAll<{ raid_id: string; character_id: string }>((f, t) =>
+        supabase
+          .from("raid_duties")
+          .select("raid_id, character_id")
+          .order("raid_id")
+          .order("split_no")
+          .order("duty")
+          .range(f, t),
+      ),
+      fetchAll<{ raid_id: string; character_id: string; item_id: number }>((f, t) =>
+        supabase
+          .from("reserves")
+          .select("raid_id, character_id, item_id")
+          .order("raid_id")
+          .order("character_id")
+          .order("item_id")
+          .range(f, t),
+      ),
+      fetchAll<StatItem>((f, t) =>
+        supabase.from("loot_items").select("id, name, quality, icon").order("id").range(f, t),
+      ),
+      // Only the sign-up fields the stats need, not the whole old and new rows.
+      fetchAll<HistoryRow>((f, t) =>
+        supabase
+          .from("history")
+          .select(
+            "id, at, actor, action, raid_id, old_character:old->>character_id, old_status:old->>status, new_character:new->>character_id, new_status:new->>status",
+          )
+          .eq("table_name", "signups")
+          .order("id")
+          .range(f, t),
+      ),
+    ],
+  );
 
   const classById = new Map(classes.map((c) => [c.id, c]));
   const itemById = new Map(items.map((i) => [i.id, i]));
@@ -223,6 +235,20 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
     if (c && a.status === "present") bump(classCounts, c.class_id);
   }
 
+  // Specs each player played: comp spots in raids that have started, where attendance was recorded only when present.
+  const presentIn = new Set(
+    attendance.filter((a) => a.status === "present").map((a) => `${a.raid_id}:${a.character_id}`),
+  );
+  const specsPlayed = new Map<string, Set<string>>();
+  for (const slot of slots) {
+    const c = charById.get(slot.character_id);
+    if (!c || !pastRaids.has(slot.raid_id)) continue;
+    if (recorded.has(slot.raid_id) && !presentIn.has(`${slot.raid_id}:${slot.character_id}`)) continue;
+    specsPlayed.set(c.owner_id, (specsPlayed.get(c.owner_id) ?? new Set()).add(slot.spec_id ?? c.main_spec_id));
+  }
+  const versatility = new Map<string, number>();
+  for (const [id, specs] of specsPlayed) if (specs.size > 1) versatility.set(id, specs.size);
+
   // Raid duties (raid lead, loot lead, assists) in raids that have started.
   const dutyCounts = new Map<string, number>();
   for (const d of duties) {
@@ -264,14 +290,12 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
   const itemReserves = new Map<number, number>();
   const raidItemReserves = new Map<string, number>();
   const playerItemRaids = new Map<string, Set<string>>();
-  const playerReserves = new Map<string, number>();
   for (const r of reserves) {
     if (!pastRaids.has(r.raid_id) || !itemById.has(r.item_id)) continue;
     bump(itemReserves, r.item_id);
     bump(raidItemReserves, `${r.raid_id}:${r.item_id}`);
     const owner = ownerOf(r.character_id);
     if (!owner) continue;
-    bump(playerReserves, owner);
     const key = `${owner}:${r.item_id}`;
     playerItemRaids.set(key, (playerItemRaids.get(key) ?? new Set()).add(r.raid_id));
   }
@@ -402,11 +426,11 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
       entries: playerTop(dutyCounts, (n) => plural(n, "duty", "duties")),
     },
     {
-      id: "shopaholic",
-      title: "Shopaholic",
+      id: "swiss-army-knife",
+      title: "Swiss Army Knife",
       layout: "top",
-      blurb: "Most soft reserves placed",
-      entries: playerTop(playerReserves, (n) => plural(n, "reserve")),
+      blurb: "Most different specs played in raids",
+      entries: playerTop(versatility, (n) => plural(n, "spec")),
     },
     {
       id: "raids-run",
