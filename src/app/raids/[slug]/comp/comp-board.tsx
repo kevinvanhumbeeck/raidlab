@@ -13,6 +13,7 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { RoleCount, type RoleCountState } from "@/components/role-count";
+import { RoleIcon } from "@/components/role-icon";
 import { SpecIcon } from "@/components/spec-icon";
 import { autoFill, type FillResult } from "@/lib/auto-fill";
 import { coverageSummary, roleCoverage, type RoleOption } from "@/lib/coverage";
@@ -572,8 +573,6 @@ function Pool({ disabled, children }: { disabled: boolean; children: React.React
   );
 }
 
-const ROLE_BADGE: Record<Role, string> = { tank: "Tank", healer: "Heal", dps: "DPS" };
-
 function Card({
   character: c,
   disabled,
@@ -634,18 +633,20 @@ function Card({
             ⚠
           </span>
         )}
-        {role && onCycleRole && (
+        {role && onCycleRole ? (
           <button
             type="button"
             disabled={disabled}
             onPointerDown={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             onClick={onCycleRole}
-            title={disabled ? `Plays ${ROLE_BADGE[role].toLowerCase()}` : "Switch role"}
-            className="rounded border border-border px-1.5 text-[11px] leading-4 opacity-80 enabled:hover:border-accent enabled:hover:opacity-100"
+            title={disabled ? undefined : "Switch role"}
+            className="rounded border border-border p-0.5 enabled:hover:border-accent"
           >
-            {ROLE_BADGE[role]}
+            <RoleIcon role={role} className="opacity-80" />
           </button>
+        ) : (
+          <RoleIcon role={role ?? c.role} />
         )}
       </span>
     </div>

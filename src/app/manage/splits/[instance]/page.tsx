@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { RoleIcon } from "@/components/role-icon";
 import { SpecIcon } from "@/components/spec-icon";
 import { readable } from "@/lib/theme";
 import { getInstance } from "@/lib/raid";
@@ -81,6 +82,7 @@ export default async function SplitRosterPage({ params }: { params: Promise<{ in
                 return (
                   <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
                     <SpecIcon specId={c.main_spec_id} name={spec?.name ?? ""} />
+                    <RoleIcon role={primaryRole(spec)} />
                     <span className="font-medium" style={{ color: readable(color.get(c.class_id)) }}>
                       {c.name}
                     </span>

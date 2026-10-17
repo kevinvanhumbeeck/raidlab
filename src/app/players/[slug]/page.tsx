@@ -2,6 +2,7 @@ import Link from "next/link";
 import { deleteCharacter } from "@/app/characters/actions";
 import { ConfirmButton } from "@/components/confirm-button";
 import { Pager, pageParam } from "@/components/pager";
+import { RoleIcon } from "@/components/role-icon";
 import { CharacterSpecs, SpecIcon } from "@/components/spec-icon";
 import { attendanceSummary, betterStatus, type RecordedRaid } from "@/lib/attendance";
 import { iconUrl, qualityColor } from "@/lib/loot";
@@ -359,7 +360,9 @@ export default async function PlayerPage({
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-2">{h.role ? ROLE_NAMES[h.role] : <span className="opacity-40">—</span>}</td>
+                    <td className="px-3 py-2">
+                      {h.role ? <RoleIcon role={h.role} className="" /> : <span className="opacity-40">—</span>}
+                    </td>
                     <td className="px-3 py-2 tabular-nums">{h.group ?? <span className="opacity-40">—</span>}</td>
                     <td className="px-3 py-2 text-xs">{h.duties.map((d) => DUTY_LABELS[d]).join(", ")}</td>
                     <td className="px-3 py-2">
