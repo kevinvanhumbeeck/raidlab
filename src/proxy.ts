@@ -28,6 +28,6 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Discord's interactions endpoint has no session and must answer within 3 seconds.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/discord|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // Discord's interactions endpoint has no session and must answer within 3 seconds. Static files don't need one.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt|api/discord|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

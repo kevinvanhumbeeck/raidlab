@@ -1,0 +1,4 @@
+# A guild app behind a Discord login: only the home page is public.
+User-agent: *
+Allow: /$
+Disallow: /

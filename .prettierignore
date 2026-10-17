@@ -2,3 +2,5 @@ backups
 supabase/.temp
 package-lock.json
 AGENTS.md
+# Google Search Console checks this file's exact content.
+public/google*.html
