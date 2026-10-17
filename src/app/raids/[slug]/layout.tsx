@@ -3,8 +3,8 @@ import { requireViewer } from "@/lib/viewer";
 import { RAID_CLOSED_MESSAGE, canEditRaid, formatRaidDate, formatRaidTime, hasStarted, isLocked } from "@/lib/wow";
 import { setRaidLock } from "../actions";
 import { LockButton } from "./lock-button";
-import { RaidTabs } from "./raid-tabs";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { SectionTabs } from "@/components/section-tabs";
 
 // Shared header and tabs for a raid's sign-ups, composition, loot and attendance pages.
 export default async function RaidLayout({
@@ -67,20 +67,21 @@ export default async function RaidLayout({
         {raid.notes && <p className="text-sm opacity-70">{raid.notes}</p>}
         {isOfficer && !canEdit && <p className="text-sm text-warn">{RAID_CLOSED_MESSAGE}</p>}
       </section>
-      <RaidTabs
-        raidSlug={raid.slug}
+      <SectionTabs
+        base={`/raids/${raid.slug}`}
         tabs={[
-          { segment: "", label: "Sign-ups", meta: `${accepted ?? 0}/${capacity}` },
-          { segment: "comp", label: "Composition", meta: `${placed ?? 0}/${capacity}` },
-          { segment: "loot", label: "Loot", meta: `${reserved ?? 0}` },
+          { segment: "", icon: "signups", label: "Sign-ups", meta: `${accepted ?? 0}/${capacity}` },
+          { segment: "comp", icon: "comp", label: "Composition", meta: `${placed ?? 0}/${capacity}` },
+          { segment: "loot", icon: "loot", label: "Loot", meta: `${reserved ?? 0}` },
           {
             segment: "attendance",
+            icon: "attendance",
             label: "Attendance",
             meta: recorded ? "✓" : started ? "to do" : "–",
             warn: started && !recorded,
           },
           // The audit log (#90), for admins.
-          ...(isAdmin ? [{ segment: "history", label: "History", meta: "" }] : []),
+          ...(isAdmin ? [{ segment: "history", icon: "history" as const, label: "History", meta: "" }] : []),
         ]}
       />
       {children}

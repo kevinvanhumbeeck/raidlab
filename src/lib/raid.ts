@@ -45,20 +45,13 @@ export const getPlayer = cache(async (slug: string) => {
   return profile;
 });
 
-// The instance behind a /manage/loot/[instance] or /manage/splits/[instance] URL. Old links with the instance's name
-// redirect to the slug.
-export const getInstance = cache(async (param: string, section: "loot" | "splits") => {
+// The instance behind a /manage/loot/[instance] or /manage/splits/[instance] URL.
+export const getInstance = cache(async (slug: string) => {
   const { supabase } = await requireViewer();
   const { data: instances } = await supabase.from("instances").select("name, size, reserves");
-  const instance = instances?.find((i) => instanceSlug(i.name) === param);
-  if (instance) return instance;
-  let name = param;
-  try {
-    name = decodeURIComponent(param);
-  } catch {}
-  const byName = instances?.find((i) => i.name === name);
-  if (byName) permanentRedirect(`/manage/${section}/${instanceSlug(byName.name)}`);
-  notFound();
+  const instance = instances?.find((i) => instanceSlug(i.name) === slug);
+  if (!instance) notFound();
+  return instance;
 });
 
 // RLS enforces the lock too; this gives players a readable error instead.
