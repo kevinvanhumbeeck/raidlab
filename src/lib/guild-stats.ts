@@ -35,6 +35,14 @@ const TOP = 5;
 
 const plural = (n: number, word: string, many = `${word}s`) => `${n} ${n === 1 ? word : many}`;
 
+// "40 min", "5 hours", "3 days"
+function duration(ms: number) {
+  const minutes = Math.round(ms / 60000);
+  if (minutes < 60) return plural(minutes, "min", "min");
+  const hours = Math.round(minutes / 60);
+  return hours < 48 ? plural(hours, "hour") : plural(Math.round(hours / 24), "day");
+}
+
 // Every row of a query, a page of 1000 at a time. The query must have a stable order.
 async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>) {
   const size = 1000;
@@ -248,6 +256,7 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
   const lastMinute = new Map<string, number>();
   const flipFlops = new Map<string, number>();
   const firstSignup = new Map<string, string>();
+  let lastPullOut: { owner: string; raid: (typeof raids)[number]; before: number } | null = null;
   for (const h of history) {
     const owner = ownerOf(h.new_character ?? h.old_character);
     const raid = h.raid_id ? raidById.get(h.raid_id) : undefined;
@@ -257,6 +266,9 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
     if (h.action === "update" && h.old_status !== h.new_status) bump(flipFlops, owner);
     // History is in id order, so the first insert seen for a raid is its first sign-up.
     if (h.action === "insert" && !firstSignup.has(raid.id)) firstSignup.set(raid.id, owner);
+    // Pulling out: an accepted sign-up switched to declined, or withdrawn. The last one seen is the latest.
+    const pulledOut = h.old_status === "accepted" && (h.action === "delete" || h.new_status === "declined");
+    if (pulledOut) lastPullOut = { owner, raid, before };
   }
   const earlyBird = new Map<string, number>();
   for (const owner of firstSignup.values()) bump(earlyBird, owner);
@@ -390,8 +402,24 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
       id: "early-bird",
       title: "Early Bird",
       layout: "spotlight",
-      blurb: "First to sign up for a raid",
-      entries: playerTop(earlyBird, (n) => plural(n, "raid")),
+      blurb: "First to sign up, most often",
+      entries: playerTop(earlyBird, (n) => (n === 1 ? "first once" : `first ${n} times`)),
+    },
+    {
+      id: "last-pull-out",
+      title: "The Withdrawal Method",
+      layout: "spotlight",
+      blurb: "Last to pull out of a raid",
+      entries:
+        lastPullOut && profileById.has(lastPullOut.owner)
+          ? [
+              playerEntry(
+                lastPullOut.owner,
+                lastPullOut.before > 0 ? `${duration(lastPullOut.before)} before the start` : "after the start",
+                lastPullOut.raid.title,
+              ),
+            ]
+          : [],
     },
     {
       id: "most-wanted",
@@ -464,6 +492,6 @@ export const getGuildStats = unstable_cache(
     return admin ? computeGuildStats(admin) : [];
   },
   // Bump the version when the shape of the stats changes: the cache outlives deployments.
-  ["guild-stats", "v2"],
+  ["guild-stats", "v3"],
   { revalidate: 3600, tags: [GUILD_STATS_TAG] },
 );
