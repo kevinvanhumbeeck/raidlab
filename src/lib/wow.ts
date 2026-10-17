@@ -197,11 +197,9 @@ export function canEditRaid(raid: { starts_at: string }, viewer: { isOfficer: bo
   return viewer.isOfficer && Date.now() < closesAt;
 }
 
-// Profile page of the player owning a character, opened on that character.
-export function playerHref(playerSlug: string, characterName?: string) {
-  return characterName
-    ? `/players/${playerSlug}?character=${encodeURIComponent(characterName.toLowerCase())}`
-    : `/players/${playerSlug}`;
+// Profile page of a player.
+export function playerHref(playerSlug: string) {
+  return `/players/${playerSlug}`;
 }
 
 // URL slug of an instance name: "Onyxia's Lair" → "onyxias-lair". Computed rather than stored, since there are only

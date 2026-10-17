@@ -49,7 +49,7 @@ export default async function RaidsPage({ searchParams }: { searchParams: Promis
                     href={`/raids/${raid.slug}`}
                     className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-foreground/5"
                   >
-                    <span className="font-medium">{raid.title}</span>
+                    <span className="text-sm font-medium">{raid.title}</span>
                     <span className="text-sm opacity-70">
                       {raid.instance} · {raid.size}-man{raid.splits > 1 && ` × ${raid.splits}`}
                     </span>
@@ -83,7 +83,7 @@ export default async function RaidsPage({ searchParams }: { searchParams: Promis
                     href={`/raids/${raid.slug}/attendance`}
                     className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-foreground/5"
                   >
-                    <span className="font-medium">{raid.title}</span>
+                    <span className="text-sm font-medium">{raid.title}</span>
                     <span className="text-sm opacity-70">{formatRaidTime(raid.starts_at)}</span>
                     <span className={`ml-auto text-xs ${recorded ? "opacity-70" : "text-warn"}`}>
                       {recorded ? "Attendance recorded" : "Attendance not recorded"}

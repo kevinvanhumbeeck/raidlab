@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Card, CardHeader, StatTile } from "@/components/card";
+import { RoleIcon } from "@/components/role-icon";
 import { SpecIcon } from "@/components/spec-icon";
 import { ROLES, ROLE_LABELS, playerHref, primaryRole, type Role } from "@/lib/wow";
 import { readable } from "@/lib/theme";
@@ -87,16 +88,19 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
                       <li key={c.id} className="flex items-center gap-2 px-4 py-2">
                         <SpecIcon specId={c.main_spec_id} name={specById.get(c.main_spec_id)?.name ?? ""} />
                         <Link
-                          href={playerHref(c.profiles?.slug ?? "", c.name)}
+                          href={playerHref(c.profiles?.slug ?? "")}
                           className="font-medium hover:underline"
                           style={{ color: readable(cls.color) }}
                         >
                           {c.name}
                         </Link>
                         {!c.is_main && <span className="text-xs text-muted">alt</span>}
-                        {c.profiles && c.profiles.display_name !== c.name && (
-                          <span className="ml-auto text-xs text-muted">{c.profiles.display_name}</span>
-                        )}
+                        <span className="ml-auto flex items-center gap-2">
+                          {c.profiles && c.profiles.display_name !== c.name && (
+                            <span className="text-xs text-muted">{c.profiles.display_name}</span>
+                          )}
+                          <RoleIcon role={primaryRole(specById.get(c.main_spec_id))} />
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -141,7 +145,7 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
           ))}
         </div>
         {missing.length > 0 && (
-          <p className="flex flex-wrap items-center gap-1.5 text-sm text-warn">
+          <p className="flex flex-wrap items-center gap-1.5 pt-3 text-sm text-warn">
             No main for:
             {missing.map((s) => (
               <SpecIcon

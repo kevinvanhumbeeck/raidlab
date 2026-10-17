@@ -109,7 +109,7 @@ export default async function RaidAttendancePage({
             {sorted.map(({ character, status }) => (
               <li key={character.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2">
                 <Link
-                  href={playerHref(character.profiles?.slug ?? "", character.name)}
+                  href={playerHref(character.profiles?.slug ?? "")}
                   className="w-40 font-medium hover:underline"
                   style={{ color: readable(color.get(character.class_id)) }}
                 >
