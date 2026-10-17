@@ -38,6 +38,7 @@ const plural = (n: number, word: string, many = `${word}s`) => `${n} ${n === 1 ?
 // "40 min", "5 hours", "3 days"
 function duration(ms: number) {
   const minutes = Math.round(ms / 60000);
+  if (minutes < 1) return "seconds";
   if (minutes < 60) return plural(minutes, "min", "min");
   const hours = Math.round(minutes / 60);
   return hours < 48 ? plural(hours, "hour") : plural(Math.round(hours / 24), "day");
@@ -106,8 +107,8 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
     fetchAll<{ id: string; name: string; class_id: string }>((f, t) =>
       supabase.from("specs").select("id, name, class_id").order("id").range(f, t),
     ),
-    fetchAll<{ id: string; title: string; instance: string; starts_at: string }>((f, t) =>
-      supabase.from("raids").select("id, title, instance, starts_at").order("id").range(f, t),
+    fetchAll<{ id: string; title: string; instance: string; starts_at: string; locked_at: string | null }>((f, t) =>
+      supabase.from("raids").select("id, title, instance, starts_at, locked_at").order("id").range(f, t),
     ),
     fetchAll<{ raid_id: string; character_id: string; status: AttendanceStatus }>((f, t) =>
       supabase
@@ -256,7 +257,8 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
   const lastMinute = new Map<string, number>();
   const flipFlops = new Map<string, number>();
   const firstSignup = new Map<string, string>();
-  let lastPullOut: { owner: string; raid: (typeof raids)[number]; before: number } | null = null;
+  // Per player, their pull-out closest to the sign-up lock (ms before it).
+  const closestPullOut = new Map<string, number>();
   for (const h of history) {
     const owner = ownerOf(h.new_character ?? h.old_character);
     const raid = h.raid_id ? raidById.get(h.raid_id) : undefined;
@@ -266,9 +268,13 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
     if (h.action === "update" && h.old_status !== h.new_status) bump(flipFlops, owner);
     // History is in id order, so the first insert seen for a raid is its first sign-up.
     if (h.action === "insert" && !firstSignup.has(raid.id)) firstSignup.set(raid.id, owner);
-    // Pulling out: an accepted sign-up switched to declined, or withdrawn. The last one seen is the latest.
+    // Pulling out: an accepted sign-up switched to declined, or withdrawn, while sign-ups were still open. A raid an
+    // officer reopened (no lock) counts up to its start.
     const pulledOut = h.old_status === "accepted" && (h.action === "delete" || h.new_status === "declined");
-    if (pulledOut) lastPullOut = { owner, raid, before };
+    const beforeLock = new Date(raid.locked_at ?? raid.starts_at).getTime() - new Date(h.at).getTime();
+    if (pulledOut && beforeLock >= 0 && beforeLock < (closestPullOut.get(owner) ?? Infinity)) {
+      closestPullOut.set(owner, beforeLock);
+    }
   }
   const earlyBird = new Map<string, number>();
   for (const owner of firstSignup.values()) bump(earlyBird, owner);
@@ -403,17 +409,12 @@ async function computeGuildStats(supabase: SupabaseClient): Promise<Stat[]> {
       id: "last-pull-out",
       title: "Premature Exit",
       layout: "spotlight",
-      blurb: "Last to pull out of a raid",
-      entries:
-        lastPullOut && profileById.has(lastPullOut.owner)
-          ? [
-              playerEntry(
-                lastPullOut.owner,
-                lastPullOut.before > 0 ? `${duration(lastPullOut.before)} before the start` : "after the start",
-                lastPullOut.raid.title,
-              ),
-            ]
-          : [],
+      blurb: "Pulled out closest to the sign-up lock",
+      entries: [...closestPullOut]
+        .filter(([id]) => profileById.has(id))
+        .sort((a, b) => a[1] - b[1] || playerName(a[0]).localeCompare(playerName(b[0])))
+        .slice(0, TOP)
+        .map(([id, ms]) => playerEntry(id, `${duration(ms)} before the lock`)),
     },
     {
       id: "most-wanted",
@@ -475,6 +476,6 @@ export const getGuildStats = unstable_cache(
     return admin ? computeGuildStats(admin) : [];
   },
   // Bump the version when the shape of the stats changes: the cache outlives deployments.
-  ["guild-stats", "v4"],
+  ["guild-stats", "v5"],
   { revalidate: 3600, tags: [GUILD_STATS_TAG] },
 );
