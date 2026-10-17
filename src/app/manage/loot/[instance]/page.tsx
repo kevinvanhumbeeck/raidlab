@@ -18,7 +18,7 @@ export default async function LootTablePage({
   const { supabase, isAdmin } = await requireViewer();
   if (!isAdmin) redirect("/");
 
-  const instance = await getInstance((await params).instance, "loot");
+  const instance = await getInstance((await params).instance);
   const { missing } = await searchParams;
 
   const { data: items } = await supabase
@@ -32,8 +32,8 @@ export default async function LootTablePage({
   return (
     <div className="space-y-6">
       <section className="space-y-1">
-        <Breadcrumbs items={[{ label: "Manage", href: "/manage" }, { label: `${instance.name} loot` }]} />
-        <h1 className="text-2xl font-semibold">{instance.name} loot</h1>
+        <Breadcrumbs items={[{ label: "Instances", href: "/manage/instances" }, { label: `${instance.name} loot` }]} />
+        <h2 className="text-lg font-semibold">{instance.name} loot</h2>
         <p className="text-sm opacity-70">
           Players can soft-reserve {instance.reserves} of these items per raid. Item names and icons come from
           Wowhead&apos;s WoW Forever database.

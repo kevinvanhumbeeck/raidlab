@@ -54,7 +54,8 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
 
   return (
     <div className="space-y-6">
-      <section>
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Members</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <StatTile label="Mains" value={mains.length} />
           <StatTile label="Alts" value={all.length - mains.length} />
@@ -62,10 +63,6 @@ export async function Roster({ supabase }: { supabase: SupabaseClient }) {
             <StatTile key={role} label={ROLE_LABELS[role]} value={roleCount(role)} hint="mains" />
           ))}
         </div>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Members</h2>
         {all.length === 0 ? (
           <p className="opacity-70">Nobody has registered a character yet.</p>
         ) : (

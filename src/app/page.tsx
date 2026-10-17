@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { DiscordLoginButton } from "@/components/discord-login-button";
+import { GuildStats } from "@/components/guild-stats";
 import { Roster } from "@/components/roster";
 import { signOut } from "@/app/auth/actions";
 import { getViewer } from "@/lib/viewer";
@@ -53,6 +54,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
         <h1 className="text-2xl font-semibold">Welcome, {profile?.display_name}</h1>
         {isOfficer && <p className="text-sm opacity-70">You are an officer.</p>}
       </div>
+      <GuildStats />
       <Roster supabase={supabase} />
     </div>
   );

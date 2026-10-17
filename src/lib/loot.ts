@@ -17,7 +17,7 @@ export function qualityColor(quality: number) {
 }
 
 export function iconUrl(icon: string | null) {
-  return `https://wow.zamimg.com/images/wow/icons/medium/${icon ?? "inv_misc_questionmark"}.jpg`;
+  return `https://wow.zamimg.com/images/wow/icons/large/${icon ?? "inv_misc_questionmark"}.jpg`;
 }
 
 export function wowheadItemUrl(id: number) {
